@@ -86,95 +86,6 @@
       </div>
       
       <nav class="sidebar-accordion">
-      </nav>
-    </aside>
-
-    <!-- KHUNG BÊN PHẢI (Chứa Navbar + Main Content) -->
-    <div class="app-wrapper">
-      <!-- TOPBAR / NAVBAR CỐ ĐỊNH -->
-      <header class="amis-topbar">
-        <div class="topbar-left">
-          <!-- Hamburger menu & Breadcrumb -->
-          <button class="topbar-btn" id="btn-toggle-sidebar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          </button>
-          
-          <div class="topbar-breadcrumb">
-            <span id="breadcrumb-group">TỔNG QUAN</span>
-            <span class="breadcrumb-separator">›</span>
-            <span id="breadcrumb-current-nav" class="breadcrumb-active">Dashboard</span>
-          </div>
-        </div>
-
-        <!-- Thanh Tìm Kiếm (Center) -->
-        <div class="topbar-center" style="position: relative;">
-          <div class="topbar-search">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="global-search-input" placeholder="Tìm kiếm nhanh..." autocomplete="off">
-          </div>
-          <div id="global-search-results" class="search-dropdown" style="display:none; position:absolute; top:44px; left:0; width:100%; background:var(--amis-card-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:var(--shadow-dropdown); z-index:1000;"></div>
-        </div>
-
-        <!-- Điều Khiển Phải: Quick Create, Giao diện, Thông báo, Tài khoản -->
-        <div class="topbar-right">
-          <!-- Quick Create Dropdown -->
-          <div class="quick-create-dropdown" style="position: relative; margin-right: 8px;">
-            <button class="btn-quick-create" id="btn-quick-create">
-              <span style="font-size: 16px; line-height: 1;">+</span>
-              <span>Tạo Mới</span>
-            </button>
-            <div id="quick-create-menu" class="dropdown-menu" style="display: none;">
-              <a href="/shipments" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('shipments'); window.closeQuickMenu();"><span style="margin-right:8px;">🚢</span>Tạo Lô Hàng</a>
-              <a href="/invoices" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('invoices'); window.closeQuickMenu();"><span style="margin-right:8px;">🧾</span>Tạo Hóa Đơn (Invoice)</a>
-              <a href="/booking" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('booking'); window.closeQuickMenu();"><span style="margin-right:8px;">⚓</span>Tạo Booking Tàu</a>
-              <a href="/customs-declarations" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('customs-declarations'); window.closeQuickMenu();"><span style="margin-right:8px;">📋</span>Mở Tờ Khai Hải Quan</a>
-              <a href="/documents" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('documents'); window.closeQuickMenu();"><span style="margin-right:8px;">📤</span>Upload Chứng Từ</a>
-            </div>
-          </div>
-
-          <!-- Chuyển Đổi Giao Diện Sáng / Tối -->
-          <button class="topbar-btn" id="btn-theme-toggle" title="Đổi giao diện Sáng / Tối">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-          </button>
-
-          <!-- Thông Báo -->
-          <button class="topbar-btn" id="btn-notif" style="position:relative;" title="Thông báo hệ thống">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            <span class="notif-badge">1</span>
-          </button>
-
-          <!-- Tài Khoản Người Dùng -->
-          <div class="user-profile">
-            <div class="user-avatar" id="user-avatar">N</div>
-            <div class="user-info">
-              <span class="user-name" id="user-display-name">Nhàn</span>
-            </div>
-            <button class="topbar-btn" id="btn-logout" title="Đăng xuất" style="width: 24px; height: 24px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <!-- VÙNG LÀM VIỆC CHÍNH -->
-      <main class="amis-main">
-          
           <!-- 1. TỔNG QUAN -->
           <div class="nav-group open" data-group="overview">
             <div class="nav-group-header">
@@ -405,37 +316,98 @@
               </div>
               <span class="group-chevron">▾</span>
             </div>
-            <div class="nav-group-body">
-              <a href="/system-notifications" class="nav-item" data-tab="system-notifications">
-                <span class="nav-bullet">•</span>
-                <span class="nav-text">Thông báo tự động</span>
-              </a>
-              <a href="/users" class="nav-item" data-tab="users">
-                <span class="nav-bullet">•</span>
-                <span class="nav-text">Người dùng & phân quyền</span>
-              </a>
-              <a href="/audit-logs" class="nav-item" data-tab="audit-logs">
-                <span class="nav-bullet">•</span>
-                <span class="nav-text">Audit Log</span>
-              </a>
-              <a href="/backup" class="nav-item" data-tab="backup">
-                <span class="nav-bullet">•</span>
-                <span class="nav-text">Sao lưu dữ liệu (pg_dump)</span>
-              </a>
-              <a href="/settings" class="nav-item" data-tab="settings">
-                <span class="nav-bullet">•</span>
-                <span class="nav-text">Cấu hình</span>
-              </a>
+      </nav>
+    </aside>
+
+    <!-- KHUNG BÊN PHẢI (Chứa Navbar + Main Content) -->
+    <div class="app-wrapper">
+      <!-- TOPBAR / NAVBAR CỐ ĐỊNH -->
+      <header class="amis-topbar">
+        <div class="topbar-left">
+          <!-- Hamburger menu & Breadcrumb -->
+          <button class="topbar-btn" id="btn-toggle-sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          
+          <div class="topbar-breadcrumb">
+            <span id="breadcrumb-group">TỔNG QUAN</span>
+            <span class="breadcrumb-separator">›</span>
+            <span id="breadcrumb-current-nav" class="breadcrumb-active">Dashboard</span>
+          </div>
+        </div>
+
+        <!-- Thanh Tìm Kiếm (Center) -->
+        <div class="topbar-center" style="position: relative;">
+          <div class="topbar-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="global-search-input" placeholder="Tìm kiếm nhanh..." autocomplete="off">
+          </div>
+          <div id="global-search-results" class="search-dropdown" style="display:none; position:absolute; top:44px; left:0; width:100%; background:var(--amis-card-bg); border:1px solid var(--border-color); border-radius:8px; box-shadow:var(--shadow-dropdown); z-index:1000;"></div>
+        </div>
+
+        <!-- Điều Khiển Phải: Quick Create, Giao diện, Thông báo, Tài khoản -->
+        <div class="topbar-right">
+          <!-- Quick Create Dropdown -->
+          <div class="quick-create-dropdown" style="position: relative; margin-right: 8px;">
+            <button class="btn-quick-create" id="btn-quick-create">
+              <span style="font-size: 16px; line-height: 1;">+</span>
+              <span>Tạo Mới</span>
+            </button>
+            <div id="quick-create-menu" class="dropdown-menu" style="display: none;">
+              <a href="/shipments" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('shipments'); window.closeQuickMenu();"><span style="margin-right:8px;">🚢</span>Tạo Lô Hàng</a>
+              <a href="/invoices" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('invoices'); window.closeQuickMenu();"><span style="margin-right:8px;">🧾</span>Tạo Hóa Đơn (Invoice)</a>
+              <a href="/booking" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('booking'); window.closeQuickMenu();"><span style="margin-right:8px;">⚓</span>Tạo Booking Tàu</a>
+              <a href="/customs-declarations" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('customs-declarations'); window.closeQuickMenu();"><span style="margin-right:8px;">📋</span>Mở Tờ Khai Hải Quan</a>
+              <a href="/documents" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('documents'); window.closeQuickMenu();"><span style="margin-right:8px;">📤</span>Upload Chứng Từ</a>
             </div>
           </div>
 
-        </nav>
-      </aside>
+          <!-- Chuyển Đổi Giao Diện Sáng / Tối -->
+          <button class="topbar-btn" id="btn-theme-toggle" title="Đổi giao diện Sáng / Tối">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
 
+          <!-- Thông Báo -->
+          <button class="topbar-btn" id="btn-notif" style="position:relative;" title="Thông báo hệ thống">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="notif-badge">1</span>
+          </button>
+
+          <!-- Tài Khoản Người Dùng -->
+          <div class="user-profile">
+            <div class="user-avatar" id="user-avatar">N</div>
+            <div class="user-info">
+              <span class="user-name" id="user-display-name">Nhàn</span>
+            </div>
+            <button class="topbar-btn" id="btn-logout" title="Đăng xuất" style="width: 24px; height: 24px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
         </div>
-      </main>
-    </div>
-  </div>
+      </header>
+
+      <!-- VÙNG LÀM VIỆC CHÍNH -->
+      <!-- VÙNG LÀM VIỆC CHÍNH -->
+      <main class="amis-main">
+        <div id="main-content">
+          <!-- Dynamic feature views rendered here -->
+        </div>
       </main>
     </div>
   </div>
