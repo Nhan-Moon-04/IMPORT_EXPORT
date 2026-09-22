@@ -5,18 +5,35 @@ import { api, showToast } from "../../core/api.js";
 
 let shipmentsList = [];
 let selectedId = null;
+let currentShipmentFilter = 'All';
 
-export async function renderShipments(container) {
+export async function renderShipments(container, filterType = 'All') {
   selectedId = null;
+  currentShipmentFilter = filterType;
+  
+  let title = "Tất cả Lô Hàng";
+  if (filterType === 'Import') title = "Lô Hàng Nhập Khẩu";
+  if (filterType === 'Export') title = "Lô Hàng Xuất Khẩu";
+
   container.innerHTML = `
     <div class="grid-card">
       <div class="misa-toolbar">
         <div class="toolbar-group">
-          <button id="btnShipmentAdd" class="btn btn-primary">+ Thêm mới Lô hàng</button>
-          <button id="btnShipmentEdit" class="btn btn-blue" disabled>✏️ Sửa</button>
-          <button id="btnShipmentStatus" class="btn btn-default" disabled>🔄 Đổi Trạng Thái</button>
-          <button id="btnShipmentDelete" class="btn btn-danger" disabled>🗑️ Xóa</button>
-          <button id="btnShipmentRefresh" class="btn btn-default">🔄 Nạp lại</button>
+          <button id="btnShipmentAdd" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm Lô hàng mới
+          </button>
+          <button id="btnShipmentEdit" class="btn btn-default" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Sửa
+          </button>
+          <button id="btnShipmentStatus" class="btn btn-default" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg> Đổi Trạng Thái
+          </button>
+          <button id="btnShipmentDelete" class="btn btn-default" style="color: var(--amis-red);" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Xóa
+          </button>
+          <button id="btnShipmentRefresh" class="btn btn-default">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Nạp lại
+          </button>
         </div>
         <div class="toolbar-group">
           <input type="text" id="shipmentSearchInput" class="form-input" style="width: 220px;" placeholder="Lọc mã lô, cảng...">
@@ -54,13 +71,18 @@ export async function renderShipments(container) {
   `;
 
   setupShipmentEvents();
-  await loadShipmentsData();
+  await loadShipmentsData(currentShipmentFilter);
 }
 
-async function loadShipmentsData() {
+async function loadShipmentsData(filterType = 'All') {
   try {
     const res = await api.get("/api/shipments?pageSize=100");
     shipmentsList = res.data.items;
+
+    if (filterType !== 'All') {
+      shipmentsList = shipmentsList.filter(s => s.type === filterType);
+    }
+
     renderShipmentsTable(shipmentsList);
   } catch (err) {
     // Handled
@@ -83,19 +105,19 @@ function renderShipmentsTable(items) {
       <td style="cursor:pointer;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
         <strong style="color:var(--amis-blue); text-decoration:underline;">${s.shipmentCode}</strong>
       </td>
-      <td>${s.type === 'Import' ? '<span class="chip chip-info">📥 Nhập khẩu</span>' : '<span class="chip chip-success">📤 Xuất khẩu</span>'}</td>
+      <td>${s.type === 'Import' ? '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">📥 Nhập khẩu</span>' : '<span class="status-chip chip-delivered" style="background:#dcfce7; color:#15803d;">📤 Xuất khẩu</span>'}</td>
       <td>${s.supplierName || s.customerName || '-'}</td>
       <td>${s.portOfLoading || '-'} ➔ ${s.portOfDischarge || '-'}</td>
-      <td><span class="chip chip-gray">${s.deliveryTerm || 'CIF'}</span></td>
+      <td><span class="status-chip chip-draft">${s.deliveryTerm || 'CIF'}</span></td>
       <td>${Number(s.totalQuantity || 0).toLocaleString()}</td>
       <td><strong>$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${s.currency || 'USD'}</strong></td>
-      <td><span class="chip chip-warning">${s.status}</span></td>
+      <td><span class="status-chip chip-warning">${s.status}</span></td>
       <td>${s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '-'}</td>
       <td>
-        <button class="btn btn-primary btn-sm" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">Chi Tiết</button>
-        <button class="btn btn-default btn-sm" onclick="window.xnkEditShipment('${s.id}')">✏️</button>
-        <button class="btn btn-default btn-sm" onclick="window.xnkStatusShipment('${s.id}')">🔄</button>
-        <button class="btn btn-danger btn-sm" onclick="window.xnkDeleteShipment('${s.id}')">🗑️</button>
+        <button class="btn btn-default btn-sm" onclick="window.appNavigateTo('shipment-detail', '${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+        <button class="btn btn-default btn-sm" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+        <button class="btn btn-default btn-sm" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg></button>
+        <button class="btn btn-default btn-sm" style="color: var(--amis-red);" onclick="window.xnkDeleteShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
       </td>
     </tr>
   `).join('');
@@ -128,7 +150,7 @@ function selectShipmentRow(id) {
 }
 
 function setupShipmentEvents() {
-  document.getElementById("btnShipmentRefresh")?.addEventListener("click", loadShipmentsData);
+  document.getElementById("btnShipmentRefresh")?.addEventListener("click", () => loadShipmentsData(currentShipmentFilter));
   document.getElementById("btnShipmentAdd")?.addEventListener("click", () => openShipmentForm(null));
   document.getElementById("btnShipmentEdit")?.addEventListener("click", () => {
     if (selectedId) openShipmentForm(selectedId);

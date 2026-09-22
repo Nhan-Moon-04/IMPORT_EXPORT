@@ -77,6 +77,14 @@
   --text-main: var(--amis-text);
   --text-muted: var(--amis-text-muted);
   
+  --amis-sidebar-bg: #1e293b;
+  --amis-sidebar-text: #94a3b8;
+  --amis-sidebar-text-hover: #f8fafc;
+  --amis-sidebar-hover: #334155;
+  --amis-sidebar-active-bg: #3b82f6;
+  --amis-sidebar-active-text: #ffffff;
+  --amis-sidebar-border: #334155;
+
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
   --shadow-dropdown: 0 10px 25px -5px rgba(0, 0, 0, 0.5);

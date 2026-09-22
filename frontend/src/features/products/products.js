@@ -14,19 +14,19 @@ export async function renderProducts(container) {
       <div class="misa-toolbar">
         <div class="toolbar-group">
           <button id="btnProductAdd" class="btn btn-primary">
-            <span>+</span> <span>Thêm mới</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span>Thêm mới</span>
           </button>
-          <button id="btnProductEdit" class="btn btn-blue" disabled>
-            <span>✏️</span> <span>Sửa</span>
+          <button id="btnProductEdit" class="btn btn-default" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> <span>Sửa</span>
           </button>
-          <button id="btnProductDelete" class="btn btn-danger" disabled>
-            <span>🗑️</span> <span>Xóa</span>
+          <button id="btnProductDelete" class="btn btn-default" style="color: var(--amis-red);" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> <span>Xóa</span>
           </button>
           <button id="btnProductHistory" class="btn btn-default" disabled>
-            <span>📊</span> <span>Xem Lịch Sử Mua/Bán</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> <span>Xem Lịch Sử Mua/Bán</span>
           </button>
           <button id="btnProductRefresh" class="btn btn-default">
-            <span>🔄</span> <span>Nạp lại</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> <span>Nạp lại</span>
           </button>
         </div>
 
@@ -105,9 +105,9 @@ function renderProductsTable(items) {
         <td>${p.unit || 'kg'}</td>
         <td>${p.countryOfOrigin || '-'}</td>
         <td>
-          <button class="btn btn-default btn-sm" onclick="window.xnkViewHistory('${p.id}')">📊 Lịch sử</button>
-          <button class="btn btn-default btn-sm" onclick="window.xnkEditProduct('${p.id}')">✏️ Sửa</button>
-          <button class="btn btn-danger btn-sm" onclick="window.xnkDeleteProduct('${p.id}')">🗑️</button>
+          <button class="btn btn-default btn-sm" onclick="window.xnkViewHistory('${p.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> Lịch sử</button>
+          <button class="btn btn-default btn-sm" onclick="window.xnkEditProduct('${p.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Sửa</button>
+          <button class="btn btn-default btn-sm" style="color: var(--amis-red);" onclick="window.xnkDeleteProduct('${p.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
         </td>
       </tr>
     `;

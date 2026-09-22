@@ -176,3 +176,59 @@
 .nav-item.active .nav-bullet {
   opacity: 1;
 }
+
+/* Text clipping for smooth animation */
+.brand-text, .group-title, .nav-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  transition: opacity 0.2s;
+}
+
+/* =========================================================
+   COLLAPSED STATE
+   ========================================================= */
+.amis-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+/* We will hide them with width and opacity to keep transition smooth */
+.amis-sidebar.collapsed .brand-text,
+.amis-sidebar.collapsed .group-title,
+.amis-sidebar.collapsed .nav-text,
+.amis-sidebar.collapsed .group-chevron,
+.amis-sidebar.collapsed .nav-bullet {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.amis-sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.amis-sidebar.collapsed .nav-group-header {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.amis-sidebar.collapsed .group-title-left {
+  justify-content: center;
+  gap: 0;
+}
+
+.amis-sidebar.collapsed .group-icon {
+  margin: 0;
+  font-size: 18px; /* Slightly larger icon when collapsed */
+}
+
+.amis-sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.amis-sidebar.collapsed .nav-group-body {
+  padding-left: 0;
+}

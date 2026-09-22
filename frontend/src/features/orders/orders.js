@@ -12,9 +12,15 @@ export async function renderOrders(container) {
     <div class="grid-card">
       <div class="misa-toolbar">
         <div class="toolbar-group">
-          <button id="btnOrderAdd" class="btn btn-primary">+ Thêm mới Đơn PO</button>
-          <button id="btnOrderDelete" class="btn btn-danger" disabled>🗑️ Xóa</button>
-          <button id="btnOrderRefresh" class="btn btn-default">🔄 Nạp lại</button>
+          <button id="btnOrderAdd" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm mới Đơn PO
+          </button>
+          <button id="btnOrderDelete" class="btn btn-default" style="color: var(--amis-red);" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Xóa
+          </button>
+          <button id="btnOrderRefresh" class="btn btn-default">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Nạp lại
+          </button>
         </div>
         <div class="toolbar-group">
           <input type="text" id="orderSearchInput" class="form-input" style="width: 220px;" placeholder="Lọc số PO, nhà cung cấp...">
@@ -84,8 +90,8 @@ function renderOrdersTable(items) {
       <td><strong>$${Number(o.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${o.currency || 'USD'}</strong></td>
       <td><span class="chip chip-info">${o.status}</span></td>
       <td>
-        <button class="btn btn-default btn-sm" onclick="window.xnkViewOrder('${o.id}')">👁️ Xem</button>
-        <button class="btn btn-danger btn-sm" onclick="window.xnkDeleteOrder('${o.id}')">🗑️</button>
+        <button class="btn btn-default btn-sm" onclick="window.xnkViewOrder('${o.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Xem</button>
+        <button class="btn btn-default btn-sm" style="color: var(--amis-red);" onclick="window.xnkDeleteOrder('${o.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
       </td>
     </tr>
   `).join('');
@@ -142,7 +148,7 @@ async function openOrderForm() {
   const footer = document.getElementById("modalFooter");
 
   tabs.style.display = "none";
-  title.innerHTML = `➕ Tạo Mới Đơn Mua Hàng Quốc Tế (Purchase Order - PO)`;
+  title.innerHTML = `Tạo Mới Đơn Mua Hàng Quốc Tế (Purchase Order - PO)`;
 
   body.innerHTML = `
     <form id="orderForm">
@@ -277,7 +283,7 @@ async function viewOrder(id) {
     const footer = document.getElementById("modalFooter");
 
     tabs.style.display = "none";
-    title.innerHTML = `📋 Chi Tiết Đơn Hàng PO: <strong>${o.poNumber}</strong>`;
+    title.innerHTML = `Chi Tiết Đơn Hàng PO: <strong>${o.poNumber}</strong>`;
 
     body.innerHTML = `
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; background: var(--bg-surface-alt); padding: 12px; border-radius: 4px; margin-bottom: 14px; font-size: 13px;">

@@ -13,11 +13,12 @@ export async function renderDocuments(container) {
       <!-- UPLOAD PANEL -->
       <div style="background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);">
         <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-          <span>📤</span> <span>Tải Lên Chứng Từ & Hồ Sơ Xuất Nhập Khẩu</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amis-blue)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Tải Lên Chứng Từ & Hồ Sơ Xuất Nhập Khẩu</span>
         </div>
 
         <div class="dropzone" id="documentDropzone">
-          <div class="dropzone-icon">📁</div>
+          <div class="dropzone-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
           <div style="font-weight: 700; font-size: 14px; color: var(--misa-blue);">Kéo thả file chứng từ vào đây hoặc bấm để chọn tệp</div>
           <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Hỗ trợ: PDF (B/L, C/O, Tờ khai), Excel (Invoice, Packing list), Word, Ảnh hóa đơn scan (Tối đa 50MB)</div>
           <input type="file" id="filePickerInput" style="display: none;">
@@ -52,7 +53,7 @@ export async function renderDocuments(container) {
           </div>
           <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px;">
             <button type="button" id="btnCancelUpload" class="btn btn-default">Hủy</button>
-            <button type="button" id="btnStartUpload" class="btn btn-primary">✔ Bắt Đầu Tải Lên</button>
+            <button type="button" id="btnStartUpload" class="btn btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Bắt Đầu Tải Lên</button>
           </div>
         </div>
       </div>
@@ -62,7 +63,7 @@ export async function renderDocuments(container) {
         <div class="misa-toolbar">
           <div class="toolbar-group">
             <span style="font-weight: 700; font-size: 13px;">Danh Sách Chứng Từ Đã Lưu Trữ</span>
-            <button id="btnDocRefresh" class="btn btn-default btn-sm">🔄 Nạp lại</button>
+            <button id="btnDocRefresh" class="btn btn-default btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Nạp lại</button>
           </div>
           <div class="toolbar-group">
             <input type="text" id="docSearchInput" class="form-input" style="width: 200px;" placeholder="Lọc theo tên file...">
@@ -135,16 +136,21 @@ function renderDocumentsTable(items) {
     const sizeStr = d.fileSize ? (d.fileSize > 1024 * 1024 ? (d.fileSize / (1024 * 1024)).toFixed(2) + " MB" : (d.fileSize / 1024).toFixed(1) + " KB") : "-";
     return `
       <tr>
-        <td><strong>📄 ${d.originalFileName || d.fileName}</strong></td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <strong>${d.originalFileName || d.fileName}</strong>
+          </div>
+        </td>
         <td><span class="chip chip-info">${getCategoryLabel(d.category)}</span></td>
         <td>${d.shipmentCode ? `<strong>${d.shipmentCode}</strong>` : '-'}</td>
         <td>${sizeStr}</td>
         <td><code>${(d.fileType || '').toUpperCase()}</code></td>
         <td>${new Date(d.createdAt).toLocaleDateString('vi-VN')}</td>
         <td>${d.description || '-'}</td>
-        <td>
-          <a href="/api/documents/${d.id}/download" class="btn btn-default btn-sm" target="_blank">⬇️ Tải về</a>
-          <button class="btn btn-danger btn-sm" onclick="window.xnkDeleteDoc('${d.id}')">🗑️</button>
+        <td style="white-space: nowrap;">
+          <a href="/api/documents/${d.id}/download" class="btn btn-default btn-sm" target="_blank"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Tải về</a>
+          <button class="btn btn-default btn-sm" style="color: var(--amis-red);" onclick="window.xnkDeleteDoc('${d.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
         </td>
       </tr>
     `;

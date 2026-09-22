@@ -19,7 +19,7 @@ echo [3] Khoi dong Backend (.NET 8) tai http://localhost:5000
 start cmd /k "title XNK_BACKEND && dotnet run --project backend/XNK.API --urls=http://localhost:5000"
 
 echo [4] Khoi dong Frontend (Vanilla JS) tai http://localhost:4200
-start cmd /k "title XNK_FRONTEND && cd frontend && npx serve -p 4200"
+start cmd /k "title XNK_FRONTEND && cd frontend && npx serve -s -p 4200"
 
 echo.
 echo Da hoan tat lenh khoi dong! 

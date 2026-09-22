@@ -4,6 +4,8 @@ import { api, toast, openModal, closeModal } from './core/api.js';
 
 import { renderDashboard } from './features/dashboard/dashboard.js';
 import { renderProducts } from './features/products/products.js';
+import { renderProductHistory } from './features/products/productHistory.js';
+import { renderHsCodes } from './features/products/hsCodes.js';
 import { renderShipments } from './features/shipments/shipments.js';
 import { renderShipmentDetail } from './features/shipments/shipmentDetail.js';
 import { renderOrders } from './features/orders/orders.js';
@@ -121,6 +123,15 @@ function initGlobalEvents() {
     navigateTo(route.tab, false, route.param);
   });
 
+  // Sidebar toggle
+  const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+  const sidebar = document.querySelector('.amis-sidebar');
+  if (btnToggleSidebar && sidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+    });
+  }
+
   // Quick Create Dropdown toggle
   const btnQuickCreate = document.getElementById('btn-quick-create');
   const quickMenu = document.getElementById('quick-create-menu');
@@ -174,6 +185,21 @@ function initGlobalEvents() {
       searchInput?.focus();
     }
   });
+
+  // Language toggle
+  const langToggle = document.getElementById('btn-lang-toggle');
+  if (langToggle) {
+    langToggle.addEventListener('click', () => {
+      const current = langToggle.textContent.trim();
+      const next = current === 'VN' ? 'EN' : 'VN';
+      langToggle.textContent = next;
+      localStorage.setItem('lang', next);
+      toast(`Đã chuyển đổi sang ngôn ngữ: ${next === 'VN' ? 'Tiếng Việt' : 'English'}`, 'success');
+      // Later: Implement actual translation update logic here
+    });
+    const savedLang = localStorage.getItem('lang');
+    if (savedLang) langToggle.textContent = savedLang;
+  }
 
   // Theme toggle
   const themeToggle = document.getElementById('btn-theme-toggle');
@@ -302,15 +328,25 @@ export function navigateTo(tab, updateHistory = true, param = null) {
       break;
 
     case 'products':
-    case 'product-history':
-    case 'hs-codes':
       renderProducts(mainContent);
       break;
 
+    case 'hs-codes':
+      renderHsCodes(mainContent);
+      break;
+
+    case 'product-history':
+      renderProductHistory(mainContent);
+      break;
+
     case 'shipments':
+      renderShipments(mainContent, 'All');
+      break;
     case 'shipments-import':
+      renderShipments(mainContent, 'Import');
+      break;
     case 'shipments-export':
-      renderShipments(mainContent);
+      renderShipments(mainContent, 'Export');
       break;
 
     case 'shipment-detail':
@@ -322,8 +358,10 @@ export function navigateTo(tab, updateHistory = true, param = null) {
       break;
 
     case 'invoices':
+      renderInvoices(mainContent, 'Invoice');
+      break;
     case 'packing-lists':
-      renderInvoices(mainContent);
+      renderInvoices(mainContent, 'PackingList');
       break;
 
     case 'documents':

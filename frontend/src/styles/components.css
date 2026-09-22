@@ -289,3 +289,167 @@ textarea.form-control {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* =========================================================
+   MISA TABLE & TOOLBAR
+   ========================================================= */
+
+.grid-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.misa-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-default {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+.btn-default:hover {
+  background: var(--amis-row-hover);
+  color: var(--amis-blue);
+  border-color: var(--amis-blue);
+}
+
+.misa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.misa-table th {
+  background: #f8fafc;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .misa-table th {
+  background: #0f172a;
+}
+
+.misa-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.misa-table tr:hover td {
+  background-color: var(--amis-row-hover);
+}
+
+.misa-table tr.selected td {
+  background-color: var(--amis-row-selected);
+}
+
+.grid-scroll {
+  flex: 1;
+  overflow: auto;
+}
+
+.misa-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-app);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   FORMS (NEW)
+   ========================================================= */
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--amis-blue);
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.15);
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.form-label.required::after {
+  content: " *";
+  color: var(--amis-red);
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+/* =========================================================
+   MODAL TABS
+   ========================================================= */
+.modal-tab-btn {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.modal-tab-btn:hover {
+  color: var(--amis-blue);
+}
+
+.modal-tab-btn.active {
+  color: var(--amis-blue);
+  border-bottom-color: var(--amis-blue);
+}
