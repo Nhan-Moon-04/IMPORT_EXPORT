@@ -2,7 +2,7 @@
  * XNK API Client with JWT Bearer Interceptor, Toast Notifications, and Global Modal Controller
  */
 
-export const API_BASE = "";
+export const API_BASE = "http://localhost:5000";
 
 export function getToken() {
   return localStorage.getItem("xnk_token");

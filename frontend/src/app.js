@@ -1,61 +1,101 @@
 // frontend/src/app.js
 import { auth } from './core/auth.js';
 import { api, toast, openModal, closeModal } from './core/api.js';
-import { i18n, t, setLanguage } from './core/i18n.js';
 
 import { renderDashboard } from './features/dashboard/dashboard.js';
 import { renderProducts } from './features/products/products.js';
 import { renderShipments } from './features/shipments/shipments.js';
+import { renderShipmentDetail } from './features/shipments/shipmentDetail.js';
 import { renderOrders } from './features/orders/orders.js';
 import { renderInvoices } from './features/invoices/invoices.js';
 import { renderPartners } from './features/partners/partners.js';
 import { renderDocuments } from './features/documents/documents.js';
 import { renderExcelTool } from './features/excel/excel.js';
+import { renderCustoms } from './features/customs/customs.js';
+import { renderShipping } from './features/shipping/shipping.js';
+import { renderFinance } from './features/finance/finance.js';
+import { renderReports } from './features/reports/reports.js';
+import { renderSystem } from './features/system/system.js';
 
 let currentTab = 'dashboard';
+let currentParam = null;
 
-// Route mapping
-const ROUTES = {
-  '': 'dashboard',
-  'dashboard': 'dashboard',
-  'products': 'products',
-  'product': 'products',
-  'shipments': 'shipments',
-  'shipment': 'shipments',
-  'orders': 'orders',
-  'order': 'orders',
-  'invoices': 'invoices',
-  'invoice': 'invoices',
-  'partners': 'partners',
-  'partner': 'partners',
-  'suppliers': 'partners',
-  'documents': 'documents',
-  'document': 'documents',
-  'upload': 'documents',
-  'excel': 'excel'
+// Route Titles Map
+const ROUTE_TITLES = {
+  'dashboard': 'Tổng Quan Hệ Thống (Dashboard)',
+  'products': 'Danh Mục Sản Phẩm Sợi',
+  'product-history': 'Lịch Sử Nhập / Xuất Hàng Hóa',
+  'hs-codes': 'Biểu Thuế & HS Code',
+  'shipments-import': 'Lô Hàng Nhập Khẩu Sợi',
+  'shipments-export': 'Lô Hàng Xuất Khẩu Sợi',
+  'shipments': 'Tất Cả Lô Hàng & Vận Đơn',
+  'shipment-detail': 'Chi Tiết Lô Hàng (10 Tabs Nghiệp Vụ)',
+  'orders': 'Đơn Mua / Bán Sợi (PO / SO)',
+  'invoices': 'Hóa Đơn Thương Mại (Commercial Invoices)',
+  'packing-lists': 'Phiếu Đóng Gói (Packing Lists)',
+  'documents': 'Kho Chứng Từ & Upload File',
+  'booking': 'Booking Vận Tải Biển',
+  'containers': 'Quản Lý Container & Số Chì (Seal)',
+  'tracking': 'Theo Dõi Hải Trình Tàu / ETD / ETA',
+  'customs-accounts': 'Tài Khoản Hải Quan & Token Điện Tử',
+  'customs-declarations': 'Tờ Khai Hải Quan Điện Tử (VNACCS)',
+  'customs-taxes': 'Thuế Hải Quan & C/O Form E',
+  'partners-suppliers': 'Danh Bạ Nhà Cung Cấp',
+  'partners-customers': 'Danh Bạ Khách Hàng',
+  'forwarders': 'Hãng Tàu & Đại Lý Forwarder',
+  'costs': 'Chi Phí Lô Hàng',
+  'payments': 'Thanh Toán & Dòng Tiền Ngoại Tệ',
+  'cost-allocation': 'Phân Bổ Giá Vốn (Landed Cost)',
+  'reports-import': 'Báo Cáo Nhập Khẩu',
+  'reports-export': 'Báo Cáo Xuất Khẩu',
+  'excel': 'Xuất / Nhập File Excel (SheetJS)',
+  'system-notifications': 'Thông Báo Tự Động',
+  'users': 'Người Dùng & Phân Quyền',
+  'audit-logs': 'Nhật Ký Hệ Thống (Audit Log)',
+  'backup': 'Sao Lưu Dữ Liệu PostgreSQL',
+  'settings': 'Cấu Hình Hệ Thống'
 };
 
-// Initialize application
+// Application Bootstrap
 document.addEventListener('DOMContentLoaded', async () => {
   initGlobalEvents();
-  
-  // Determine initial route from URL pathname (or hash fallback)
-  let path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
-  if (!path && window.location.hash) {
-    path = window.location.hash.replace(/^#\/?/, '').toLowerCase();
-  }
-  const initialRoute = ROUTES[path] || 'dashboard';
+
+  // Resolve initial route from URL
+  const initial = parseCurrentUrl();
 
   if (!auth.isAuthenticated()) {
-    showLoginModal(initialRoute);
+    showLoginModal(initial.tab, initial.param);
   } else {
     updateUserUI();
-    navigateTo(initialRoute, false);
+    navigateTo(initial.tab, false, initial.param);
   }
 });
 
+function parseCurrentUrl() {
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  const searchParams = new URLSearchParams(window.location.search);
+  const idFromQuery = searchParams.get('id');
+
+  // Check path parts e.g. /shipments/SHP-20260806-LCW
+  const parts = path.split('/');
+  if (parts.length >= 2 && (parts[0] === 'shipments' || parts[0] === 'shipment-detail')) {
+    return { tab: 'shipment-detail', param: parts[1] };
+  }
+
+  const baseTab = parts[0] || 'dashboard';
+  return { tab: baseTab, param: idFromQuery };
+}
+
 function initGlobalEvents() {
-  // Navigation tabs click handler
+  // Collapsible Accordion Sidebar Groups
+  document.querySelectorAll('.nav-group-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const group = header.closest('.nav-group');
+      if (group) group.classList.toggle('open');
+    });
+  });
+
+  // Nav Items click handler
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
@@ -64,12 +104,28 @@ function initGlobalEvents() {
     });
   });
 
-  // Handle browser Back / Forward navigation
+  // Browser Back / Forward handler
   window.addEventListener('popstate', () => {
-    const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
-    const route = ROUTES[path] || 'dashboard';
-    navigateTo(route, false);
+    const route = parseCurrentUrl();
+    navigateTo(route.tab, false, route.param);
   });
+
+  // Quick Create Dropdown toggle
+  const btnQuickCreate = document.getElementById('btn-quick-create');
+  const quickMenu = document.getElementById('quick-create-menu');
+  if (btnQuickCreate && quickMenu) {
+    btnQuickCreate.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = quickMenu.style.display === 'block';
+      quickMenu.style.display = isOpen ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => {
+      quickMenu.style.display = 'none';
+    });
+  }
+  window.closeQuickMenu = () => {
+    if (quickMenu) quickMenu.style.display = 'none';
+  };
 
   // Global search input
   const searchInput = document.getElementById('global-search-input');
@@ -100,7 +156,7 @@ function initGlobalEvents() {
     });
   }
 
-  // Keyboard shortcut Ctrl + K for search
+  // Hotkey Ctrl + K
   window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
@@ -116,17 +172,10 @@ function initGlobalEvents() {
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
+      toast(`Đã chuyển sang giao diện ${next === 'dark' ? 'Tối' : 'Sáng'}`, 'info');
     });
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-  }
-
-  // Language selector
-  const langSelect = document.getElementById('lang-select');
-  if (langSelect) {
-    langSelect.addEventListener('change', (e) => {
-      setLanguage(e.target.value);
-    });
   }
 
   // Logout button
@@ -138,30 +187,37 @@ function initGlobalEvents() {
     });
   }
 
-  // Close modal when clicking backdrop
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  if (modalBackdrop) {
-    modalBackdrop.addEventListener('click', (e) => {
-      if (e.target === modalBackdrop) closeModal();
+  // Modal backdrop click
+  const modalOverlay = document.getElementById('modalOverlay');
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
     });
   }
 }
 
-export function navigateTo(tab, updateHistory = true) {
+export function navigateTo(tab, updateHistory = true, param = null) {
   currentTab = tab;
+  currentParam = param;
 
-  // Update URL in address bar to match requested route e.g. /products
-  const targetPath = `/${tab}`;
-  if (updateHistory && window.location.pathname !== targetPath) {
-    history.pushState({ tab }, '', targetPath);
+  // Build target path
+  let targetPath = `/${tab}`;
+  if (param) {
+    targetPath = tab === 'shipment-detail' ? `/shipment-detail?id=${param}` : `/${tab}/${param}`;
   }
 
-  // Update active class in sidebar
+  // Update browser URL
+  if (updateHistory && window.location.pathname + window.location.search !== targetPath) {
+    history.pushState({ tab, param }, '', targetPath);
+  }
+
+  // Update active state in sidebar and expand parent group
   document.querySelectorAll('.nav-item').forEach(item => {
-    if (item.getAttribute('data-tab') === tab) {
-      item.classList.add('active');
-    } else {
-      item.classList.remove('active');
+    const isCur = item.getAttribute('data-tab') === tab;
+    item.classList.toggle('active', isCur);
+    if (isCur) {
+      const parentGroup = item.closest('.nav-group');
+      if (parentGroup) parentGroup.classList.add('open');
     }
   });
 
@@ -171,47 +227,88 @@ export function navigateTo(tab, updateHistory = true) {
   const mainContent = document.getElementById('main-content');
   if (!mainContent) return;
 
-  const tabTitles = {
-    dashboard: 'Bàn Làm Việc (Tổng Quan Xuất Nhập Khẩu)',
-    shipments: 'Quản Lý Lô Hàng & Vận Đơn (Shipments & B/L)',
-    orders: 'Đơn Hàng Mua / Bán Sợi (PO & Sales Orders)',
-    products: 'Danh Mục Sản Phẩm Sợi (Yarn Catalog)',
-    invoices: 'Hóa Đơn Thương Mại & Chứng Từ (Invoices)',
-    partners: 'Danh Bạ Nhà Cung Cấp & Đối Tác (Suppliers)',
-    documents: 'Quản Lý Hồ Sơ & Upload Chứng Từ (Documents)',
-    excel: 'Tiện Ích Đọc & Nhập File Excel (SheetJS)'
-  };
-
-  if (pageTitle) pageTitle.textContent = tabTitles[tab] || 'Hệ Thống XNK';
-  if (breadcrumbCurrent) breadcrumbCurrent.textContent = tabTitles[tab] || tab;
+  const displayTitle = ROUTE_TITLES[tab] || 'Hệ Thống XNK';
+  if (pageTitle) pageTitle.textContent = displayTitle;
+  if (breadcrumbCurrent) breadcrumbCurrent.textContent = displayTitle;
 
   mainContent.innerHTML = '<div style="padding:40px; text-align:center;"><div class="spinner"></div><p style="margin-top:10px; color:#6b7280;">Đang nạp dữ liệu...</p></div>';
 
+  // Render view corresponding to selected route
   switch (tab) {
     case 'dashboard':
       renderDashboard(mainContent);
       break;
+
+    case 'products':
+    case 'product-history':
+    case 'hs-codes':
+      renderProducts(mainContent);
+      break;
+
     case 'shipments':
+    case 'shipments-import':
+    case 'shipments-export':
       renderShipments(mainContent);
       break;
+
+    case 'shipment-detail':
+      renderShipmentDetail(mainContent, param || 'SHP-20260806-LCW');
+      break;
+
     case 'orders':
       renderOrders(mainContent);
       break;
-    case 'products':
-      renderProducts(mainContent);
-      break;
+
     case 'invoices':
+    case 'packing-lists':
       renderInvoices(mainContent);
       break;
-    case 'partners':
-      renderPartners(mainContent);
-      break;
+
     case 'documents':
       renderDocuments(mainContent);
       break;
+
+    case 'booking':
+    case 'containers':
+    case 'tracking':
+      renderShipping(mainContent, tab);
+      break;
+
+    case 'customs-accounts':
+    case 'customs-declarations':
+    case 'customs-taxes':
+      renderCustoms(mainContent, tab);
+      break;
+
+    case 'partners-suppliers':
+    case 'partners-customers':
+    case 'forwarders':
+      renderPartners(mainContent);
+      break;
+
+    case 'costs':
+    case 'payments':
+    case 'cost-allocation':
+      renderFinance(mainContent, tab);
+      break;
+
+    case 'reports-import':
+    case 'reports-export':
+      renderReports(mainContent, tab);
+      break;
+
     case 'excel':
       renderExcelTool(mainContent);
       break;
+
+    case 'system-notifications':
+    case 'users':
+    case 'audit-logs':
+    case 'backup':
+    case 'settings':
+      renderSystem(mainContent, tab);
+      break;
+
     default:
       renderDashboard(mainContent);
   }
@@ -225,24 +322,24 @@ function renderSearchResults(data, container) {
   }
 
   let html = '<div style="max-height:360px; overflow-y:auto; padding:6px 0;">';
-  
-  if (data.products && data.products.length > 0) {
-    html += '<div style="padding:4px 12px; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase;">Sản phẩm sợi</div>';
-    data.products.slice(0, 4).forEach(p => {
+
+  if (data.shipments && data.shipments.length > 0) {
+    html += '<div style="padding:4px 12px; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase;">Lô hàng</div>';
+    data.shipments.slice(0, 4).forEach(s => {
       html += `
-        <div class="search-item" style="padding:6px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9;" onclick="window.appNavigateTo('products')">
-          <strong style="color:var(--amis-blue);">${p.code}</strong> - ${p.name}
+        <div class="search-item" style="padding:8px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
+          <strong style="color:var(--amis-blue);">${s.code}</strong> (B/L: ${s.blNumber || '---'}) - <span class="status-chip chip-transit">${s.status}</span>
         </div>
       `;
     });
   }
 
-  if (data.shipments && data.shipments.length > 0) {
-    html += '<div style="padding:4px 12px; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-top:6px;">Lô hàng</div>';
-    data.shipments.slice(0, 4).forEach(s => {
+  if (data.products && data.products.length > 0) {
+    html += '<div style="padding:4px 12px; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-top:6px;">Sản phẩm sợi</div>';
+    data.products.slice(0, 4).forEach(p => {
       html += `
-        <div class="search-item" style="padding:6px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9;" onclick="window.appNavigateTo('shipments')">
-          <strong style="color:var(--amis-blue);">${s.code}</strong> (B/L: ${s.blNumber || '---'}) - ${s.status}
+        <div class="search-item" style="padding:8px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9;" onclick="window.appNavigateTo('products')">
+          <strong style="color:var(--amis-blue);">${p.code}</strong> - ${p.name}
         </div>
       `;
     });
@@ -252,7 +349,7 @@ function renderSearchResults(data, container) {
     html += '<div style="padding:4px 12px; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-top:6px;">Nhà cung cấp</div>';
     data.suppliers.slice(0, 4).forEach(sp => {
       html += `
-        <div class="search-item" style="padding:6px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9;" onclick="window.appNavigateTo('partners')">
+        <div class="search-item" style="padding:8px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9;" onclick="window.appNavigateTo('partners-suppliers')">
           <strong style="color:var(--amis-blue);">${sp.code}</strong> - ${sp.name}
         </div>
       `;
@@ -264,11 +361,11 @@ function renderSearchResults(data, container) {
   container.style.display = 'block';
 }
 
-function showLoginModal(targetTab = 'dashboard') {
+function showLoginModal(targetTab = 'dashboard', targetParam = null) {
   const content = `
     <div style="text-align:center; padding:10px 0 20px;">
-      <div style="width:48px; height:48px; background:#0266b3; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:22px; margin-bottom:12px;">M</div>
-      <h3 style="font-size:18px; font-weight:700; color:var(--amis-sidebar);">MISA AMIS - ĐĂNG NHẬP XNK</h3>
+      <div style="width:48px; height:48px; background:#0266b3; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:24px; margin-bottom:12px;">🚢</div>
+      <h3 style="font-size:17px; font-weight:700; color:#0f1e36;">ĐĂNG NHẬP XNK LOGISTICS</h3>
       <p style="font-size:12px; color:#6b7280;">Hệ thống Quản lý Xuất Nhập Khẩu Sợi Dệt</p>
     </div>
     <form id="login-form">
@@ -300,7 +397,7 @@ function showLoginModal(targetTab = 'dashboard') {
     if (success) {
       closeModal();
       updateUserUI();
-      navigateTo(targetTab, true);
+      navigateTo(targetTab, true, targetParam);
     }
   });
 }
@@ -313,4 +410,4 @@ function updateUserUI() {
   if (userAvatarEl) userAvatarEl.textContent = (user?.name || user?.username || 'A')[0].toUpperCase();
 }
 
-window.appNavigateTo = (tab) => navigateTo(tab, true);
+window.appNavigateTo = (tab, param = null) => navigateTo(tab, true, param);

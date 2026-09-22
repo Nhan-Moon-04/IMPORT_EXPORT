@@ -1,48 +1,38 @@
 /* =========================================================
-   MISA AMIS ENTERPRISE TOKENS & CSS VARIABLES
+   MISA AMIS 2025 ENTERPRISE TOKENS & CSS VARIABLES
    ========================================================= */
 
 :root {
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  /* MISA AMIS Corporate Palette */
-  --amis-blue: #0266b3;
+  /* MISA AMIS Corporate Palette (2025) */
+  --amis-blue: #0266b3; /* Signature MISA blue */
   --amis-blue-hover: #00508f;
   --amis-blue-light: #e8f3fb;
-  --amis-green: #008848;
+  --amis-green: #00a152;
   --amis-green-hover: #00733d;
   --amis-green-light: #e6f7ef;
   --amis-orange: #f37021;
   --amis-orange-hover: #d95e14;
-  --amis-red: #e53935;
+  --amis-red: #ea3a3d;
   --amis-red-light: #fde8e8;
-  --amis-sidebar: #0f1e36;
+  
+  /* Sidebar Palette (often dark enterprise blue or light theme in AMIS) */
+  --amis-sidebar-bg: #0f1e36;
+  --amis-sidebar-text: #a1b2c9;
+  --amis-sidebar-text-hover: #ffffff;
   --amis-sidebar-hover: #1b2d4b;
-  --amis-sidebar-active: #0266b3;
-
-  /* Aliases */
-  --misa-blue: var(--amis-blue);
-  --misa-blue-hover: var(--amis-blue-hover);
-  --misa-blue-light: var(--amis-blue-light);
-  --misa-green: var(--amis-green);
-  --misa-green-hover: var(--amis-green-hover);
-  --misa-green-light: var(--amis-green-light);
-  --misa-orange: var(--amis-orange);
-  --misa-orange-hover: var(--amis-orange-hover);
-  --misa-red: var(--amis-red);
-  --misa-red-light: var(--amis-red-light);
-  --misa-sidebar: var(--amis-sidebar);
-  --misa-sidebar-hover: var(--amis-sidebar-hover);
-  --misa-sidebar-active: var(--amis-sidebar-active);
+  --amis-sidebar-active-bg: #0266b3;
+  --amis-sidebar-active-text: #ffffff;
 
   /* Light Theme Defaults */
-  --amis-bg: #f4f5f8;
+  --amis-bg: #f2f5f8; /* Soft background */
   --amis-card-bg: #ffffff;
-  --amis-border: #dcdfe6;
-  --amis-text: #1f2937;
-  --amis-text-muted: #6b7280;
-  --amis-row-hover: #f0f7ff;
-  --amis-row-selected: #e0f2fe;
+  --amis-border: #e2e8f0;
+  --amis-text: #1e293b;
+  --amis-text-muted: #64748b;
+  --amis-row-hover: #f8fafc;
+  --amis-row-selected: #f1f5f9;
 
   --bg-app: var(--amis-bg);
   --bg-surface: var(--amis-card-bg);
@@ -51,33 +41,43 @@
   --text-muted: var(--amis-text-muted);
 
   /* Dimensions */
-  --header-height: 48px;
-  --sidebar-width: 220px;
-  --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --header-height: 56px; /* AMIS standard header height */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px; /* Smooth rounded corners */
+  --radius-lg: 12px;
+  --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-dropdown: 0 10px 25px rgba(0, 0, 0, 0.15);
+  /* Shadows (Soft & Premium) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-dropdown: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-floating: 0 0 15px rgba(0, 0, 0, 0.05);
 
-  --transition: all 0.2s ease-in-out;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 [data-theme="dark"] {
-  --amis-bg: #0b1120;
+  --amis-bg: #0f172a;
   --amis-card-bg: #1e293b;
   --amis-border: #334155;
-  --amis-text: #f1f5f9;
+  --amis-text: #f8fafc;
   --amis-text-muted: #94a3b8;
-  --amis-row-hover: #1e3a5f;
-  --amis-row-selected: #1e40af;
+  --amis-row-hover: #334155;
+  --amis-row-selected: #0f172a;
 
   --bg-app: var(--amis-bg);
   --bg-surface: var(--amis-card-bg);
   --border-color: var(--amis-border);
   --text-main: var(--amis-text);
   --text-muted: var(--amis-text-muted);
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-dropdown: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  --shadow-floating: 0 0 15px rgba(0, 0, 0, 0.4);
 }

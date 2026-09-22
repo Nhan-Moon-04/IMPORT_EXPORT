@@ -1,0 +1,183 @@
+/* =========================================================
+   SIDEBAR (IMEX N - MISA AMIS 2025 STYLE)
+   ========================================================= */
+
+.app-body {
+  display: flex;
+  height: calc(100vh - var(--header-height));
+  overflow: hidden;
+  background-color: var(--amis-bg);
+}
+
+.amis-sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--amis-sidebar-bg);
+  color: var(--amis-sidebar-text);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition-slow);
+  overflow-y: auto;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  box-shadow: inset -1px 0 0 rgba(0,0,0,0.1);
+}
+
+.amis-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.amis-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.amis-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-accordion {
+  padding: 12px 0;
+}
+
+.nav-group {
+  margin-bottom: 4px;
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.nav-group-header:hover {
+  background-color: var(--amis-sidebar-hover);
+  color: var(--amis-sidebar-text-hover);
+}
+
+.group-title-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.group-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.group-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.group-chevron {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+  opacity: 0.6;
+}
+
+.nav-group.open .group-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-group.open .group-title-left {
+  color: var(--amis-sidebar-text-hover);
+}
+
+.nav-group.open .group-icon {
+  opacity: 1;
+}
+
+/* Group Body (Collapsible) */
+.nav-group-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: rgba(0, 0, 0, 0.15); /* Slightly darker for submenu */
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group.open .nav-group-body {
+  max-height: 600px; /* Arbitrary large height for CSS transition */
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 48px;
+  color: var(--amis-sidebar-text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+}
+
+.nav-item:hover {
+  color: var(--amis-sidebar-text-hover);
+  background-color: var(--amis-sidebar-hover);
+}
+
+.nav-item.active {
+  color: var(--amis-sidebar-active-text);
+  background-color: var(--amis-sidebar-active-bg);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--amis-orange); /* Highlight indicator */
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.nav-bullet {
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.nav-item:hover .nav-bullet,
+.nav-item.active .nav-bullet {
+  opacity: 1;
+}
+
+/* Workspace */
+.app-workspace {
+  flex-grow: 1;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Breadcrumb logic for later if needed */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.breadcrumb a {
+  color: var(--amis-blue);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}

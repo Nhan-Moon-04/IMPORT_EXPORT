@@ -1,0 +1,284 @@
+/* =========================================================
+   HEADER / NAVBAR (IMEX N - MISA AMIS 2025 STYLE)
+   ========================================================= */
+
+.amis-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  padding: 0 16px;
+  background-color: var(--amis-blue);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left, .topbar-center, .topbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-left {
+  gap: 16px;
+  flex: 0 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.brand:hover {
+  background-color: var(--amis-row-hover);
+}
+
+.brand-icon {
+  font-size: 24px;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.brand-sub {
+  font-size: 10px;
+  font-weight: 600;
+  background-color: var(--amis-orange);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.company-badge {
+  display: none; /* Hide on smaller screens */
+}
+
+@media (min-width: 1200px) {
+  .company-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Quick Create Dropdown */
+.quick-create-dropdown {
+  position: relative;
+}
+
+.btn-quick-create {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-quick-create:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 220px;
+  background-color: var(--amis-card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease forwards;
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.dropdown-item:hover {
+  background-color: var(--amis-row-hover);
+  color: var(--amis-blue);
+}
+
+/* Center Search */
+.topbar-center {
+  flex-grow: 1;
+  max-width: 500px;
+  margin: 0 20px;
+}
+
+.topbar-search {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  padding: 0 16px;
+  height: 36px;
+  transition: var(--transition);
+}
+
+.topbar-search:focus-within {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+.topbar-search:focus-within svg {
+  color: var(--amis-blue);
+}
+
+.topbar-search:focus-within input {
+  color: var(--text-main);
+}
+
+.topbar-search svg {
+  color: #ffffff;
+  width: 16px;
+  height: 16px;
+}
+
+.topbar-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0 10px;
+  font-size: 14px;
+  color: #ffffff;
+  outline: none;
+}
+
+.topbar-search input::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Right Controls */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+  width: 30%;
+}
+
+.topbar-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+.topbar-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: var(--amis-red);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--amis-card-bg);
+}
+
+/* User Profile */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  margin-left: 8px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #ffcc00;
+  color: var(--amis-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.user-role {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -80,7 +80,9 @@ function renderShipmentsTable(items) {
   tbody.innerHTML = items.map(s => `
     <tr data-id="${s.id}" class="${selectedId === s.id ? 'selected' : ''}">
       <td style="text-align:center;"><input type="checkbox" class="row-checkbox" value="${s.id}" ${selectedId === s.id ? 'checked' : ''}></td>
-      <td><strong>${s.shipmentCode}</strong></td>
+      <td style="cursor:pointer;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
+        <strong style="color:var(--amis-blue); text-decoration:underline;">${s.shipmentCode}</strong>
+      </td>
       <td>${s.type === 'Import' ? '<span class="chip chip-info">📥 Nhập khẩu</span>' : '<span class="chip chip-success">📤 Xuất khẩu</span>'}</td>
       <td>${s.supplierName || s.customerName || '-'}</td>
       <td>${s.portOfLoading || '-'} ➔ ${s.portOfDischarge || '-'}</td>
@@ -90,8 +92,9 @@ function renderShipmentsTable(items) {
       <td><span class="chip chip-warning">${s.status}</span></td>
       <td>${s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '-'}</td>
       <td>
-        <button class="btn btn-default btn-sm" onclick="window.xnkEditShipment('${s.id}')">✏️ Sửa</button>
-        <button class="btn btn-default btn-sm" onclick="window.xnkStatusShipment('${s.id}')">🔄 Trạng thái</button>
+        <button class="btn btn-primary btn-sm" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">Chi Tiết</button>
+        <button class="btn btn-default btn-sm" onclick="window.xnkEditShipment('${s.id}')">✏️</button>
+        <button class="btn btn-default btn-sm" onclick="window.xnkStatusShipment('${s.id}')">🔄</button>
         <button class="btn btn-danger btn-sm" onclick="window.xnkDeleteShipment('${s.id}')">🗑️</button>
       </td>
     </tr>

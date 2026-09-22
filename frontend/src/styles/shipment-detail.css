@@ -1,0 +1,132 @@
+/* =========================================================
+   SHIPMENT DETAIL & TABS (IMEX N - MISA AMIS 2025 STYLE)
+   ========================================================= */
+
+.shipment-detail-header {
+  background-color: var(--amis-card-bg);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px 0 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.shipment-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.shipment-title-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shipment-title-left h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--amis-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shipment-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.shipment-meta span strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* 10 Tabs Navigation */
+.detail-tabs-bar {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.detail-tabs-bar::-webkit-scrollbar {
+  height: 4px;
+}
+.detail-tabs-bar::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+}
+
+.detail-tab {
+  background: transparent;
+  border: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: var(--transition);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+}
+
+.detail-tab:hover {
+  color: var(--amis-blue);
+  background-color: var(--amis-row-hover);
+}
+
+.detail-tab.active {
+  color: var(--amis-blue);
+  background-color: transparent;
+}
+
+/* Active Indicator */
+.detail-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; /* cover the border-bottom of the bar */
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--amis-blue);
+}
+
+/* Tab Content Areas */
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Status Chips */
+.status-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chip-draft { background-color: var(--amis-bg); color: var(--text-muted); border: 1px solid var(--border-color); }
+.chip-transit { background-color: var(--amis-blue-light); color: var(--amis-blue); border: 1px solid var(--amis-blue); }
+.chip-customs { background-color: var(--amis-orange); color: white; }
+.chip-delivered { background-color: var(--amis-green-light); color: var(--amis-green); border: 1px solid var(--amis-green); }
+.chip-cancelled { background-color: var(--amis-red-light); color: var(--amis-red); border: 1px solid var(--amis-red); }

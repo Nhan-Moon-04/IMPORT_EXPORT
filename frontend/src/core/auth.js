@@ -27,3 +27,10 @@ export function getUser() {
 export function isAuthenticated() {
   return !!getToken();
 }
+
+export const auth = {
+  login,
+  logout,
+  getUser,
+  isAuthenticated
+};

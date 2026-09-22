@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MISA AMIS - Quản Lý Xuất Nhập Khẩu Sợi Dệt</title>
+  <title>IMEX N - Hệ Thống Quản Lý Xuất Nhập Khẩu</title>
   
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,69 +16,67 @@
   <link rel="stylesheet" href="/src/styles/layout.css">
   <link rel="stylesheet" href="/src/styles/grid.css">
   <link rel="stylesheet" href="/src/styles/components.css">
+  
+  <!-- Phân chia CSS theo Component / Chức năng -->
+  <link rel="stylesheet" href="/src/styles/header.css">
+  <link rel="stylesheet" href="/src/styles/sidebar.css">
+  <link rel="stylesheet" href="/src/styles/dashboard.css">
+  <link rel="stylesheet" href="/src/styles/shipment-detail.css">
 
   <!-- SheetJS Library for Excel processing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
-    <!-- MISA AMIS Topbar -->
+    <!-- TOPBAR / NAVBAR CỐ ĐỊNH -->
     <header class="amis-topbar">
       <div class="topbar-left">
-        <!-- 9-dots App Switcher icon -->
-        <div class="app-switcher" title="Ứng dụng MISA">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="4" cy="4" r="2.5"></circle>
-            <circle cx="12" cy="4" r="2.5"></circle>
-            <circle cx="20" cy="4" r="2.5"></circle>
-            <circle cx="4" cy="12" r="2.5"></circle>
-            <circle cx="12" cy="12" r="2.5"></circle>
-            <circle cx="20" cy="12" r="2.5"></circle>
-            <circle cx="4" cy="20" r="2.5"></circle>
-            <circle cx="12" cy="20" r="2.5"></circle>
-            <circle cx="20" cy="20" r="2.5"></circle>
-          </svg>
+        <!-- Logo + Tên Công Ty -->
+        <div class="brand" onclick="window.appNavigateTo('dashboard')" title="Trang chủ Hệ Thống">
+          <span class="brand-icon">🚢</span>
+          <span class="brand-title">IMEX N</span>
+          <span class="brand-sub">ENTERPRISE</span>
         </div>
 
-        <div class="brand" onclick="window.appNavigateTo('dashboard')">
-          <span class="brand-misa">MISA</span>
-          <span class="brand-amis">AMIS</span>
-          <span class="brand-sub">XUẤT NHẬP KHẨU</span>
-        </div>
-
-        <div class="company-badge" title="Chi nhánh làm việc">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="company-badge" title="Đơn vị vận hành">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 21h18M3 7v14M21 7v14M6 7V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3M9 21v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4"></path>
           </svg>
-          <span>CÔNG TY CP XNK DỆT MAY VIỆT NAM</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
+          <span>CÔNG TY CP XUẤT NHẬP KHẨU DỆT MAY</span>
+        </div>
+
+        <!-- Nút Tạo Nhanh + Tạo Mới Dropdown -->
+        <div class="quick-create-dropdown" style="position: relative; margin-left: 8px;">
+          <button class="btn-quick-create" id="btn-quick-create">
+            <span style="font-size: 15px; line-height: 1;">+</span>
+            <span>Tạo Mới</span>
+            <span style="font-size: 10px; margin-left: 2px;">▼</span>
+          </button>
+          <div id="quick-create-menu" class="dropdown-menu" style="display: none; position: absolute; top: 36px; left: 0; width: 200px; background: #ffffff; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); z-index: 1000; overflow: hidden; border: 1px solid var(--amis-border);">
+            <a href="/shipments" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('shipments'); window.closeQuickMenu();"><span style="margin-right:8px;">🚢</span>Tạo Lô Hàng</a>
+            <a href="/invoices" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('invoices'); window.closeQuickMenu();"><span style="margin-right:8px;">🧾</span>Tạo Hóa Đơn (Invoice)</a>
+            <a href="/booking" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('booking'); window.closeQuickMenu();"><span style="margin-right:8px;">⚓</span>Tạo Booking Tàu</a>
+            <a href="/customs-declarations" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('customs-declarations'); window.closeQuickMenu();"><span style="margin-right:8px;">📋</span>Mở Tờ Khai Hải Quan</a>
+            <a href="/documents" class="dropdown-item" onclick="event.preventDefault(); window.appNavigateTo('documents'); window.closeQuickMenu();"><span style="margin-right:8px;">📤</span>Upload Chứng Từ</a>
+          </div>
         </div>
       </div>
 
-      <!-- Center Global Search -->
+      <!-- Thanh Tìm Kiếm Toàn Hệ Thống (Center) -->
       <div class="topbar-center" style="position: relative;">
         <div class="topbar-search">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="global-search-input" placeholder="Tìm nhanh sản phẩm sợi, lô hàng, B/L, nhà cung cấp (Ctrl + K)..." autocomplete="off">
+          <input type="text" id="global-search-input" placeholder="Tìm nhanh lô hàng, B/L, số cont, mã sợi, nhà cung cấp (Ctrl + K)..." autocomplete="off">
         </div>
         <div id="global-search-results" class="search-dropdown" style="display:none; position:absolute; top:40px; left:0; width:100%; background:var(--amis-card-bg); border:1px solid var(--amis-border); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:1000;"></div>
       </div>
 
-      <!-- Right Topbar Controls -->
+      <!-- Điều Khiển Phải: Giao diện, Thông báo, Tài khoản -->
       <div class="topbar-right">
-        <!-- Language Switcher -->
-        <select id="lang-select" class="form-control" style="height:28px; font-size:12px; background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.25); padding:2px 8px; border-radius:4px;">
-          <option value="vi" style="color:#333;">🇻🇳 Tiếng Việt</option>
-          <option value="en" style="color:#333;">🇬🇧 English</option>
-          <option value="zh" style="color:#333;">🇨🇳 中文 (Chinese)</option>
-        </select>
-
-        <!-- Theme Toggle -->
+        <!-- Chuyển Đổi Giao Diện Sáng / Tối -->
         <button class="topbar-btn" id="btn-theme-toggle" title="Đổi giao diện Sáng / Tối">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="5"></circle>
@@ -93,8 +91,8 @@
           </svg>
         </button>
 
-        <!-- Notifications -->
-        <button class="topbar-btn" style="position:relative;" title="Thông báo hệ thống">
+        <!-- Thông Báo -->
+        <button class="topbar-btn" id="btn-notif" style="position:relative;" title="Thông báo hệ thống">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -102,7 +100,7 @@
           <span class="notif-badge">3</span>
         </button>
 
-        <!-- User Profile Dropdown -->
+        <!-- Tài Khoản Người Dùng -->
         <div class="user-profile">
           <div class="user-avatar" id="user-avatar">A</div>
           <div class="user-info">
@@ -120,88 +118,270 @@
       </div>
     </header>
 
-    <!-- Main Body: Sidebar + Content -->
+    <!-- THÂN HỆ THỐNG: SIDEBAR + WORKSPACE -->
     <div class="app-body">
-      <!-- Dark Sidebar matching MISA AMIS -->
+      <!-- SIDEBAR COLLAPSIBLE ACCORDION (10 NHÓM CHUẨN DO NGƯỜI DÙNG YÊU CẦU) -->
       <aside class="amis-sidebar">
-        <nav class="nav-menu">
-          <a href="/dashboard" class="nav-item active" data-tab="dashboard">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span class="nav-text">Bàn Làm Việc</span>
-          </a>
+        <nav class="sidebar-accordion">
+          
+          <!-- 1. TỔNG QUAN -->
+          <div class="nav-group open" data-group="overview">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">📊</span>
+                <span class="group-title">TỔNG QUAN</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/dashboard" class="nav-item active" data-tab="dashboard">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Dashboard</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/shipments" class="nav-item" data-tab="shipments">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-              <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-            <span class="nav-text">Lô Hàng & Vận Đơn</span>
-          </a>
+          <!-- 2. HÀNG HÓA -->
+          <div class="nav-group open" data-group="goods">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">🧵</span>
+                <span class="group-title">HÀNG HÓA</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/products" class="nav-item" data-tab="products">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Sản phẩm sợi</span>
+              </a>
+              <a href="/product-history" class="nav-item" data-tab="product-history">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Lịch sử nhập/xuất</span>
+              </a>
+              <a href="/hs-codes" class="nav-item" data-tab="hs-codes">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">HS Code & Biểu thuế</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/orders" class="nav-item" data-tab="orders">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <span class="nav-text">Đơn Mua / Bán (PO)</span>
-          </a>
+          <!-- 3. XUẤT NHẬP KHẨU -->
+          <div class="nav-group open" data-group="xnk">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">🌐</span>
+                <span class="group-title">XUẤT NHẬP KHẨU</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/shipments-import" class="nav-item" data-tab="shipments-import">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Nhập khẩu</span>
+              </a>
+              <a href="/shipments-export" class="nav-item" data-tab="shipments-export">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Xuất khẩu</span>
+              </a>
+              <a href="/shipments" class="nav-item" data-tab="shipments">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Tất cả lô hàng</span>
+              </a>
+              <a href="/orders" class="nav-item" data-tab="orders">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">PO / SO</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/products" class="nav-item" data-tab="products">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
-              <path d="M2 12h20"></path>
-            </svg>
-            <span class="nav-text">Danh Mục Sợi Dệt</span>
-          </a>
+          <!-- 4. CHỨNG TỪ -->
+          <div class="nav-group" data-group="docs">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">📁</span>
+                <span class="group-title">CHỨNG TỪ</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/invoices" class="nav-item" data-tab="invoices">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Invoice</span>
+              </a>
+              <a href="/packing-lists" class="nav-item" data-tab="packing-lists">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Packing List</span>
+              </a>
+              <a href="/documents" class="nav-item" data-tab="documents">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Kho chứng từ & Upload</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/invoices" class="nav-item" data-tab="invoices">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-              <line x1="2" y1="10" x2="22" y2="10"></line>
-            </svg>
-            <span class="nav-text">Hóa Đơn (Invoice)</span>
-          </a>
+          <!-- 5. VẬN CHUYỂN -->
+          <div class="nav-group" data-group="logistics">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">🚢</span>
+                <span class="group-title">VẬN CHUYỂN</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/booking" class="nav-item" data-tab="booking">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Booking</span>
+              </a>
+              <a href="/containers" class="nav-item" data-tab="containers">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Container & Seal</span>
+              </a>
+              <a href="/tracking" class="nav-item" data-tab="tracking">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Theo dõi tàu / ETD / ETA</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/partners" class="nav-item" data-tab="partners">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <span class="nav-text">Nhà Cung Cấp & KH</span>
-          </a>
+          <!-- 6. HẢI QUAN -->
+          <div class="nav-group" data-group="customs">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">🏛️</span>
+                <span class="group-title">HẢI QUAN</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/customs-accounts" class="nav-item" data-tab="customs-accounts">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Tài khoản hải quan</span>
+              </a>
+              <a href="/customs-declarations" class="nav-item" data-tab="customs-declarations">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Tờ khai hải quan</span>
+              </a>
+              <a href="/customs-taxes" class="nav-item" data-tab="customs-taxes">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Thuế hải quan</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/documents" class="nav-item" data-tab="documents">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <span class="nav-text">Upload Chứng Từ</span>
-          </a>
+          <!-- 7. ĐỐI TÁC -->
+          <div class="nav-group" data-group="partners">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">🤝</span>
+                <span class="group-title">ĐỐI TÁC</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/partners-suppliers" class="nav-item" data-tab="partners-suppliers">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Nhà cung cấp</span>
+              </a>
+              <a href="/partners-customers" class="nav-item" data-tab="partners-customers">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Khách hàng</span>
+              </a>
+              <a href="/forwarders" class="nav-item" data-tab="forwarders">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Hãng tàu / Forwarder</span>
+              </a>
+            </div>
+          </div>
 
-          <a href="/excel" class="nav-item" data-tab="excel">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <path d="M8 13h8M8 17h8M8 9h2"></path>
-            </svg>
-            <span class="nav-text">Đọc File Excel</span>
-          </a>
+          <!-- 8. TÀI CHÍNH -->
+          <div class="nav-group" data-group="finance">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">💰</span>
+                <span class="group-title">TÀI CHÍNH</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/costs" class="nav-item" data-tab="costs">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Chi phí lô hàng</span>
+              </a>
+              <a href="/payments" class="nav-item" data-tab="payments">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Thanh toán & Dòng tiền</span>
+              </a>
+              <a href="/cost-allocation" class="nav-item" data-tab="cost-allocation">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Phân bổ giá vốn (Landed Cost)</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- 9. BÁO CÁO -->
+          <div class="nav-group" data-group="reports">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">📈</span>
+                <span class="group-title">BÁO CÁO</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/reports-import" class="nav-item" data-tab="reports-import">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Báo cáo nhập khẩu</span>
+              </a>
+              <a href="/reports-export" class="nav-item" data-tab="reports-export">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Báo cáo xuất khẩu</span>
+              </a>
+              <a href="/excel" class="nav-item" data-tab="excel">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Xuất Excel / PDF</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- 10. HỆ THỐNG -->
+          <div class="nav-group" data-group="system">
+            <div class="nav-group-header">
+              <div class="group-title-left">
+                <span class="group-icon">⚙️</span>
+                <span class="group-title">HỆ THỐNG</span>
+              </div>
+              <span class="group-chevron">▾</span>
+            </div>
+            <div class="nav-group-body">
+              <a href="/system-notifications" class="nav-item" data-tab="system-notifications">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Thông báo tự động</span>
+              </a>
+              <a href="/users" class="nav-item" data-tab="users">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Người dùng & phân quyền</span>
+              </a>
+              <a href="/audit-logs" class="nav-item" data-tab="audit-logs">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Audit Log</span>
+              </a>
+              <a href="/backup" class="nav-item" data-tab="backup">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Sao lưu dữ liệu (pg_dump)</span>
+              </a>
+              <a href="/settings" class="nav-item" data-tab="settings">
+                <span class="nav-bullet">•</span>
+                <span class="nav-text">Cấu hình</span>
+              </a>
+            </div>
+          </div>
+
         </nav>
       </aside>
 
-      <!-- Main Workspace -->
+      <!-- VÙNG LÀM VIỆC CHÍNH -->
       <main class="amis-main">
         <header class="page-header">
           <div>
@@ -214,7 +394,7 @@
           </div>
         </header>
 
-        <!-- Feature View Container -->
+        <!-- CONTAINER CHỨA NỘI DUNG TỪNG TAB -->
         <div id="main-content">
           <!-- Dynamic feature views rendered here -->
         </div>
@@ -222,7 +402,7 @@
     </div>
   </div>
 
-  <!-- Universal Modal Dialog Overlay -->
+  <!-- UNIVERSAL MODAL OVERLAY -->
   <div class="modal-backdrop" id="modalOverlay" style="display: none;">
     <div class="modal-dialog" id="modalContainer">
       <div class="modal-header">
@@ -237,10 +417,10 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
+  <!-- TOAST SHELF -->
   <div class="toast-container" id="toastShelf"></div>
 
-  <!-- Main JavaScript Bootstrap -->
+  <!-- MAIN JAVASCRIPT BOOTSTRAP -->
   <script type="module" src="/src/app.js"></script>
 </body>
 </html>

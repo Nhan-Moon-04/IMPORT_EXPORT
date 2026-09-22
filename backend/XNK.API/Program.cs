@@ -148,11 +148,11 @@ app.MapControllers();
 if (Directory.Exists(frontendPath))
 {
     var fileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(frontendPath);
-    app.MapFallbackToFile("index.html", new StaticFileOptions { FileProvider = fileProvider });
+    app.MapFallbackToFile("{*path:regex(^(?!api|swagger).*$)}", "index.html", new StaticFileOptions { FileProvider = fileProvider });
 }
 else
 {
-    app.MapFallbackToFile("index.html");
+    app.MapFallbackToFile("{*path:regex(^(?!api|swagger).*$)}", "index.html");
 }
 
 // ========== Auto-migrate & Seed on startup ==========
