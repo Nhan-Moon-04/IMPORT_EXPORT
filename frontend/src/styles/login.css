@@ -1,0 +1,149 @@
+/* =========================================================
+   LOGIN SCREEN (Hiệp Lợi Group Style)
+   ========================================================= */
+
+#login-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8eefd 100%);
+  z-index: 9999;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+
+.login-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-logo-box {
+  background: var(--amis-blue);
+  color: #fff;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.login-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--amis-text);
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  font-size: 13px;
+  color: var(--amis-text-muted);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #f8fafc;
+  color: var(--amis-text);
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--amis-blue);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px var(--amis-blue-light);
+}
+
+.input-group input::placeholder {
+  color: #94a3b8;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+}
+
+.input-group input:focus + .input-icon {
+  color: var(--amis-blue);
+}
+
+.input-icon-right {
+  position: absolute;
+  right: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.input-icon-right:hover {
+  color: var(--amis-text);
+}
+
+.login-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.forgot-pwd {
+  font-size: 13px;
+  color: var(--amis-blue);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.btn-login-submit {
+  background-color: #4f46e5; /* Distinct indigo/blue like the screenshot */
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 8px;
+}
+
+.btn-login-submit:hover {
+  background-color: #4338ca;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}

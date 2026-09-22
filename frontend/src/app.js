@@ -64,12 +64,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const initial = parseCurrentUrl();
 
   if (!auth.isAuthenticated()) {
-    showLoginModal(initial.tab, initial.param);
+    showLoginScreen();
   } else {
+    showAppLayout();
     updateUserUI();
     navigateTo(initial.tab, false, initial.param);
   }
 });
+
+function showLoginScreen() {
+  document.getElementById('app-layout').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showAppLayout() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-layout').style.display = 'flex';
+}
 
 function parseCurrentUrl() {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -178,12 +189,55 @@ function initGlobalEvents() {
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
   }
 
+  // Login Form New
+  const loginFormNew = document.getElementById('login-form-new');
+  if (loginFormNew) {
+    loginFormNew.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = document.getElementById('login-username-new').value;
+      const pass = document.getElementById('login-password-new').value;
+      const submitBtn = loginFormNew.querySelector('.btn-login-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang xử lý...';
+
+      try {
+        await auth.login(user, pass);
+        // Login success
+        showAppLayout();
+        updateUserUI();
+        
+        const currentRoute = parseCurrentUrl();
+        navigateTo(currentRoute.tab, true, currentRoute.param);
+      } catch (err) {
+        // Handled in api.js by toast
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Đăng nhập';
+      }
+    });
+
+    // Toggle password visibility
+    const togglePwd = document.getElementById('toggle-password');
+    if (togglePwd) {
+      togglePwd.addEventListener('click', () => {
+        const pwdInput = document.getElementById('login-password-new');
+        if (pwdInput.type === 'password') {
+          pwdInput.type = 'text';
+          togglePwd.querySelector('.eye-slash').style.display = 'block';
+        } else {
+          pwdInput.type = 'password';
+          togglePwd.querySelector('.eye-slash').style.display = 'none';
+        }
+      });
+    }
+  }
+
   // Logout button
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       auth.logout();
-      showLoginModal();
+      showLoginScreen();
     });
   }
 
@@ -222,14 +276,22 @@ export function navigateTo(tab, updateHistory = true, param = null) {
   });
 
   // Update page title & breadcrumb
-  const pageTitle = document.getElementById('page-title');
-  const breadcrumbCurrent = document.getElementById('breadcrumb-current');
+  const breadcrumbCurrentNav = document.getElementById('breadcrumb-current-nav');
+  const breadcrumbGroup = document.getElementById('breadcrumb-group');
   const mainContent = document.getElementById('main-content');
   if (!mainContent) return;
 
   const displayTitle = ROUTE_TITLES[tab] || 'Hệ Thống XNK';
-  if (pageTitle) pageTitle.textContent = displayTitle;
-  if (breadcrumbCurrent) breadcrumbCurrent.textContent = displayTitle;
+  if (breadcrumbCurrentNav) breadcrumbCurrentNav.textContent = displayTitle;
+
+  // Try to find the group name from sidebar active item
+  const activeNavItem = document.querySelector('.nav-item.active');
+  if (activeNavItem && breadcrumbGroup) {
+    const groupHeader = activeNavItem.closest('.nav-group')?.querySelector('.group-title');
+    if (groupHeader) {
+      breadcrumbGroup.textContent = groupHeader.textContent;
+    }
+  }
 
   mainContent.innerHTML = '<div style="padding:40px; text-align:center;"><div class="spinner"></div><p style="margin-top:10px; color:#6b7280;">Đang nạp dữ liệu...</p></div>';
 

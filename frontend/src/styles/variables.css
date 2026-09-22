@@ -17,13 +17,14 @@
   --amis-red: #ea3a3d;
   --amis-red-light: #fde8e8;
   
-  /* Sidebar Palette (often dark enterprise blue or light theme in AMIS) */
-  --amis-sidebar-bg: #0f1e36;
-  --amis-sidebar-text: #a1b2c9;
-  --amis-sidebar-text-hover: #ffffff;
-  --amis-sidebar-hover: #1b2d4b;
-  --amis-sidebar-active-bg: #0266b3;
-  --amis-sidebar-active-text: #ffffff;
+  /* Sidebar Palette (Light Theme like Hiệp Lợi Group) */
+  --amis-sidebar-bg: #ffffff; /* Siderbar is white */
+  --amis-sidebar-text: #64748b; /* slate-500 */
+  --amis-sidebar-text-hover: #1e293b;
+  --amis-sidebar-hover: #f1f5f9;
+  --amis-sidebar-active-bg: #eff6ff; /* blue-50 */
+  --amis-sidebar-active-text: #3b82f6; /* blue-500 */
+  --amis-sidebar-border: #e2e8f0;
 
   /* Light Theme Defaults */
   --amis-bg: #f2f5f8; /* Soft background */

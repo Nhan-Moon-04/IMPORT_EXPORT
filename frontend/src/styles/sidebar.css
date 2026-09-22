@@ -1,13 +1,6 @@
 /* =========================================================
-   SIDEBAR (IMEX N - MISA AMIS 2025 STYLE)
+   SIDEBAR (IMEX N - LIGHT THEME)
    ========================================================= */
-
-.app-body {
-  display: flex;
-  height: calc(100vh - var(--header-height));
-  overflow: hidden;
-  background-color: var(--amis-bg);
-}
 
 .amis-sidebar {
   width: var(--sidebar-width);
@@ -19,38 +12,73 @@
   overflow-y: auto;
   flex-shrink: 0;
   border-right: 1px solid var(--border-color);
-  box-shadow: inset -1px 0 0 rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
+  z-index: 100;
 }
 
 .amis-sidebar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .amis-sidebar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
 }
 
-.amis-sidebar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  min-height: var(--header-height);
+}
+
+.brand-icon-box {
+  background: var(--amis-blue);
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--amis-text);
+  line-height: 1.2;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--amis-text-muted);
 }
 
 .sidebar-accordion {
-  padding: 12px 0;
+  padding: 12px 10px;
 }
 
 .nav-group {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .nav-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 8px 10px;
   cursor: pointer;
   transition: var(--transition);
   user-select: none;
+  border-radius: var(--radius-md);
 }
 
 .nav-group-header:hover {
@@ -61,27 +89,28 @@
 .group-title-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .group-icon {
-  font-size: 16px;
+  font-size: 15px;
   width: 20px;
   text-align: center;
   opacity: 0.8;
 }
 
 .group-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .group-chevron {
-  font-size: 12px;
+  font-size: 10px;
   transition: transform 0.3s ease;
   opacity: 0.6;
+  display: inline-block; /* allows transform */
 }
 
 .nav-group.open .group-chevron {
@@ -94,6 +123,7 @@
 
 .nav-group.open .group-icon {
   opacity: 1;
+  color: var(--amis-blue);
 }
 
 /* Group Body (Collapsible) */
@@ -101,26 +131,29 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  background-color: rgba(0, 0, 0, 0.15); /* Slightly darker for submenu */
   display: flex;
   flex-direction: column;
+  padding-left: 14px;
 }
 
 .nav-group.open .nav-group-body {
-  max-height: 600px; /* Arbitrary large height for CSS transition */
+  max-height: 600px;
+  margin-top: 2px;
+  margin-bottom: 8px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px 10px 48px;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 2px;
   color: var(--amis-sidebar-text);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
   transition: var(--transition);
-  position: relative;
+  border-radius: var(--radius-md);
 }
 
 .nav-item:hover {
@@ -131,53 +164,15 @@
 .nav-item.active {
   color: var(--amis-sidebar-active-text);
   background-color: var(--amis-sidebar-active-bg);
-}
-
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: var(--amis-orange); /* Highlight indicator */
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
+  font-weight: 600;
 }
 
 .nav-bullet {
   font-size: 10px;
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 .nav-item:hover .nav-bullet,
 .nav-item.active .nav-bullet {
   opacity: 1;
-}
-
-/* Workspace */
-.app-workspace {
-  flex-grow: 1;
-  padding: 24px;
-  overflow-y: auto;
-  position: relative;
-}
-
-/* Breadcrumb logic for later if needed */
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 20px;
-}
-
-.breadcrumb a {
-  color: var(--amis-blue);
-  text-decoration: none;
-}
-
-.breadcrumb a:hover {
-  text-decoration: underline;
 }
