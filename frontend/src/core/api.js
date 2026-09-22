@@ -45,8 +45,8 @@ export function openModal(title, contentHtml) {
 
   if (!overlay || !titleEl || !bodyEl) return;
 
-  titleEl.innerHTML = title;
-  bodyEl.innerHTML = contentHtml;
+  if (title !== undefined) titleEl.innerHTML = title;
+  if (contentHtml !== undefined) bodyEl.innerHTML = contentHtml;
   if (tabs) tabs.style.display = "none";
   if (footer) footer.innerHTML = "";
 
@@ -62,6 +62,8 @@ export function closeModal() {
   }
 }
 
+window.openModal = openModal;
+window.closeModal = closeModal;
 window.closeGlobalModal = closeModal;
 window.switchFormTab = function(tabId) {
   const g = document.getElementById("tabGeneral");

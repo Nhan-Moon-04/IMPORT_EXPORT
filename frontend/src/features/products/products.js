@@ -93,7 +93,7 @@ function renderProductsTable(items) {
 
   tbody.innerHTML = items.map(p => {
     const s = p.specification;
-    const specStr = s ? `${s.yarnType || ''} ${s.denierCount || ''}/${s.filamentCount ? s.filamentCount + 'F' : ''} ${s.sdorTBR || ''}` : '-';
+    const specStr = s ? `${s.yarnType || ''} ${s.denierCount || ''}/${s.filamentCount ? s.filamentCount + 'F' : ''} ${s.sDorTBR || ''}` : '-';
     return `
       <tr data-id="${p.id}" class="${selectedId === p.id ? 'selected' : ''}">
         <td style="text-align: center;"><input type="checkbox" class="row-checkbox" value="${p.id}" ${selectedId === p.id ? 'checked' : ''}></td>
@@ -281,9 +281,9 @@ async function openProductForm(id) {
           <div class="form-group">
             <label class="form-label">Độ bóng / Quang học</label>
             <select id="pSdOrTbr" class="form-select">
-              <option value="Semi Dull (SD)" ${spec.sdorTBR?.includes('Semi Dull') ? 'selected' : ''}>Semi Dull (SD - Bán mờ)</option>
-              <option value="Bright (BR)" ${spec.sdorTBR?.includes('Bright') ? 'selected' : ''}>Bright (BR - Bóng)</option>
-              <option value="Full Dull (FD)" ${spec.sdorTBR?.includes('Full Dull') ? 'selected' : ''}>Full Dull (FD - Mờ hoàn toàn)</option>
+              <option value="Semi Dull (SD)" ${spec.sDorTBR?.includes('Semi Dull') ? 'selected' : ''}>Semi Dull (SD - Bán mờ)</option>
+              <option value="Bright (BR)" ${spec.sDorTBR?.includes('Bright') ? 'selected' : ''}>Bright (BR - Bóng)</option>
+              <option value="Full Dull (FD)" ${spec.sDorTBR?.includes('Full Dull') ? 'selected' : ''}>Full Dull (FD - Mờ hoàn toàn)</option>
             </select>
           </div>
           <div class="form-group">
@@ -360,7 +360,7 @@ async function openProductForm(id) {
         composition: "100% Polyester",
         denierCount: document.getElementById("pDenier").value.trim() || null,
         filamentCount: parseInt(document.getElementById("pFilament").value) || null,
-        sdorTBR: document.getElementById("pSdOrTbr").value,
+        sDorTBR: document.getElementById("pSdOrTbr").value,
         color: document.getElementById("pColor").value.trim() || null,
         tpm: document.getElementById("pTpm").value.trim() || null,
         packagingType: document.getElementById("pPackaging").value.trim() || null,
