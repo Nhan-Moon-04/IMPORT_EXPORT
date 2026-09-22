@@ -1,0 +1,291 @@
+/* =========================================================
+   MISA AMIS UI COMPONENTS & MODALS
+   ========================================================= */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-primary {
+  background: var(--amis-green);
+  color: #ffffff;
+}
+.btn-primary:hover {
+  background: var(--amis-green-hover);
+}
+
+.btn-blue {
+  background: var(--amis-blue);
+  color: #ffffff;
+}
+.btn-blue:hover {
+  background: var(--amis-blue-hover);
+}
+
+.btn-secondary {
+  background: var(--amis-card-bg);
+  border: 1px solid var(--amis-border);
+  color: var(--amis-text);
+}
+.btn-secondary:hover {
+  background: var(--amis-row-hover);
+  border-color: var(--amis-blue);
+  color: var(--amis-blue);
+}
+
+.btn-danger {
+  background: var(--amis-red);
+  color: #ffffff;
+}
+.btn-danger:hover {
+  background: #c62828;
+}
+
+/* Forms */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--amis-text);
+}
+
+.form-control {
+  padding: 6px 10px;
+  font-size: 12.5px;
+  border: 1px solid var(--amis-border);
+  border-radius: 4px;
+  outline: none;
+  background: var(--amis-card-bg);
+  color: var(--amis-text);
+  transition: var(--transition);
+}
+
+.form-control:focus {
+  border-color: var(--amis-blue);
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.15);
+}
+
+textarea.form-control {
+  resize: vertical;
+}
+
+/* Status Chips */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.chip-draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+.chip-transit {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.chip-customs {
+  background: #fef3c7;
+  color: #b45309;
+}
+.chip-delivered {
+  background: #dcfce7;
+  color: #15803d;
+}
+.chip-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Dropzone */
+.dropzone {
+  border: 2px dashed #93c5fd;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="dark"] .dropzone {
+  background: #1e293b;
+  border-color: #3b82f6;
+}
+
+.dropzone:hover, .dropzone.dragover {
+  border-color: var(--amis-blue);
+  background: #eff6ff;
+}
+
+/* Modal Dialog */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-backdrop.show {
+  display: flex;
+}
+
+.modal-dialog {
+  background: var(--amis-card-bg);
+  border-radius: 6px;
+  box-shadow: var(--shadow-dropdown);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--amis-border);
+}
+
+[data-theme="dark"] .modal-header {
+  background: #0f172a;
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--amis-text);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--amis-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.modal-body {
+  padding: 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Toast Container */
+.toast-container {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid var(--amis-blue);
+  animation: toastSlide 0.25s ease-out;
+}
+
+@keyframes toastSlide {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.toast-success {
+  border-left-color: var(--amis-green);
+}
+
+.toast-error {
+  border-left-color: var(--amis-red);
+}
+
+.toast-info {
+  border-left-color: var(--amis-blue);
+}
+
+/* Spinner Loader */
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(2, 102, 179, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--amis-blue);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

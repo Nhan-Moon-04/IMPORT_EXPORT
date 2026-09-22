@@ -1,0 +1,6 @@
+@XNK.API_HostAddress = http://localhost:5284
+
+GET {{XNK.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

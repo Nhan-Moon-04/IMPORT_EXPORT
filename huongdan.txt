@@ -1,0 +1,2411 @@
+ĐẶC TẢ HỆ THỐNG QUẢN LÝ XUẤT NHẬP KHẨU (XNK)
+1. Tổng quan hệ thống
+
+Xây dựng hệ thống web quản lý toàn bộ hoạt động xuất khẩu, nhập khẩu, hàng hóa, chứng từ, vận chuyển, hải quan, nhà cung cấp và lịch sử giao dịch của công ty.
+
+Hệ thống có khả năng:
+
+Quản lý hồ sơ nhập khẩu và xuất khẩu.
+
+Quản lý toàn bộ chứng từ liên quan.
+
+Theo dõi tình trạng lô hàng, container và tàu.
+
+Quản lý tài khoản và tờ khai hải quan.
+
+Tra cứu lịch sử nhập/xuất của từng sản phẩm.
+
+Theo dõi giá nhập, giá xuất và chi phí.
+
+Báo cáo, thống kê và xuất dữ liệu Excel/PDF.
+
+Phân quyền nhân viên và lưu lịch sử thao tác.
+Theme sang tối,
+Ngôn ngữ trung việt anh
+
+2. Công nghệ dự kiến
+
+Thành phần
+
+	
+
+Công nghệ
+
+
+
+
+Frontend
+
+	
+
+Angular
+
+
+
+
+Backend
+
+	
+
+ASP.NET Core Web API
+
+
+
+
+Ngôn ngữ backend
+
+	
+
+C#
+
+
+
+
+Database
+
+	
+
+PostgreSQL
+
+
+
+
+ORM
+
+	
+
+Entity Framework Core
+
+
+
+
+Authentication
+
+	
+
+JWT Access Token + Refresh Token
+
+
+
+
+Phân quyền
+
+	
+
+Role-Based Access Control
+
+
+
+
+Lưu trữ file
+
+	
+
+Local Storage hoặc Object Storage
+
+
+
+
+Đóng gói
+
+	
+
+Docker
+
+
+
+
+Triển khai
+
+	
+
+VPS
+
+
+
+
+Quản lý mã nguồn
+
+	
+
+Git/GitHub
+
+3. Dashboard tổng quan
+
+Trang tổng quan hiển thị tình hình hoạt động XNK.
+
+3.1. Thống kê
+
+Tổng số lô hàng nhập khẩu.
+
+Tổng số lô hàng xuất khẩu.
+
+Tổng giá trị nhập khẩu.
+
+Tổng giá trị xuất khẩu.
+
+Tổng số lượng hàng hóa.
+
+Tổng số nhà cung cấp và khách hàng.
+
+Số tờ khai chưa thông quan.
+
+Số container đang vận chuyển.
+
+Số chứng từ còn thiếu.
+
+3.2. Biểu đồ
+
+Giá trị nhập khẩu theo tháng/năm.
+
+Giá trị xuất khẩu theo tháng/năm.
+
+Số lượng hàng nhập/xuất.
+
+Giá nhập trung bình theo từng sản phẩm.
+
+Thống kê theo nhà cung cấp.
+
+Thống kê theo khách hàng.
+
+Thống kê theo quốc gia.
+
+Thống kê theo loại hình hải quan.
+
+3.3. Cảnh báo
+
+Tàu sắp đến ngày ETD/ETA.
+
+Booking chưa xác nhận.
+
+Container chưa có thông tin.
+
+Tờ khai chưa thông quan.
+
+Chứng thư số sắp hết hạn.
+
+Chứng từ còn thiếu.
+
+Hàng sắp đến nhưng chưa hoàn thành hồ sơ.
+
+Các khoản phí hoặc thời hạn cần xử lý.
+
+4. Quản lý sản phẩm/hàng hóa
+
+Quản lý thông tin cơ bản và lịch sử của từng sản phẩm.
+
+4.1. Thông tin sản phẩm
+
+Mã sản phẩm/SKU.
+
+Tên sản phẩm.
+
+Tên tiếng Anh.
+
+Tên tiếng Việt.
+
+Nhóm sản phẩm.
+
+Mô tả hàng hóa.
+
+Đơn vị tính: kg, cone, carton, roll...
+
+Thành phần nguyên liệu.
+
+Nhà sản xuất.
+
+Nước xuất xứ.
+
+Mã HS Code.
+
+Ghi chú.
+
+4.2. Thông tin sợi
+
+Đối với sản phẩm sợi, có thể quản lý:
+
+Loại sợi: FDY, DTY, POY, PHTY...
+
+Thành phần: Polyester, Recycled Polyester...
+
+Denier/Count.
+
+Số filament.
+
+Hướng xoắn.
+
+TPM.
+
+Màu sắc.
+
+SD/TBR hoặc các thông số khác.
+
+Quy cách đóng gói.
+
+Trọng lượng mỗi cone/bobin.
+
+Tiêu chuẩn chất lượng.
+
+Chứng nhận liên quan.
+
+4.3. Lịch sử sản phẩm
+
+Khi mở một sản phẩm, hệ thống hiển thị:
+
+Các lần nhập khẩu.
+
+Các lần xuất khẩu.
+
+Ngày nhập/xuất.
+
+Nhà cung cấp.
+
+Khách hàng.
+
+Số lượng.
+
+Đơn giá.
+
+Tổng giá trị.
+
+Số Invoice.
+
+Số tờ khai.
+
+Mã lô hàng.
+
+File chứng từ liên quan.
+
+Ví dụ truy vấn:
+
+“Sợi Polyester 100/36 SD này nhập ngày nào, giá bao nhiêu và nhập bao nhiêu kg?”
+
+Hệ thống trả về bảng lịch sử tất cả các lần nhập sản phẩm đó.
+
+5. Quản lý nhà cung cấp và khách hàng
+5.1. Nhà cung cấp
+
+Tên công ty.
+
+Tên giao dịch.
+
+Địa chỉ.
+
+Quốc gia.
+
+Mã số thuế.
+
+Người liên hệ.
+
+Email.
+
+Số điện thoại.
+
+Điều khoản thanh toán.
+
+Điều kiện giao hàng: FOB, CIF, EXW...
+
+Lịch sử nhập hàng.
+
+Lịch sử giá.
+
+Chứng từ và hợp đồng liên quan.
+
+5.2. Khách hàng
+
+Tên công ty.
+
+Địa chỉ.
+
+Quốc gia.
+
+Mã số thuế.
+
+Người liên hệ.
+
+Email.
+
+Số điện thoại.
+
+Điều khoản thanh toán.
+
+Điều kiện giao hàng.
+
+Lịch sử xuất hàng.
+
+Lịch sử đơn giá.
+
+Hợp đồng và chứng từ liên quan.
+
+5.3. Các bên liên quan khác
+
+Shipper.
+
+Consignee.
+
+Notify Party.
+
+Forwarder.
+
+Đại lý hải quan.
+
+Hãng tàu.
+
+Đơn vị vận chuyển.
+
+Đơn vị kiểm định.
+
+6. Quản lý lô hàng (Shipment)
+
+Mỗi lô hàng có một hồ sơ riêng, liên kết với toàn bộ chứng từ và thông tin vận chuyển.
+
+6.1. Thông tin lô hàng
+
+Mã lô hàng/Shipment Code.
+
+Loại hình: nhập khẩu hoặc xuất khẩu.
+
+Ngày tạo hồ sơ.
+
+Ngày nhập/xuất dự kiến.
+
+Nhà cung cấp hoặc khách hàng.
+
+Cảng đi.
+
+Cảng đến.
+
+Điều kiện giao hàng.
+
+Tổng số lượng.
+
+Tổng trọng lượng.
+
+Tổng giá trị.
+
+Loại tiền tệ.
+
+Trạng thái lô hàng.
+
+6.2. Trạng thái lô hàng
+
+Draft – Nháp.
+
+Preparing Documents – Đang chuẩn bị chứng từ.
+
+Booking Requested – Đã yêu cầu booking.
+
+Booking Confirmed – Đã xác nhận booking.
+
+In Transit – Đang vận chuyển.
+
+Arrived – Đã đến cảng.
+
+Customs Processing – Đang làm hải quan.
+
+Customs Cleared – Đã thông quan.
+
+Completed – Hoàn tất.
+
+Cancelled – Đã hủy.
+
+6.3. Liên kết dữ liệu
+
+Một lô hàng có thể liên kết với:
+
+Nhiều sản phẩm.
+
+Invoice.
+
+Packing List.
+
+Booking.
+
+Container.
+
+Tờ khai hải quan.
+
+C/O.
+
+Chứng từ vận chuyển.
+
+Chứng từ kiểm định.
+
+Các file đính kèm khác.
+
+7. Quản lý Purchase Order và Sales Order
+7.1. Purchase Order – Đơn mua hàng
+
+Số PO.
+
+Ngày PO.
+
+Nhà cung cấp.
+
+Sản phẩm.
+
+Số lượng.
+
+Đơn giá.
+
+Tổng giá trị.
+
+Điều kiện giao hàng.
+
+Ngày giao hàng dự kiến.
+
+Trạng thái PO.
+
+File PO và hợp đồng.
+
+7.2. Sales Order – Đơn bán hàng
+
+Số SO.
+
+Ngày SO.
+
+Khách hàng.
+
+Sản phẩm.
+
+Số lượng.
+
+Đơn giá.
+
+Tổng giá trị.
+
+Điều kiện giao hàng.
+
+Ngày giao hàng dự kiến.
+
+Trạng thái SO.
+
+File SO và hợp đồng.
+
+7.3. Theo dõi đơn hàng
+
+Đã đặt hàng bao nhiêu.
+
+Đã giao bao nhiêu.
+
+Còn lại bao nhiêu.
+
+Đã nhập/xuất bao nhiêu.
+
+Liên kết PO/SO với shipment và Invoice.
+
+8. Quản lý Invoice
+8.1. Thông tin Invoice
+
+Số Invoice.
+
+Ngày Invoice.
+
+Loại Invoice.
+
+Nhà cung cấp/khách hàng.
+
+Số PO/SO.
+
+Điều kiện thanh toán.
+
+Loại tiền tệ.
+
+Tổng tiền hàng.
+
+Chiết khấu.
+
+Phí khác.
+
+Tổng giá trị Invoice.
+
+8.2. Chi tiết Invoice
+
+Tên sản phẩm.
+
+Mã sản phẩm.
+
+Mô tả hàng hóa.
+
+Số lượng.
+
+Đơn vị tính.
+
+Đơn giá.
+
+Thành tiền.
+
+Mã HS Code.
+
+Nước xuất xứ.
+
+Ghi chú.
+
+8.3. Tính năng
+
+Nhập dữ liệu thủ công.
+
+Import dữ liệu từ Excel.
+
+Kiểm tra tổng tiền.
+
+Kiểm tra trùng số Invoice.
+
+Liên kết với Packing List.
+
+Liên kết với tờ khai hải quan.
+
+Đính kèm file Invoice.
+
+Theo dõi lịch sử chỉnh sửa.
+
+9. Quản lý Packing List
+9.1. Thông tin Packing List
+
+Số Packing List.
+
+Ngày lập.
+
+Số Invoice liên quan.
+
+Số kiện.
+
+Tổng trọng lượng Gross.
+
+Tổng trọng lượng Net.
+
+Số pallet.
+
+Quy cách đóng gói.
+
+Loại bao bì.
+
+9.2. Chi tiết đóng gói
+
+Tên sản phẩm.
+
+Mã sản phẩm.
+
+Số cone/bobin/carton.
+
+Trọng lượng mỗi đơn vị.
+
+Tổng trọng lượng.
+
+Số kiện.
+
+Số lô.
+
+Số container nếu có.
+
+9.3. Tính năng
+
+Liên kết Invoice.
+
+Liên kết shipment.
+
+Upload file PDF/Excel.
+
+Kiểm tra chênh lệch số lượng/trọng lượng.
+
+Xuất báo cáo đóng gói.
+
+10. Quản lý Booking và vận chuyển
+10.1. Thông tin Booking
+
+Số Booking.
+
+Ngày Booking.
+
+Hãng tàu.
+
+Forwarder.
+
+Tên tàu.
+
+Số chuyến/Voyage.
+
+Cảng xếp hàng.
+
+Cảng dỡ hàng.
+
+ETD.
+
+ETA.
+
+Closing Time.
+
+Cut-off SI.
+
+Cut-off VGM.
+
+Trạng thái Booking.
+
+10.2. Theo dõi lịch tàu
+
+ETD dự kiến.
+
+ETD thực tế.
+
+ETA dự kiến.
+
+ETA cập nhật.
+
+Ngày hàng lên tàu.
+
+Ngày tàu đến cảng.
+
+Lịch sử thay đổi lịch tàu.
+
+Người cập nhật.
+
+Nội dung email thông báo.
+
+10.3. Quản lý Container
+
+Số container.
+
+Loại container: 20GP, 40HC...
+
+Số seal.
+
+Trọng lượng.
+
+Số kiện.
+
+Ngày lấy container.
+
+Ngày hạ container.
+
+Ngày đóng hàng.
+
+Trạng thái container.
+
+File chứng từ container.
+
+11. Quản lý tài khoản hải quan
+11.1. Thông tin tài khoản
+
+Tên tài khoản hải quan.
+
+Mã số doanh nghiệp/MST.
+
+Tên doanh nghiệp.
+
+Chi cục hải quan đăng ký.
+
+Loại tài khoản: chính/phụ.
+
+Người phụ trách.
+
+Trạng thái tài khoản.
+
+Ngày tạo.
+
+Ngày cập nhật.
+
+Ghi chú.
+
+11.2. Thông tin đăng nhập và chữ ký số
+
+Tên đăng nhập.
+
+Mã người sử dụng.
+
+Hệ thống hải quan sử dụng.
+
+Chứng thư số.
+
+Ngày cấp chứng thư số.
+
+Ngày hết hạn.
+
+Trạng thái chứng thư số.
+
+Người quản lý chứng thư số.
+
+Bảo mật:
+
+Không lưu mật khẩu hoặc mã PIN ở dạng văn bản thường.
+
+Mã hóa các dữ liệu nhạy cảm nếu cần lưu.
+
+Giới hạn người có quyền xem thông tin.
+
+Lưu nhật ký truy cập và thao tác.
+
+11.3. Theo dõi tài khoản
+
+Lịch sử sử dụng tài khoản.
+
+Nhân viên sử dụng.
+
+Thời gian thao tác.
+
+Lịch sử thay đổi.
+
+Lịch sử lỗi.
+
+Trạng thái hoạt động.
+
+11.4. Cảnh báo
+
+Chứng thư số sắp hết hạn.
+
+Tài khoản bị khóa.
+
+Tài khoản không hoạt động.
+
+Có thay đổi thông tin đăng nhập.
+
+Cần cập nhật thông tin tài khoản.
+
+12. Quản lý tờ khai hải quan
+12.1. Thông tin tờ khai
+
+Số tờ khai.
+
+Ngày đăng ký.
+
+Loại hình nhập khẩu/xuất khẩu.
+
+Mã loại hình.
+
+Mã chi cục hải quan.
+
+Tài khoản hải quan sử dụng.
+
+Người thực hiện.
+
+Mã phân luồng.
+
+Trạng thái tờ khai.
+
+Ngày thông quan.
+
+Số Invoice liên quan.
+
+Số PO/Booking/Shipment.
+
+12.2. Phân luồng
+
+Luồng xanh.
+
+Luồng vàng.
+
+Luồng đỏ.
+
+Trạng thái kiểm tra hồ sơ.
+
+Trạng thái kiểm tra thực tế hàng hóa.
+
+Ghi chú xử lý.
+
+12.3. Chi tiết hàng hóa trên tờ khai
+
+Tên hàng khai báo.
+
+Mã HS Code.
+
+Mã sản phẩm nội bộ.
+
+Xuất xứ.
+
+Số lượng.
+
+Đơn vị tính.
+
+Đơn giá.
+
+Trị giá hải quan.
+
+Thuế suất.
+
+Tiền thuế.
+
+Mã biểu thuế.
+
+Ghi chú khai báo.
+
+12.4. Trạng thái tờ khai
+
+Chưa đăng ký.
+
+Đã đăng ký.
+
+Đang xử lý.
+
+Phân luồng xanh.
+
+Phân luồng vàng.
+
+Phân luồng đỏ.
+
+Đã thông quan.
+
+Đã hủy.
+
+Bổ sung hồ sơ.
+
+Điều chỉnh tờ khai.
+
+12.5. Quản lý hồ sơ hải quan
+
+Liên kết với:
+
+Tờ khai hải quan.
+
+Invoice.
+
+Packing List.
+
+Contract.
+
+C/O.
+
+Bill of Lading.
+
+Booking.
+
+Giấy phép nhập khẩu/xuất khẩu.
+
+Kết quả kiểm tra.
+
+Chứng từ nộp thuế.
+
+Công văn giải trình.
+
+File khai báo và file kết quả.
+
+13. Quản lý HS Code và thuế
+13.1. Danh mục HS Code
+
+Mã HS Code.
+
+Mô tả hàng hóa.
+
+Nhóm hàng.
+
+Thuế nhập khẩu.
+
+Thuế xuất khẩu.
+
+Thuế VAT.
+
+Nước xuất xứ.
+
+Ngày áp dụng.
+
+Nguồn tham khảo.
+
+Lịch sử thay đổi mã HS.
+
+13.2. Theo dõi vấn đề HS Code
+
+HS Code nhà cung cấp khai báo.
+
+HS Code doanh nghiệp sử dụng.
+
+HS Code hải quan đề xuất.
+
+Nội dung giải trình.
+
+File kết quả phân tích/phân loại.
+
+Lịch sử điều chỉnh.
+
+Ghi chú rủi ro và chênh lệch.
+
+13.3. Tính thuế dự kiến
+
+Trị giá tính thuế.
+
+Thuế nhập khẩu.
+
+Thuế VAT.
+
+Thuế khác.
+
+Tổng số tiền thuế.
+
+Tình trạng đã nộp/chưa nộp.
+
+Chứng từ nộp thuế.
+
+14. Quản lý chi phí nhập khẩu/xuất khẩu
+
+Theo dõi tổng chi phí thực tế của từng lô hàng.
+
+14.1. Các loại chi phí
+
+Tiền hàng.
+
+Cước vận chuyển.
+
+Phí bảo hiểm.
+
+Phí local charge.
+
+Phí THC.
+
+Phí chứng từ.
+
+Phí nâng/hạ.
+
+Phí lưu container.
+
+Phí lưu bãi.
+
+Phí demurrage/detention.
+
+Thuế nhập khẩu.
+
+Thuế VAT.
+
+Phí kiểm định.
+
+Phí khai hải quan.
+
+Các chi phí khác.
+
+14.2. Phân bổ chi phí
+
+Theo trọng lượng.
+
+Theo số lượng.
+
+Theo giá trị hàng.
+
+Theo từng sản phẩm.
+
+Theo từng Invoice.
+
+Theo từng container.
+
+14.3. Giá vốn thực tế
+
+Hệ thống có thể tính:
+
+Giá vốn = Tiền hàng + Thuế + Vận chuyển + Phí liên quan
+
+Có thể theo dõi:
+
+Giá mua ban đầu.
+
+Tổng chi phí phát sinh.
+
+Giá vốn sau phân bổ.
+
+Giá vốn theo kg.
+
+So sánh giá giữa các lần nhập.
+
+15. Quản lý thanh toán
+15.1. Theo dõi thanh toán
+
+Số Invoice.
+
+Nhà cung cấp/khách hàng.
+
+Tổng giá trị.
+
+Loại tiền tệ.
+
+Hạn thanh toán.
+
+Ngày thanh toán.
+
+Số tiền đã thanh toán.
+
+Số tiền còn lại.
+
+Trạng thái thanh toán.
+
+15.2. Hình thức thanh toán
+
+T/T.
+
+L/C.
+
+D/P.
+
+D/A.
+
+Các phương thức khác.
+
+15.3. Tính năng
+
+Cảnh báo sắp đến hạn thanh toán.
+
+Theo dõi công nợ.
+
+Upload chứng từ thanh toán.
+
+Lịch sử thanh toán.
+
+Báo cáo công nợ theo nhà cung cấp/khách hàng.
+
+16. Quản lý chứng từ và file
+
+Đây là module quan trọng để lưu trữ toàn bộ tài liệu XNK.
+
+16.1. Loại file hỗ trợ
+
+PDF.
+
+Excel.
+
+Word.
+
+JPG/PNG.
+
+ZIP.
+
+Các định dạng được cho phép.
+
+16.2. Danh mục chứng từ
+
+Contract.
+
+Purchase Order.
+
+Sales Order.
+
+Commercial Invoice.
+
+Packing List.
+
+Booking Confirmation.
+
+Bill of Lading.
+
+C/O.
+
+Tờ khai hải quan.
+
+Giấy nộp thuế.
+
+Chứng thư kiểm định.
+
+Test Report.
+
+GRS/TC.
+
+Oeko-Tex.
+
+Fumigation Certificate.
+
+Insurance Certificate.
+
+Email trao đổi.
+
+Công văn và hồ sơ giải trình.
+
+Các chứng từ khác.
+
+16.3. Chức năng file
+
+Upload file.
+
+Xem file trực tiếp.
+
+Download file.
+
+Tìm kiếm file.
+
+Phân loại file.
+
+Gắn file vào shipment.
+
+Gắn file vào Invoice.
+
+Gắn file vào sản phẩm.
+
+Gắn file vào tờ khai.
+
+Phân quyền xem/tải file.
+
+Lưu phiên bản file.
+
+Lịch sử cập nhật.
+
+Kiểm tra file trùng.
+
+Đặt tên file theo quy tắc.
+
+16.4. Quản lý phiên bản
+
+Version 1, Version 2...
+
+Người cập nhật.
+
+Thời gian cập nhật.
+
+Nội dung thay đổi.
+
+Khôi phục phiên bản cũ.
+
+Không xóa vĩnh viễn nếu chưa có quyền.
+
+17. Quản lý email và thông báo
+17.1. Lưu email liên quan
+
+Email booking.
+
+Email cập nhật tàu.
+
+Email chứng từ.
+
+Email nhà cung cấp.
+
+Email khách hàng.
+
+Email hải quan.
+
+Email về lịch giao hàng.
+
+Email về vấn đề phát sinh.
+
+17.2. Tính năng
+
+Đính kèm email vào shipment.
+
+Đính kèm email vào Booking.
+
+Đính kèm email vào Invoice.
+
+Lưu file .eml hoặc .msg nếu cần.
+
+Ghi chú nội dung email.
+
+Theo dõi email đã xử lý/chưa xử lý.
+
+Lưu người gửi và ngày nhận.
+
+17.3. Thông báo nội bộ
+
+Thông báo lô hàng mới.
+
+Thông báo chứng từ thiếu.
+
+Thông báo lịch tàu thay đổi.
+
+Thông báo tờ khai chưa thông quan.
+
+Thông báo hạn thanh toán.
+
+Thông báo chứng thư số sắp hết hạn.
+
+18. Tìm kiếm và tra cứu
+
+Cho phép tìm kiếm trên toàn bộ dữ liệu.
+
+18.1. Tìm theo sản phẩm
+
+Tên sản phẩm.
+
+Mã sản phẩm.
+
+HS Code.
+
+Thành phần.
+
+Quy cách sợi.
+
+Màu sắc.
+
+Nhà cung cấp.
+
+18.2. Tìm theo chứng từ
+
+Số Invoice.
+
+Số PO.
+
+Số SO.
+
+Số Booking.
+
+Số Bill of Lading.
+
+Số container.
+
+Số tờ khai.
+
+Số Contract.
+
+18.3. Tìm theo thời gian
+
+Ngày nhập khẩu.
+
+Ngày xuất khẩu.
+
+Ngày Invoice.
+
+ETD.
+
+ETA.
+
+Ngày thông quan.
+
+Khoảng thời gian tùy chọn.
+
+18.4. Tìm kiếm nâng cao
+
+Nhà cung cấp.
+
+Khách hàng.
+
+Quốc gia.
+
+Loại hình nhập/xuất.
+
+Trạng thái lô hàng.
+
+Mã HS Code.
+
+Giá trị.
+
+Số lượng.
+
+Người phụ trách.
+
+19. Báo cáo và xuất dữ liệu
+19.1. Báo cáo nhập khẩu
+
+Danh sách lô hàng nhập.
+
+Tổng giá trị nhập khẩu.
+
+Số lượng theo sản phẩm.
+
+Giá nhập theo từng lần.
+
+Nhà cung cấp theo thời gian.
+
+Thuế và chi phí nhập khẩu.
+
+Báo cáo theo HS Code.
+
+19.2. Báo cáo xuất khẩu
+
+Danh sách lô hàng xuất.
+
+Tổng giá trị xuất khẩu.
+
+Số lượng theo sản phẩm.
+
+Khách hàng theo thời gian.
+
+Doanh thu theo sản phẩm.
+
+Báo cáo theo quốc gia.
+
+19.3. Báo cáo hải quan
+
+Danh sách tờ khai.
+
+Tờ khai chưa thông quan.
+
+Tờ khai theo phân luồng.
+
+Tờ khai theo loại hình.
+
+Tổng tiền thuế.
+
+Báo cáo theo tài khoản hải quan.
+
+Lịch sử điều chỉnh tờ khai.
+
+19.4. Định dạng xuất
+
+Excel.
+
+PDF.
+
+CSV.
+
+In trực tiếp.
+
+Tạo báo cáo theo bộ lọc.
+
+Lưu mẫu báo cáo thường dùng.
+
+20. Quản lý người dùng và phân quyền
+20.1. Tài khoản người dùng
+
+Họ tên.
+
+Tên đăng nhập.
+
+Email.
+
+Số điện thoại.
+
+Phòng ban.
+
+Chức vụ.
+
+Trạng thái tài khoản.
+
+Ngày tạo.
+
+Lần đăng nhập cuối.
+
+20.2. Vai trò
+Admin
+
+Quản lý toàn bộ hệ thống.
+
+Quản lý người dùng.
+
+Quản lý phân quyền.
+
+Xem và chỉnh sửa mọi dữ liệu.
+
+Quản lý cấu hình hệ thống.
+
+Nhân viên XNK
+
+Tạo và chỉnh sửa hồ sơ XNK.
+
+Quản lý chứng từ.
+
+Quản lý booking.
+
+Theo dõi tờ khai.
+
+Tra cứu dữ liệu theo quyền được cấp.
+
+Viewer
+
+Chỉ xem dữ liệu được cho phép.
+
+Không được chỉnh sửa.
+
+Có thể bị giới hạn quyền tải file.
+
+Kế toán (nếu cần)
+
+Xem Invoice.
+
+Theo dõi thanh toán.
+
+Theo dõi thuế và chi phí.
+
+Quản lý dữ liệu công nợ.
+
+20.3. Phân quyền chi tiết
+
+Phân quyền theo:
+
+Xem.
+
+Thêm.
+
+Sửa.
+
+Xóa.
+
+Upload file.
+
+Download file.
+
+Xuất Excel/PDF.
+
+Xem dữ liệu nhạy cảm.
+
+Duyệt hồ sơ.
+
+Quản lý tài khoản hải quan.
+
+21. Quy trình phê duyệt
+
+Có thể thiết lập quy trình duyệt:
+
+Nhân viên tạo hồ sơ.
+
+Nhân viên bổ sung chứng từ.
+
+Người phụ trách kiểm tra.
+
+Quản lý phê duyệt.
+
+Chuyển sang xử lý hải quan/vận chuyển.
+
+Hoàn tất hồ sơ.
+
+Khóa hồ sơ sau khi hoàn thành.
+
+Áp dụng cho:
+
+PO.
+
+Invoice.
+
+Shipment.
+
+Tờ khai.
+
+Chi phí phát sinh.
+
+Điều chỉnh dữ liệu.
+
+Xóa chứng từ.
+
+22. Lịch sử thao tác và bảo mật
+22.1. Audit Log
+
+Lưu lại:
+
+Người thực hiện.
+
+Thời gian.
+
+Chức năng thao tác.
+
+Dữ liệu trước khi sửa.
+
+Dữ liệu sau khi sửa.
+
+IP nếu cần.
+
+Hành động: thêm/sửa/xóa/tải file/đăng nhập.
+
+22.2. Bảo mật
+
+JWT Access Token.
+
+Refresh Token.
+
+Mã hóa mật khẩu bằng hash.
+
+Phân quyền API.
+
+Kiểm tra dữ liệu đầu vào.
+
+Giới hạn dung lượng upload.
+
+Kiểm tra định dạng file.
+
+Chống upload file nguy hiểm.
+
+HTTPS.
+
+Giới hạn đăng nhập sai.
+
+Quản lý phiên đăng nhập.
+
+Sao lưu database định kỳ.
+
+23. Import dữ liệu từ Excel
+
+Do dữ liệu hiện tại có thể được lưu bằng Excel, hệ thống cần hỗ trợ:
+
+Import danh sách sản phẩm.
+
+Import Invoice.
+
+Import Packing List.
+
+Import danh sách nhà cung cấp.
+
+Import danh sách khách hàng.
+
+Import lịch sử nhập/xuất.
+
+Import dữ liệu tờ khai.
+
+Kiểm tra cột bắt buộc.
+
+Kiểm tra dữ liệu trùng.
+
+Hiển thị lỗi trước khi lưu.
+
+Cho phép xem trước dữ liệu.
+
+Lưu lịch sử import.
+
+24. Sao lưu và khôi phục dữ liệu
+24.1. Database
+
+Backup tự động hằng ngày.
+
+Backup theo tuần/tháng.
+
+Lưu nhiều phiên bản backup.
+
+Khôi phục database khi có sự cố.
+
+Kiểm tra backup định kỳ.
+
+24.2. File
+
+Backup thư mục lưu chứng từ.
+
+Lưu bản sao trên server khác hoặc cloud.
+
+Không để mất file khi di chuyển hệ thống.
+
+Theo dõi dung lượng lưu trữ.
+
+Thiết lập chính sách lưu trữ lâu dài.
+
+25. Tích hợp hệ thống khác
+
+Có thể mở rộng trong tương lai:
+
+Tích hợp MISA.
+
+Tích hợp email.
+
+Tích hợp Google Drive/OneDrive.
+
+Tích hợp hệ thống vận chuyển.
+
+Tích hợp API tra cứu tàu nếu có.
+
+Tích hợp thông báo Telegram/Zalo/Email.
+
+Tích hợp chữ ký số nếu hệ thống và nhà cung cấp hỗ trợ API.
+
+API cho phần mềm nội bộ khác.
+
+26. Thiết kế database dự kiến
+
+Các bảng chính:
+
+Bảng
+
+	
+
+Chức năng
+
+
+
+
+Users
+
+	
+
+Người dùng
+
+
+
+
+Roles
+
+	
+
+Vai trò
+
+
+
+
+Permissions
+
+	
+
+Quyền hạn
+
+
+
+
+UserRoles
+
+	
+
+Liên kết người dùng/vai trò
+
+
+
+
+Products
+
+	
+
+Danh mục sản phẩm
+
+
+
+
+ProductSpecifications
+
+	
+
+Thông số sản phẩm
+
+
+
+
+ProductPrices
+
+	
+
+Lịch sử giá
+
+
+
+
+Suppliers
+
+	
+
+Nhà cung cấp
+
+
+
+
+Customers
+
+	
+
+Khách hàng
+
+
+
+
+Partners
+
+	
+
+Các đối tác
+
+
+
+
+PurchaseOrders
+
+	
+
+Đơn mua hàng
+
+
+
+
+SalesOrders
+
+	
+
+Đơn bán hàng
+
+
+
+
+Shipments
+
+	
+
+Lô hàng
+
+
+
+
+ShipmentItems
+
+	
+
+Sản phẩm trong lô hàng
+
+
+
+
+Invoices
+
+	
+
+Invoice
+
+
+
+
+InvoiceItems
+
+	
+
+Chi tiết Invoice
+
+
+
+
+PackingLists
+
+	
+
+Packing List
+
+
+
+
+PackingListItems
+
+	
+
+Chi tiết Packing List
+
+
+
+
+Bookings
+
+	
+
+Booking
+
+
+
+
+Vessels
+
+	
+
+Tàu
+
+
+
+
+Containers
+
+	
+
+Container
+
+
+
+
+ContainerEvents
+
+	
+
+Lịch sử container
+
+
+
+
+CustomsAccounts
+
+	
+
+Tài khoản hải quan
+
+
+
+
+DigitalCertificates
+
+	
+
+Chứng thư số
+
+
+
+
+CustomsDeclarations
+
+	
+
+Tờ khai hải quan
+
+
+
+
+CustomsDeclarationItems
+
+	
+
+Chi tiết tờ khai
+
+
+
+
+HSCodes
+
+	
+
+Danh mục HS Code
+
+
+
+
+CustomsTaxes
+
+	
+
+Thuế hải quan
+
+
+
+
+Payments
+
+	
+
+Thanh toán
+
+
+
+
+ShipmentCosts
+
+	
+
+Chi phí lô hàng
+
+
+
+
+Documents
+
+	
+
+File chứng từ
+
+
+
+
+DocumentVersions
+
+	
+
+Phiên bản file
+
+
+
+
+Emails
+
+	
+
+Email liên quan
+
+
+
+
+Notifications
+
+	
+
+Thông báo
+
+
+
+
+ApprovalWorkflows
+
+	
+
+Quy trình phê duyệt
+
+
+
+
+AuditLogs
+
+	
+
+Lịch sử thao tác
+
+27. Mối quan hệ dữ liệu chính
+Supplier / Customer
+        │
+        ├── Purchase Order / Sales Order
+        │
+        └── Shipment
+              │
+              ├── Shipment Items
+              │       └── Products
+              │
+              ├── Invoice
+              │       └── Invoice Items
+              │
+              ├── Packing List
+              │       └── Packing List Items
+              │
+              ├── Booking
+              │       └── Containers
+              │
+              ├── Customs Declaration
+              │       ├── Customs Account
+              │       ├── HS Code
+              │       └── Customs Declaration Items
+              │
+              ├── Shipment Costs
+              ├── Payments
+              └── Documents
+28. Quy trình nhập khẩu dự kiến
+Nhận PO/Invoice từ nhà cung cấp
+              ↓
+Kiểm tra thông tin hàng hóa
+              ↓
+Tạo hồ sơ Shipment
+              ↓
+Nhận Booking và thông tin tàu
+              ↓
+Theo dõi ETD/ETA
+              ↓
+Nhận Invoice + Packing List + chứng từ
+              ↓
+Khai báo hải quan
+              ↓
+Theo dõi phân luồng
+              ↓
+Nộp thuế và xử lý hồ sơ
+              ↓
+Thông quan
+              ↓
+Nhập kho / hoàn tất hồ sơ
+              ↓
+Lưu trữ và báo cáo
+29. Quy trình xuất khẩu dự kiến
+Nhận Sales Order/PO từ khách hàng
+              ↓
+Chuẩn bị hàng hóa
+              ↓
+Tạo hồ sơ Shipment
+              ↓
+Tạo Invoice + Packing List
+              ↓
+Đặt Booking
+              ↓
+Theo dõi đóng hàng
+              ↓
+Khai báo hải quan xuất khẩu
+              ↓
+Theo dõi phân luồng và thông quan
+              ↓
+Hàng lên tàu
+              ↓
+Theo dõi ETD/ETA
+              ↓
+Gửi chứng từ cho khách hàng
+              ↓
+Hoàn tất hồ sơ
+30. Lộ trình phát triển
+Giai đoạn 1 – Chức năng cốt lõi
+
+Đăng nhập và phân quyền.
+
+Dashboard cơ bản.
+
+Quản lý sản phẩm.
+
+Quản lý nhà cung cấp/khách hàng.
+
+Quản lý Shipment.
+
+Invoice và Packing List.
+
+Upload và quản lý file.
+
+Tìm kiếm dữ liệu.
+
+Giai đoạn 2 – XNK chuyên sâu
+
+Booking và Container.
+
+Tờ khai hải quan.
+
+Tài khoản hải quan.
+
+HS Code.
+
+Theo dõi thuế.
+
+Lịch sử ETD/ETA.
+
+Báo cáo nhập/xuất.
+
+Import dữ liệu Excel.
+
+Giai đoạn 3 – Quản lý nâng cao
+
+Tính giá vốn và phân bổ chi phí.
+
+Quản lý thanh toán.
+
+Quy trình phê duyệt.
+
+Thông báo tự động.
+
+Audit Log nâng cao.
+
+Phiên bản chứng từ.
+
+Tích hợp MISA/email/cloud.
+
+Backup và giám sát hệ thống.
+
+Mục tiêu cuối cùng
+
+Hệ thống phải cho phép nhân viên tìm kiếm một sản phẩm hoặc lô hàng và xem được toàn bộ thông tin liên quan:
+
+Sản phẩm → Lịch sử nhập/xuất → Giá → Số lượng → Nhà cung cấp/khách hàng → Invoice → Packing List → Booking → Container → Tờ khai hải quan → Thuế → Chứng từ → Chi phí → Lịch sử thao tác.
+
+
+
+
+Hệ Thống Quản Lý Xuất Nhập Khẩu (XNK) — Kế Hoạch Triển Khai
+Tổng Quan
+Xây dựng hệ thống web quản lý xuất nhập khẩu hoàn chỉnh theo đặc tả 
+huongdan.txt
+. Hệ thống chạy local trước, sau deploy lên Ubuntu 24.
+
+Stack công nghệ:
+
+Thành phần	Công nghệ
+Frontend	Angular 18+
+Backend	ASP.NET Core 8 Web API (C#)
+Database	PostgreSQL 16
+ORM	Entity Framework Core 8
+Auth	JWT Access Token + Refresh Token
+Phân quyền	Role-Based Access Control (RBAC)
+File Storage	Local Storage (có thể chuyển Object Storage)
+Container	Docker + Docker Compose
+Giao diện	Theme sáng/tối, đa ngôn ngữ (Việt/Anh/Trung)
+Lộ Trình Phát Triển — 3 Giai Đoạn
+Theo mục 30 của đặc tả, hệ thống chia 3 giai đoạn. Ta sẽ bắt đầu từ Giai đoạn 1.
+
+Giai Đoạn 1 — Chức Năng Cốt Lõi (Triển khai ngay)
+Scope
+✅ Đăng nhập, đăng ký, phân quyền (JWT + RBAC)
+✅ Dashboard tổng quan cơ bản
+✅ Quản lý sản phẩm/hàng hóa
+✅ Quản lý nhà cung cấp & khách hàng
+✅ Quản lý lô hàng (Shipment)
+✅ Invoice & Packing List
+✅ Upload & quản lý file/chứng từ
+✅ Tìm kiếm dữ liệu
+✅ Theme sáng/tối + đa ngôn ngữ (Vi/En/Zh)
+Cấu Trúc Dự Án
+
+D:\CODE\XNK\
+├── backend/                          # ASP.NET Core 8 Web API
+│   ├── XNK.API/                      # API project
+│   │   ├── Controllers/              # API Controllers
+│   │   ├── Program.cs                # Entry point
+│   │   └── appsettings.json          # Config
+│   ├── XNK.Core/                     # Domain entities, interfaces
+│   │   ├── Entities/                 # Domain models
+│   │   ├── Interfaces/               # Repository & service interfaces
+│   │   └── DTOs/                     # Data Transfer Objects
+│   ├── XNK.Infrastructure/           # EF Core, repositories, external services
+│   │   ├── Data/                     # DbContext, migrations
+│   │   ├── Repositories/            # Repository implementations
+│   │   └── Services/                 # Service implementations
+│   └── XNK.sln                       # Solution file
+│
+├── frontend/                          # Angular 18
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── core/                 # Guards, interceptors, services
+│   │   │   ├── shared/               # Shared components, pipes, directives
+│   │   │   ├── features/             # Feature modules
+│   │   │   │   ├── auth/             # Login/register
+│   │   │   │   ├── dashboard/        # Dashboard
+│   │   │   │   ├── products/         # Quản lý sản phẩm
+│   │   │   │   ├── suppliers/        # Nhà cung cấp
+│   │   │   │   ├── customers/        # Khách hàng
+│   │   │   │   ├── shipments/        # Lô hàng
+│   │   │   │   ├── invoices/         # Invoice
+│   │   │   │   ├── packing-lists/    # Packing List
+│   │   │   │   └── documents/        # Chứng từ/file
+│   │   │   └── app.component.ts
+│   │   ├── assets/
+│   │   │   └── i18n/                 # Ngôn ngữ (vi.json, en.json, zh.json)
+│   │   └── styles/                   # Global CSS, theme
+│   └── angular.json
+│
+├── docker-compose.yml                 # PostgreSQL + Backend + Frontend
+└── huongdan.txt                       # Đặc tả
+Proposed Changes — Backend
+[NEW] Solution & Projects
+Tạo ASP.NET Core solution với 3 projects theo Clean Architecture:
+
+XNK.Core — Domain entities, interfaces, DTOs
+XNK.Infrastructure — EF Core DbContext, Migrations, Repositories
+XNK.API — Controllers, JWT Auth middleware, Startup config
+[NEW] backend/XNK.Core/Entities/ — Domain Models (Giai đoạn 1)
+Entity	Mô tả
+User	Người dùng (họ tên, email, password hash, role, trạng thái)
+Role	Vai trò (Admin, Staff, Viewer, Accountant)
+Product	Sản phẩm (mã SKU, tên Vi/En, nhóm, HS Code, đơn vị, nước xuất xứ)
+ProductSpecification	Thông số sợi (loại sợi, denier, filament, TPM, màu...)
+Supplier	Nhà cung cấp (tên, địa chỉ, quốc gia, MST, liên hệ, điều khoản)
+Customer	Khách hàng (tương tự supplier)
+Partner	Các bên liên quan (Shipper, Consignee, Forwarder, Hãng tàu...)
+Shipment	Lô hàng (mã, loại NK/XK, cảng đi/đến, trạng thái, tổng giá trị)
+ShipmentItem	Sản phẩm trong lô hàng
+Invoice	Invoice (số, ngày, loại, tiền tệ, tổng giá trị)
+InvoiceItem	Chi tiết Invoice
+PackingList	Packing List (số, ngày, tổng trọng lượng)
+PackingListItem	Chi tiết Packing List
+Document	File chứng từ (tên, loại, đường dẫn, liên kết với entity)
+AuditLog	Lịch sử thao tác cơ bản
+[NEW] backend/XNK.Infrastructure/Data/AppDbContext.cs
+EF Core DbContext cho PostgreSQL
+Fluent API configuration cho relationships
+Seed data (admin user, roles mặc định)
+[NEW] backend/XNK.API/Controllers/
+Controller	Endpoints
+AuthController	POST login, POST register, POST refresh-token
+ProductsController	CRUD sản phẩm + lịch sử nhập/xuất
+SuppliersController	CRUD nhà cung cấp
+CustomersController	CRUD khách hàng
+ShipmentsController	CRUD lô hàng + trạng thái
+InvoicesController	CRUD Invoice + chi tiết
+PackingListsController	CRUD Packing List + chi tiết
+DocumentsController	Upload, download, list, delete file
+DashboardController	Thống kê tổng quan
+SearchController	Tìm kiếm global
+Proposed Changes — Frontend
+[NEW] Angular 18 Project
+Sử dụng Angular CLI, standalone components, signals, lazy-loaded routes.
+
+Thiết kế giao diện — Chuẩn quốc tế
+Lấy cảm hứng từ giao diện các hệ thống logistics/trade lớn quốc tế:
+
+Layout: Sidebar navigation (collapsible) + Header bar + Main content
+Color Palette:
+Primary: Deep Navy Blue #0A1628 → Gradient #1E3A5F
+Accent: Teal/Cyan #00BCD4 và Orange #FF6B35
+Dark mode: True black #0D1117 với card #161B22
+Light mode: Clean white #F8FAFB với subtle blue tints
+Typography: Inter (Latin) + Noto Sans SC (Chinese) via Google Fonts
+Components:
+Glassmorphism cards cho dashboard stats
+Data tables với sort, filter, pagination
+Animated sidebar với icon transitions
+Toast notifications
+Modal dialogs
+Status badges với color-coded chips
+Chart.js cho biểu đồ dashboard
+Animations: Smooth page transitions, hover effects, skeleton loading
+Responsive: Desktop-first nhưng responsive cho tablet
+[NEW] Core Module
+AuthService — Login/logout, JWT token management
+AuthGuard — Route protection
+JwtInterceptor — Auto-attach JWT, handle 401 refresh
+ThemeService — Light/Dark toggle
+I18nService — Ngôn ngữ (Vi/En/Zh) dùng @ngx-translate
+ApiService — HTTP wrapper
+[NEW] Feature Modules (Lazy-loaded)
+Auth — Login page (premium design)
+Dashboard — Thống kê cards + biểu đồ Chart.js
+Products — Danh sách + form CRUD + lịch sử nhập/xuất
+Suppliers — Danh sách + form CRUD
+Customers — Danh sách + form CRUD
+Shipments — Danh sách + chi tiết + timeline trạng thái
+Invoices — Danh sách + form + chi tiết items
+Packing Lists — Danh sách + form + chi tiết items
+Documents — File manager với upload/preview/download
+Docker Compose
+yaml
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: xnk_db
+      POSTGRES_USER: xnk_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  backend:
+    build: ./backend
+    ports:
+      - "5000:8080"
+    depends_on:
+      - db
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+User Review Required
+IMPORTANT
+
+Phương án triển khai từng bước: Do hệ thống rất lớn (30+ module), tôi đề xuất triển khai Giai đoạn 1 trước gồm 8 chức năng cốt lõi. Sau khi GĐ1 hoàn thành sẽ tiếp tục GĐ2 và GĐ3. Bạn đồng ý không?
+
+IMPORTANT
+
+Database: Đặc tả yêu cầu PostgreSQL. Tôi sẽ dùng Docker Compose để chạy PostgreSQL 16 local. Bạn đã cài Docker Desktop chưa?
+
+WARNING
+
+Angular & .NET SDK: Cần đảm bảo máy đã cài:
+
+Node.js 18+ & npm
+.NET 8 SDK
+Angular CLI (npm install -g @angular/cli)
+Docker Desktop (cho PostgreSQL)
+Bạn xác nhận đã cài những tool này chưa?
+
+Open Questions
+Tên công ty: Hệ thống này dùng cho công ty nào? Tên sẽ hiển thị trên header/logo.
+Port: Tôi dự kiến Backend chạy ở localhost:5000, Frontend ở localhost:4200, PostgreSQL ở localhost:5432. Có port nào bị trùng không?
+Admin mặc định: Tôi sẽ tạo tài khoản admin mặc định admin/Admin@123. OK?
+Verification Plan
+Automated Tests
+Backend: dotnet test cho unit tests (service layer)
+Frontend: ng test cho component tests
+Manual Verification
+Chạy docker-compose up để khởi động PostgreSQL
+Chạy dotnet run backend, kiểm tra Swagger UI ở /swagger
+Chạy ng serve frontend, kiểm tra trang login + dashboard
+Test đăng nhập, CRUD sản phẩm, upload file
+Thứ Tự Thực Hiện (Step-by-step) & Tiến Độ Cập Nhật
+Bước	Nội dung	Trạng thái	Chi tiết kỹ thuật
+1	Tạo Backend solution (Clean Architecture) + Domain Entities	✅ Đã hoàn thành	XNK.Core, XNK.Infrastructure, XNK.API (.NET 8)
+2	Setup EF Core + PostgreSQL + Migrations	✅ Đã hoàn thành	PostgreSQL 16 Docker, 21 tables, DbInitializer tự động seed dữ liệu thực tế
+3	Implement Auth (JWT + Refresh Token + RBAC)	✅ Đã hoàn thành	BCrypt, JWT Bearer Token, Roles: Admin, Staff, Viewer, Accountant
+4	Implement CRUD APIs cho tất cả entities GĐ1	✅ Đã hoàn thành	Bao gồm đầy đủ:
+- ProductsController (CRUD + GET /api/products/{id}/history)
+- SuppliersController & CustomersController (CRUD)
+- ShipmentsController (CRUD + PATCH /status)
+- InvoicesController & PackingListsController (CRUD)
+- DocumentsController (Upload/Download/Delete)
+- DashboardController (Thống kê, biểu đồ, cảnh báo)
+- SearchController (Global search đa thực thể)
+- OrdersController (Purchase Orders & Sales Orders)
+5	Tạo Angular 18+ project + Design System	Đang triển khai	Angular 18 standalone components, signals, SCSS theme
+6	Implement Auth UI (Login page) + Guards + Interceptors	Đang triển khai	JWT storage, auto refresh, AuthGuard, Theme toggle
+7	Implement Dashboard UI + Chart.js	Đang triển khai	Cards thống kê, chart nhập/xuất theo tháng, cảnh báo ETD/ETA
+8	Implement Products, Suppliers, Customers UI	Đang triển khai	Data tables, dialog form, xem lịch sử giá mua/bán
+9	Implement Shipments, Invoices, Packing Lists UI	Đang triển khai	Timeline trạng thái lô hàng, chi tiết hàng hóa
+10	Implement Documents/File manager UI	Đang triển khai	Upload kéo thả, preview PDF/Excel, phân loại chứng từ
+11	Implement Global Search + i18n (Vi/En/Zh)	Đang triển khai	Tìm kiếm nhanh ở Header, @ngx-translate 3 ngôn ngữ
+12	Docker Compose toàn diện + Testing + Production Polish	Đang triển khai	Dockerfile multi-stage, docker-compose full stack
+
+================================================================================
+BẢNG TRA CỨU API ENDPOINTS HOÀN CHỈNH (RESTFUL API CATALOG)
+================================================================================
+
+1. Authentication & Users (/api/auth)
+- POST /api/auth/login : Đăng nhập bằng username/password -> Trả về JWT Access Token & Refresh Token
+- POST /api/auth/register : Đăng ký tài khoản mới (phân quyền Role)
+- POST /api/auth/refresh-token : Làm mới Access Token bằng Refresh Token
+- POST /api/auth/logout : Đăng xuất & hủy Refresh Token (Yêu cầu Bearer Token)
+
+2. Quản lý Sản phẩm / Hàng hóa (/api/products)
+- GET /api/products : Danh sách sản phẩm (hỗ trợ search, group, phân trang, sắp xếp)
+- GET /api/products/{id} : Chi tiết sản phẩm kèm thông số kỹ thuật sợi (Specification)
+- GET /api/products/{id}/history : Lịch sử toàn bộ các lần nhập/xuất của sản phẩm (ngày, giá, nhà cung cấp, khách hàng, số lượng, invoice, lô hàng)
+- POST /api/products : Tạo mới sản phẩm kèm thông số sợi (YarnType, Denier, Filament, TPM, Color, v.v.)
+- PUT /api/products/{id} : Cập nhật thông tin sản phẩm và thông số sợi
+- DELETE /api/products/{id} : Xóa mềm (soft-delete) sản phẩm
+
+3. Nhà cung cấp & Khách hàng (/api/suppliers & /api/customers)
+- GET /api/suppliers : Danh sách nhà cung cấp (hỗ trợ search, filter quốc gia, phân trang)
+- GET /api/suppliers/{id} : Chi tiết nhà cung cấp
+- POST /api/suppliers : Tạo mới nhà cung cấp
+- PUT /api/suppliers/{id} : Cập nhật nhà cung cấp
+- DELETE /api/suppliers/{id} : Xóa mềm nhà cung cấp
+- GET /api/customers : Danh sách khách hàng (search, country, pagination)
+- GET /api/customers/{id} : Chi tiết khách hàng
+- POST /api/customers : Tạo mới khách hàng
+- PUT /api/customers/{id} : Cập nhật khách hàng
+- DELETE /api/customers/{id} : Xóa mềm khách hàng
+
+4. Đơn đặt hàng PO & SO (/api/orders)
+- GET /api/orders/purchase : Danh sách Purchase Orders (search, phân trang)
+- GET /api/orders/purchase/{id} : Chi tiết PO kèm danh sách sản phẩm, số lượng, đơn giá
+- POST /api/orders/purchase : Tạo mới đơn mua hàng PO
+- DELETE /api/orders/purchase/{id} : Xóa đơn mua hàng
+- GET /api/orders/sales : Danh sách Sales Orders
+- GET /api/orders/sales/{id} : Chi tiết SO kèm danh sách mặt hàng
+- POST /api/orders/sales : Tạo mới đơn bán hàng SO
+- DELETE /api/orders/sales/{id} : Xóa đơn bán hàng
+
+5. Quản lý Lô hàng - Shipment (/api/shipments)
+- GET /api/shipments : Danh sách lô hàng (filter loại NK/XK, trạng thái, phân trang, sort)
+- GET /api/shipments/{id} : Chi tiết lô hàng kèm danh sách sản phẩm, invoices, packing lists, chứng từ
+- POST /api/shipments : Tạo mới hồ sơ lô hàng
+- PUT /api/shipments/{id} : Cập nhật thông tin lô hàng
+- PATCH /api/shipments/{id}/status : Cập nhật trạng thái lô hàng (Draft -> PreparingDocuments -> BookingRequested -> InTransit -> Arrived -> CustomsCleared -> Completed)
+- DELETE /api/shipments/{id} : Xóa mềm lô hàng
+
+6. Chứng từ Hóa đơn & Đóng gói (/api/invoices & /api/packinglists)
+- GET /api/invoices : Danh sách Invoice (search, filter theo lô hàng shipmentId, phân trang)
+- GET /api/invoices/{id} : Chi tiết Invoice kèm các dòng sản phẩm chi tiết
+- POST /api/invoices : Tạo Invoice (tự động tính tổng tiền từ items)
+- DELETE /api/invoices/{id} : Xóa Invoice
+- GET /api/packinglists : Danh sách Packing List
+- GET /api/packinglists/{id} : Chi tiết Packing List (kiện hàng, trọng lượng gross/net, container, số lot)
+- POST /api/packinglists : Tạo Packing List
+- DELETE /api/packinglists/{id} : Xóa Packing List
+
+7. Quản lý File & Tài liệu Đính kèm (/api/documents)
+- POST /api/documents/upload : Upload tài liệu đính kèm (multipart/form-data: file, category, entityType, entityId, shipmentId, description)
+- GET /api/documents : Danh sách tài liệu (filter category, shipmentId, entity)
+- GET /api/documents/{id}/download : Tải file về máy
+- DELETE /api/documents/{id} : Xóa file tài liệu
+
+8. Dashboard & Thống kê (/api/dashboard)
+- GET /api/dashboard : Trả về dữ liệu tổng hợp:
+  + Tổng số lô nhập khẩu, xuất khẩu
+  + Tổng giá trị kim ngạch nhập khẩu, xuất khẩu ($ USD)
+  + Tổng số sản phẩm, nhà cung cấp, khách hàng
+  + Số lô hàng đang xử lý (Pending)
+  + Danh sách 10 lô hàng mới nhất kèm tiến độ
+  + Biểu đồ giá trị nhập/xuất theo từng tháng trong năm
+
+9. Tìm kiếm Global (/api/search)
+- GET /api/search?keyword={query}&entityType={all|product|shipment|supplier|customer|invoice} :
+  Tìm kiếm nhanh tức thì trên toàn bộ hệ thống.
+
+================================================================================
+KẾ HOẠCH CHI TIẾT GIAI ĐOẠN 2: NGHIỆP VỤ XUẤT NHẬP KHẨU CHUYÊN SÂU
+================================================================================
+1. Quản lý Booking & Container Tracking
+- Entity: Booking (Số Booking, Hãng tàu, Đại lý forwarder, Tàu/Chuyến vessel/voyage, Ngày ETD cảng đi, Ngày ETA cảng đến, Closing time, Hạn nộp SI, Free time Demurrage/Detention tại cảng đến).
+- Entity: Container (Số container, Số chì seal, Loại container 20DC/40DC/40HQ/Reefer, Nhiệt độ/thông gió nếu có, Trọng lượng bì tare weight, Tình trạng rỗng/đầy hạ bãi).
+- Tính năng: Cảnh báo tự động khi tàu sắp cập cảng (ETA <= 3 ngày), cảnh báo sắp hết hạn Demurrage/Detention.
+
+2. Tờ khai Hải quan & Tài khoản Hải quan (Customs Declarations)
+- Entity: CustomsAccount (Mã doanh nghiệp, Chi cục hải quan mở tờ khai, Chữ ký số/Token USB ngày hết hạn, Mật khẩu hệ thống VNACCS).
+- Entity: CustomsDeclaration (Số tờ khai, Loại hình nhập khẩu E21/A11/A12/E31/B11..., Chi cục hải quan, Phân luồng: Xanh/Vàng/Đỏ, Ngày đăng ký, Ngày thông quan).
+- Entity: CustomsDeclarationItem (Dòng hàng tờ khai, Mã HS Code 8 số, Tên hàng theo biểu thuế, Thuế suất NK, Thuế suất VAT, Tiền thuế phải nộp, Trạng thái nộp thuế).
+
+3. Quản lý Biểu thuế & HS Code
+- Bảng biểu thuế hải quan Việt Nam: Tra cứu thuế suất ưu đãi thông thường (MFN), thuế ưu đãi đặc biệt (Form E - ACFTA, Form D - ATIGA, Form AK/VK, CPTPP, EVFTA).
+- Cảnh báo điều kiện áp dụng C/O hợp lệ để được hưởng thuế suất ưu đãi đặc biệt.
+
+4. Module Import dữ liệu Excel tự động (Tương thích mẫu file thực tế)
+- Phân tích và nạp trực tiếp từ file Excel của nhà máy/nhà cung cấp như mẫu `06-08-2026/LONG CHENG WU.xlsx`:
+  + Sheet Invoice: Tự động trích xuất Invoice No, Date, Term, Total Amount, từng dòng SKU, Unit Price.
+  + Sheet Packing List: Tự động trích xuất Gross Weight, Net Weight, Số kiện Roll/Carton, Số Container.
+  + Sheet Specs: Trích xuất các chỉ số Denier/Filament/Color đưa vào cơ sở dữ liệu.
+
+================================================================================
+KẾ HOẠCH CHI TIẾT GIAI ĐOẠN 3: TÍNH GIÁ VỐN, THANH TOÁN & QUẢN LÝ NÂNG CAO
+================================================================================
+1. Tính giá vốn hàng nhập khẩu (Landed Cost Allocation)
+- Tập hợp toàn bộ chi phí phát sinh của lô hàng:
+  + Tiền hàng (FOB/CIF invoice)
+  + Cước vận chuyển quốc tế (Ocean Freight / Air Freight)
+  + Phí Local charges tại cảng đi và cảng đến (THC, D/O, CIC, CFS, Seal, vệ sinh container...)
+  + Chi phí làm thủ tục hải quan, kiểm tra chuyên ngành
+  + Thuế nhập khẩu không được hoàn lại
+  + Cước vận tải nội địa từ cảng về kho nhà máy (Trucking)
+- Cơ chế phân bổ chi phí về từng mã sản phẩm:
+  + Phân bổ theo Giá trị (Value-based)
+  + Phân bổ theo Trọng lượng thực (Weight-based)
+  + Phân bổ theo Thể tích CBM (Volume-based)
+- Kết quả: Tính chính xác Đơn giá vốn bình quân (Landed Unit Cost) cho từng kg sợi nhập kho.
+
+2. Quản lý Thanh toán & Dòng tiền XNK
+- Theo dõi các mốc thanh toán: Tạm ứng (Deposit), Thanh toán khi có vận đơn B/L copy, Thanh toán khi hàng đến (Arrival), Thanh toán trả chậm theo LC/TT.
+- Theo dõi chênh lệch tỷ giá ngoại tệ (USD, EUR, CNY sang VND) tại các thời điểm nhận hóa đơn và thời điểm chuyển khoản ngân hàng.
+
+3. Quy trình phê duyệt & Phân quyền nhiều cấp (Approval Workflow)
+- Quy trình duyệt PO mua hàng: Nhân viên tạo -> Trưởng phòng XNK thẩm định -> Ban Giám Đốc duyệt.
+- Quy trình duyệt thanh toán tiền hàng và thuế hải quan: Kế toán kiểm tra chứng từ -> Giám đốc tài chính phê duyệt.
+
+4. Tích hợp Hệ thống Kế toán & Thông báo tự động
+- Xuất file dữ liệu hóa đơn nhập mua hàng vào phần mềm kế toán MISA SME / MISA AMIS.
+- Gửi thông báo tự động qua Email / Telegram / Zalo ZNS khi lô hàng đổi trạng thái, khi có tờ khai thông quan, hoặc khi tàu cập cảng.
+- Cơ chế sao lưu tự động PostgreSQL định kỳ hàng ngày (pg_dump) và đẩy lên cloud storage.
+

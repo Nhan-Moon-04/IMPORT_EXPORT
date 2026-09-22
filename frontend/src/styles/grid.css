@@ -1,0 +1,132 @@
+/* =========================================================
+   MISA AMIS DATA GRID, TABLES & TOOLBAR
+   ========================================================= */
+
+.card {
+  background: var(--amis-card-bg);
+  border: 1px solid var(--amis-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--amis-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  background: var(--amis-card-bg);
+  gap: 6px;
+  width: 240px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  width: 100%;
+  color: var(--amis-text);
+}
+
+/* Data Table Container */
+.table-container {
+  border: 1px solid var(--amis-border);
+  border-radius: 4px;
+  overflow: auto;
+  background: var(--amis-card-bg);
+  flex: 1;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.data-table th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--amis-border);
+  border-right: 1px solid #e2e8f0;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+[data-theme="dark"] .data-table th {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-right-color: #334155;
+}
+
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  border-right: 1px solid #f8fafc;
+  color: var(--amis-text);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .data-table td {
+  border-bottom-color: #334155;
+  border-right-color: #1e293b;
+}
+
+.data-table tbody tr:hover {
+  background: var(--amis-row-hover);
+}
+
+.data-table tbody tr.selected {
+  background: var(--amis-row-selected);
+}
+
+/* Pagination Footer */
+.grid-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px 2px;
+  font-size: 12px;
+  color: var(--amis-text-muted);
+  border-top: 1px solid var(--amis-border);
+  margin-top: 8px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

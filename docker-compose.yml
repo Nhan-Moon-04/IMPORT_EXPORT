@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: xnk_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: xnk_db
+      POSTGRES_USER: xnk_admin
+      POSTGRES_PASSWORD: XnkAdmin@2026
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xnk_admin -d xnk_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    driver: local

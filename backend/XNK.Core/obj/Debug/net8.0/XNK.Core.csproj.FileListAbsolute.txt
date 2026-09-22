@@ -1,0 +1,12 @@
+D:\CODE\XNK\backend\XNK.Core\bin\Debug\net8.0\XNK.Core.deps.json
+D:\CODE\XNK\backend\XNK.Core\bin\Debug\net8.0\XNK.Core.dll
+D:\CODE\XNK\backend\XNK.Core\bin\Debug\net8.0\XNK.Core.pdb
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.AssemblyInfoInputs.cache
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.AssemblyInfo.cs
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.csproj.CoreCompileInputs.cache
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.sourcelink.json
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.dll
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\refint\XNK.Core.dll
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\XNK.Core.pdb
+D:\CODE\XNK\backend\XNK.Core\obj\Debug\net8.0\ref\XNK.Core.dll

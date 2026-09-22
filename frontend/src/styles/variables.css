@@ -1,0 +1,83 @@
+/* =========================================================
+   MISA AMIS ENTERPRISE TOKENS & CSS VARIABLES
+   ========================================================= */
+
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* MISA AMIS Corporate Palette */
+  --amis-blue: #0266b3;
+  --amis-blue-hover: #00508f;
+  --amis-blue-light: #e8f3fb;
+  --amis-green: #008848;
+  --amis-green-hover: #00733d;
+  --amis-green-light: #e6f7ef;
+  --amis-orange: #f37021;
+  --amis-orange-hover: #d95e14;
+  --amis-red: #e53935;
+  --amis-red-light: #fde8e8;
+  --amis-sidebar: #0f1e36;
+  --amis-sidebar-hover: #1b2d4b;
+  --amis-sidebar-active: #0266b3;
+
+  /* Aliases */
+  --misa-blue: var(--amis-blue);
+  --misa-blue-hover: var(--amis-blue-hover);
+  --misa-blue-light: var(--amis-blue-light);
+  --misa-green: var(--amis-green);
+  --misa-green-hover: var(--amis-green-hover);
+  --misa-green-light: var(--amis-green-light);
+  --misa-orange: var(--amis-orange);
+  --misa-orange-hover: var(--amis-orange-hover);
+  --misa-red: var(--amis-red);
+  --misa-red-light: var(--amis-red-light);
+  --misa-sidebar: var(--amis-sidebar);
+  --misa-sidebar-hover: var(--amis-sidebar-hover);
+  --misa-sidebar-active: var(--amis-sidebar-active);
+
+  /* Light Theme Defaults */
+  --amis-bg: #f4f5f8;
+  --amis-card-bg: #ffffff;
+  --amis-border: #dcdfe6;
+  --amis-text: #1f2937;
+  --amis-text-muted: #6b7280;
+  --amis-row-hover: #f0f7ff;
+  --amis-row-selected: #e0f2fe;
+
+  --bg-app: var(--amis-bg);
+  --bg-surface: var(--amis-card-bg);
+  --border-color: var(--amis-border);
+  --text-main: var(--amis-text);
+  --text-muted: var(--amis-text-muted);
+
+  /* Dimensions */
+  --header-height: 48px;
+  --sidebar-width: 220px;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-dropdown: 0 10px 25px rgba(0, 0, 0, 0.15);
+
+  --transition: all 0.2s ease-in-out;
+}
+
+[data-theme="dark"] {
+  --amis-bg: #0b1120;
+  --amis-card-bg: #1e293b;
+  --amis-border: #334155;
+  --amis-text: #f1f5f9;
+  --amis-text-muted: #94a3b8;
+  --amis-row-hover: #1e3a5f;
+  --amis-row-selected: #1e40af;
+
+  --bg-app: var(--amis-bg);
+  --bg-surface: var(--amis-card-bg);
+  --border-color: var(--amis-border);
+  --text-main: var(--amis-text);
+  --text-muted: var(--amis-text-muted);
+}
