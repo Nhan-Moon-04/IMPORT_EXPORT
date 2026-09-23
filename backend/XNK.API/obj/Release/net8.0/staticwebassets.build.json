@@ -1,0 +1,19 @@
+{
+  "Version": 1,
+  "Hash": "NkqlvzH/FGRbWOrYBdU1ThZDyKhQkYDSJr0vpZNaGV0=",
+  "Source": "XNK.API",
+  "BasePath": "_content/XNK.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "XNK.API\\wwwroot",
+      "Source": "XNK.API",
+      "ContentRoot": "D:\\CODE\\XNK\\backend\\XNK.API\\wwwroot\\",
+      "BasePath": "_content/XNK.API",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": []
+}

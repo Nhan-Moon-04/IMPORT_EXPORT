@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using XNK.Core.DTOs;
 using XNK.Core.Entities;
 using XNK.Core.Enums;
 using XNK.Core.Interfaces;
+using XNK.Infrastructure.Data;
 
 namespace XNK.API.Controllers;
 
@@ -13,7 +15,12 @@ namespace XNK.API.Controllers;
 public class ShipmentsController : ControllerBase
 {
     private readonly IUnitOfWork _uow;
-    public ShipmentsController(IUnitOfWork uow) => _uow = uow;
+    private readonly AppDbContext _context;
+    public ShipmentsController(IUnitOfWork uow, AppDbContext context)
+    {
+        _uow = uow;
+        _context = context;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] string? type,
@@ -110,6 +117,47 @@ public class ShipmentsController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null!, "Xóa lô hàng thành công"));
     }
 
+    [HttpGet("{id}/items")]
+    public async Task<IActionResult> GetItems(Guid id)
+    {
+        var entity = await _uow.Shipments.GetWithDetailsAsync(id);
+        if (entity == null) return NotFound(ApiResponse<object>.Error("Không tìm thấy lô hàng"));
+        var items = entity.Items.Select(MapItemToDto).ToList();
+        return Ok(ApiResponse<List<ShipmentItemDto>>.Ok(items));
+    }
+
+    [HttpPost("{id}/items")]
+    public async Task<IActionResult> UpsertItems(Guid id, [FromBody] UpsertShipmentItemsDto dto)
+    {
+        var entity = await _uow.Shipments.GetWithDetailsAsync(id);
+        if (entity == null) return NotFound(ApiResponse<object>.Error("Không tìm thấy lô hàng"));
+
+        // Remove old items
+        _context.Set<ShipmentItem>().RemoveRange(entity.Items);
+
+        // Add new items
+        foreach (var itemDto in dto.Items)
+        {
+            var item = new ShipmentItem
+            {
+                ShipmentId = id,
+                ProductId = itemDto.ProductId,
+                Quantity = itemDto.Quantity,
+                UnitPrice = itemDto.UnitPrice,
+                TotalValue = (itemDto.Quantity ?? 0) * (itemDto.UnitPrice ?? 0),
+                GrossWeight = itemDto.GrossWeight,
+                NetWeight = itemDto.NetWeight,
+                Notes = itemDto.Notes,
+                CreatedBy = User.Identity?.Name
+            };
+            await _context.Set<ShipmentItem>().AddAsync(item);
+        }
+
+        await _uow.SaveChangesAsync();
+        var updated = await _uow.Shipments.GetWithDetailsAsync(id);
+        return Ok(ApiResponse<ShipmentDto>.Ok(MapToDto(updated!), "Cập nhật danh sách sản phẩm thành công"));
+    }
+
     private static ShipmentDto MapToDto(Shipment s) => new()
     {
         Id = s.Id, ShipmentCode = s.ShipmentCode, Type = s.Type.ToString(),
@@ -120,6 +168,22 @@ public class ShipmentsController : ControllerBase
         Notes = s.Notes, SupplierName = s.Supplier?.CompanyName, CustomerName = s.Customer?.CompanyName,
         SupplierId = s.SupplierId, CustomerId = s.CustomerId,
         ItemCount = s.Items?.Count ?? 0, InvoiceCount = s.Invoices?.Count ?? 0,
-        DocumentCount = s.Documents?.Count ?? 0, CreatedAt = s.CreatedAt
+        DocumentCount = s.Documents?.Count ?? 0, CreatedAt = s.CreatedAt,
+        Items = s.Items?.Select(MapItemToDto).ToList() ?? new()
+    };
+
+    private static ShipmentItemDto MapItemToDto(ShipmentItem i) => new()
+    {
+        Id = i.Id,
+        ProductId = i.ProductId,
+        ProductName = i.Product?.Name,
+        SKU = i.Product?.SKU,
+        Unit = i.Product?.Unit,
+        Quantity = i.Quantity,
+        UnitPrice = i.UnitPrice,
+        TotalValue = i.TotalValue,
+        GrossWeight = i.GrossWeight,
+        NetWeight = i.NetWeight,
+        Notes = i.Notes
     };
 }

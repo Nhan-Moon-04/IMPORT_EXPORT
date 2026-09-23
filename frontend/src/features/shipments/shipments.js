@@ -1,11 +1,15 @@
 /**
  * Shipments Feature Module - Full CRUD & Status Transitions
  */
-import { api, showToast } from "../../core/api.js";
+import { api, showToast, showConfirm } from "../../core/api.js";
 
 let shipmentsList = [];
 let selectedId = null;
 let currentShipmentFilter = 'All';
+
+// Danh sách sản phẩm được chọn trong form (local state)
+let formItems = []; // [{ productId, productName, sku, unit, quantity, unitPrice }]
+let allProducts = []; // cache danh sách sản phẩm
 
 export async function renderShipments(container, filterType = 'All') {
   selectedId = null;
@@ -173,13 +177,47 @@ async function openShipmentForm(id) {
   if (id) s = shipmentsList.find(x => x.id === id);
   const isEdit = !!s;
 
-  const [supRes, cusRes] = await Promise.all([
-    api.get("/api/suppliers?pageSize=100"),
-    api.get("/api/customers?pageSize=100")
+  // Load all data in parallel
+  const [supRes, cusRes, prodRes] = await Promise.all([
+    api.get("/api/suppliers?pageSize=200"),
+    api.get("/api/customers?pageSize=200"),
+    api.get("/api/products?pageSize=500")
   ]);
 
   const suppliers = supRes.data.items;
   const customers = cusRes.data.items;
+  allProducts = prodRes.data.items;
+
+  // Init form items from existing shipment items
+  if (isEdit && s.items && s.items.length > 0) {
+    formItems = s.items.map(i => ({
+      productId: i.productId,
+      productName: i.productName,
+      sku: i.sku,
+      unit: i.unit,
+      quantity: i.quantity || 0,
+      grossWeight: i.grossWeight || 0,
+      unitPrice: i.unitPrice || 0
+    }));
+  } else if (isEdit) {
+    // Fetch items if not loaded
+    try {
+      const itemsRes = await api.get(`/api/shipments/${id}/items`);
+      formItems = (itemsRes.data || []).map(i => ({
+        productId: i.productId,
+        productName: i.productName,
+        sku: i.sku,
+        unit: i.unit,
+        quantity: i.quantity || 0,
+        grossWeight: i.grossWeight || 0,
+        unitPrice: i.unitPrice || 0
+      }));
+    } catch { formItems = []; }
+  } else {
+    formItems = [];
+  }
+
+  const currentType = s?.type || 'Import';
 
   const title = document.getElementById("modalTitle");
   const tabs = document.getElementById("modalTabs");
@@ -199,8 +237,8 @@ async function openShipmentForm(id) {
         <div class="form-group">
           <label class="form-label required">Loại Hình</label>
           <select id="sType" class="form-select">
-            <option value="Import" ${s?.type === 'Import' ? 'selected' : ''}>Nhập khẩu</option>
-            <option value="Export" ${s?.type === 'Export' ? 'selected' : ''}>Xuất khẩu</option>
+            <option value="Import" ${currentType === 'Import' ? 'selected' : ''}>📥 Nhập khẩu</option>
+            <option value="Export" ${currentType === 'Export' ? 'selected' : ''}>📤 Xuất khẩu</option>
           </select>
         </div>
         <div class="form-group">
@@ -210,15 +248,15 @@ async function openShipmentForm(id) {
       </div>
 
       <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label">Nhà Cung Cấp (Lô nhập)</label>
+        <div class="form-group" id="supplierGroup" style="${currentType === 'Export' ? 'display:none;' : ''}">
+          <label class="form-label">🏭 Nhà Cung Cấp <span style="color:#0369a1; font-size:11px;">(Lô nhập)</span></label>
           <select id="sSupplierId" class="form-select">
             <option value="">-- Chọn Nhà Cung Cấp --</option>
             ${suppliers.map(sup => `<option value="${sup.id}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country})</option>`).join('')}
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Khách Hàng (Lô xuất)</label>
+        <div class="form-group" id="customerGroup" style="${currentType === 'Import' ? 'display:none;' : ''}">
+          <label class="form-label">🤝 Khách Hàng <span style="color:#15803d; font-size:11px;">(Lô xuất)</span></label>
           <select id="sCustomerId" class="form-select">
             <option value="">-- Chọn Khách Hàng --</option>
             ${customers.map(c => `<option value="${c.id}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`).join('')}
@@ -249,16 +287,16 @@ async function openShipmentForm(id) {
 
       <div class="form-row-3">
         <div class="form-group">
-          <label class="form-label">Tổng Số Lượng (kg/cuộn)</label>
-          <input type="number" step="0.01" id="sQty" class="form-input" value="${s?.totalQuantity || ''}">
+          <label class="form-label required">Tổng số lượng NW (kg)</label>
+          <input type="number" step="0.01" id="sQty" class="form-input" required value="${s?.totalQuantity || ''}">
         </div>
         <div class="form-group">
-          <label class="form-label">Tổng Trọng Lượng Gross (kg)</label>
+          <label class="form-label">Tổng trọng lượng GW (kg)</label>
           <input type="number" step="0.01" id="sGrossWeight" class="form-input" value="${s?.totalGrossWeight || ''}">
         </div>
         <div class="form-group">
-          <label class="form-label">Tổng Giá Trị Hàng ($ USD)</label>
-          <input type="number" step="0.01" id="sValue" class="form-input" value="${s?.totalValue || ''}">
+          <label class="form-label required">Tổng trị giá (USD)</label>
+          <input type="number" step="0.01" id="sValue" class="form-input" required value="${s?.totalValue || ''}">
         </div>
       </div>
 
@@ -266,8 +304,105 @@ async function openShipmentForm(id) {
         <label class="form-label">Ghi Chú</label>
         <textarea id="sNotes" class="form-textarea" rows="2">${s?.notes || ''}</textarea>
       </div>
+
+      <!-- ===== DANH SÁCH SẢN PHẨM ===== -->
+      <div style="margin-top: 18px; border-top: 2px solid var(--border-color); padding-top: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <label class="form-label" style="margin: 0; font-size: 14px; font-weight: 700;">
+            📦 Danh Sách Sản Phẩm Trong Lô
+          </label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="productPickerSelect" class="form-select" style="width: 320px; font-size: 13px;">
+              <option value="">-- Chọn sản phẩm để thêm --</option>
+              ${allProducts.map(p => `<option value="${p.id}" data-name="${escapeHtml(p.name)}" data-sku="${escapeHtml(p.sku)}" data-unit="${escapeHtml(p.unit || '')}">${p.sku} - ${p.name}${p.unit ? ' (' + p.unit + ')' : ''}</option>`).join('')}
+            </select>
+            <button type="button" id="btnAddProduct" class="btn btn-primary" style="white-space: nowrap; font-size: 13px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm
+            </button>
+          </div>
+        </div>
+        <div id="shipmentItemsContainer">
+          ${renderFormItemsTable()}
+        </div>
+      </div>
     </form>
   `;
+
+  // Wire up type change to show/hide supplier/customer
+  document.getElementById("sType").addEventListener("change", function() {
+    const type = this.value;
+    const supplierGroup = document.getElementById("supplierGroup");
+    const customerGroup = document.getElementById("customerGroup");
+    if (type === 'Import') {
+      supplierGroup.style.display = '';
+      customerGroup.style.display = 'none';
+      document.getElementById("sCustomerId").value = '';
+    } else {
+      supplierGroup.style.display = 'none';
+      customerGroup.style.display = '';
+      document.getElementById("sSupplierId").value = '';
+    }
+  });
+
+  // Wire up add product button
+  document.getElementById("btnAddProduct").addEventListener("click", async () => {
+    const sel = document.getElementById("productPickerSelect");
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) {
+      showToast("Vui lòng chọn sản phẩm", "error");
+      return;
+    }
+    const pid = opt.value;
+    const already = formItems.find(i => i.productId === pid);
+    if (already) {
+      showToast("Sản phẩm này đã được thêm vào lô hàng", "error");
+      return;
+    }
+    formItems.push({
+      productId: pid,
+      productName: opt.getAttribute("data-name"),
+      sku: opt.getAttribute("data-sku"),
+      unit: opt.getAttribute("data-unit"),
+      quantity: 0,
+      grossWeight: 0,
+      unitPrice: 0
+    });
+    sel.value = "";
+    refreshFormItemsTable();
+    updateTotalFields();
+  });
+
+  // Wire up global remove/input handlers (delegated)
+  document.getElementById("shipmentItemsContainer").addEventListener("click", async (e) => {
+    const btn = e.target.closest(".btn-remove-item");
+    if (btn) {
+      const idx = parseInt(btn.getAttribute("data-idx"));
+      formItems.splice(idx, 1);
+      refreshFormItemsTable();
+      updateTotalFields();
+    }
+  });
+
+  document.getElementById("shipmentItemsContainer").addEventListener("input", (e) => {
+    const inp = e.target;
+    if (inp.classList.contains("item-qty")) {
+      const idx = parseInt(inp.getAttribute("data-idx"));
+      formItems[idx].quantity = parseFloat(inp.value) || 0;
+      updateItemTotal(idx);
+      updateTotalFields();
+    }
+    if (inp.classList.contains("item-gw")) {
+      const idx = parseInt(inp.getAttribute("data-idx"));
+      formItems[idx].grossWeight = parseFloat(inp.value) || 0;
+      updateTotalFields();
+    }
+    if (inp.classList.contains("item-price")) {
+      const idx = parseInt(inp.getAttribute("data-idx"));
+      formItems[idx].unitPrice = parseFloat(inp.value) || 0;
+      updateItemTotal(idx);
+      updateTotalFields();
+    }
+  });
 
   footer.innerHTML = `
     <button type="button" class="btn btn-default" onclick="window.closeModal()">Hủy bỏ</button>
@@ -285,8 +420,8 @@ async function openShipmentForm(id) {
       shipmentCode,
       type: document.getElementById("sType").value,
       expectedDate: document.getElementById("sExpectedDate").value ? new Date(document.getElementById("sExpectedDate").value).toISOString() : null,
-      supplierId: document.getElementById("sSupplierId").value || null,
-      customerId: document.getElementById("sCustomerId").value || null,
+      supplierId: document.getElementById("sSupplierId")?.value || null,
+      customerId: document.getElementById("sCustomerId")?.value || null,
       portOfLoading: document.getElementById("sPol").value.trim() || null,
       portOfDischarge: document.getElementById("sPod").value.trim() || null,
       deliveryTerm: document.getElementById("sTerm").value,
@@ -298,13 +433,33 @@ async function openShipmentForm(id) {
     };
 
     try {
+      let savedId = id;
       if (isEdit) {
         await api.put(`/api/shipments/${s.id}`, payload);
         showToast("Cập nhật lô hàng thành công!");
       } else {
-        await api.post("/api/shipments", payload);
+        const createRes = await api.post("/api/shipments", payload);
+        savedId = createRes.data?.id;
         showToast("Tạo lô hàng mới thành công!");
       }
+
+      // Save items nếu có
+      if (savedId && formItems.length > 0) {
+        const itemsPayload = {
+          items: formItems.map(i => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            netWeight: i.quantity,
+            grossWeight: i.grossWeight,
+            unitPrice: i.unitPrice
+          }))
+        };
+        await api.post(`/api/shipments/${savedId}/items`, itemsPayload);
+      } else if (savedId && formItems.length === 0 && isEdit) {
+        // Xóa hết items nếu người dùng xóa hết
+        await api.post(`/api/shipments/${savedId}/items`, { items: [] });
+      }
+
       window.closeModal();
       await loadShipmentsData();
     } catch (err) {
@@ -315,6 +470,99 @@ async function openShipmentForm(id) {
   window.openModal();
 }
 
+// ==================== HELPERS FOR ITEMS TABLE ====================
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderFormItemsTable() {
+  if (formItems.length === 0) {
+    return `
+      <div style="text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 13px; border: 1.5px dashed var(--border-color); border-radius: 8px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block; margin: 0 auto 8px;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        Chưa có sản phẩm nào. Hãy chọn sản phẩm từ danh sách bên trên.
+      </div>`;
+  }
+
+  const grandTotal = formItems.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0);
+
+  return `
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead>
+        <tr style="background:var(--bg-surface-alt);">
+          <th style="width:40px;">#</th>
+          <th>Sản Phẩm (SKU)</th>
+          <th style="width:80px;">Đơn vị</th>
+          <th style="width:120px;">Số Lượng NW</th>
+          <th style="width:120px;">Trọng lượng GW</th>
+          <th style="width:120px;">Đơn Giá (USD)</th>
+          <th style="width:140px;">Thành Tiền</th>
+          <th style="width:50px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${formItems.map((item, idx) => `
+          <tr>
+            <td style="font-size:12px; color:var(--text-muted);">${idx + 1}</td>
+            <td>
+              <div style="font-weight:600; font-size:13px;">${escapeHtml(item.productName)}</div>
+              <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(item.sku)}</div>
+            </td>
+            <td>${escapeHtml(item.unit)}</td>
+            <td><input type="number" step="0.01" class="form-input item-qty" data-idx="${idx}" value="${item.quantity}" style="width:100px;"></td>
+            <td><input type="number" step="0.01" class="form-input item-gw" data-idx="${idx}" value="${item.grossWeight || ''}" style="width:100px;"></td>
+            <td><input type="number" step="0.0001" class="form-input item-price" data-idx="${idx}" value="${item.unitPrice}" style="width:100px;"></td>
+            <td style="font-weight:700; color:var(--misa-blue);">$<span id="item-total-${idx}">${Number((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></td>
+            <td><button type="button" class="btn btn-default btn-sm btn-remove-item" data-idx="${idx}" style="color:var(--amis-red); border-color:#fecaca;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="border-top: 2px solid var(--border-color); background: var(--bg-hover, #f8fafc);">
+          <td colspan="6" style="padding: 8px; text-align:right; font-weight:700; font-size:13px;">Tổng cộng:</td>
+          <td id="grandTotal" style="padding: 8px; text-align:right; font-weight:700; color:var(--amis-blue); font-size:14px;">$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+}
+
+function refreshFormItemsTable() {
+  const container = document.getElementById("shipmentItemsContainer");
+  if (container) container.innerHTML = renderFormItemsTable();
+}
+
+function updateItemTotal(idx) {
+  const item = formItems[idx];
+  const t = (item.quantity || 0) * (item.unitPrice || 0);
+  const el = document.getElementById(`item-total-${idx}`);
+  if (el) el.textContent = Number(t).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+  const grandTotal = formItems.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0);
+  const gtCell = document.getElementById("grandTotal");
+  if (gtCell) gtCell.textContent = `$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+}
+
+function updateTotalFields() {
+  let totalQty = 0;
+  let totalGw = 0;
+  let totalVal = 0;
+  for (const item of formItems) {
+    totalQty += (item.quantity || 0);
+    totalGw += (item.grossWeight || 0);
+    totalVal += (item.quantity || 0) * (item.unitPrice || 0);
+  }
+  const qtyEl = document.getElementById("sQty");
+  const gwEl = document.getElementById("sGrossWeight");
+  const valEl = document.getElementById("sValue");
+  if (qtyEl) qtyEl.value = totalQty > 0 ? totalQty : '';
+  if (gwEl) gwEl.value = totalGw > 0 ? totalGw : '';
+  if (valEl) valEl.value = totalVal > 0 ? totalVal : '';
+}
+
+// ==================== STATUS MODAL ====================
 async function openStatusModal(id) {
   const s = shipmentsList.find(x => x.id === id);
   const title = document.getElementById("modalTitle");
@@ -367,11 +615,19 @@ async function openStatusModal(id) {
 
 async function deleteShipment(id) {
   const s = shipmentsList.find(x => x.id === id);
-  if (!confirm(`Bạn có chắc chắn muốn xóa lô hàng [${s?.shipmentCode || id}] không?`)) return;
+  const confirmed = await showConfirm({
+    title: 'Xóa Lô Hàng',
+    message: 'Bạn có chắc chắn muốn xóa lô hàng này không? Hành động này không thể hoàn tác.',
+    highlight: s?.shipmentCode || id,
+    type: 'danger',
+    confirmText: '✔ Xóa',
+    cancelText: 'Hủy bỏ'
+  });
+  if (!confirmed) return;
 
   try {
     await api.delete(`/api/shipments/${id}`);
-    showToast("Đã xóa lô hàng thành công!");
+    showToast("Đã xóa lô hàng thành công!", "success", `Xóa ${s?.shipmentCode || ''}`);
     selectedId = null;
     await loadShipmentsData();
   } catch (err) {

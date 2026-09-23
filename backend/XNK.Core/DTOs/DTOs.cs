@@ -202,6 +202,37 @@ public class ShipmentDto
     public int InvoiceCount { get; set; }
     public int DocumentCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public List<ShipmentItemDto> Items { get; set; } = new();
+}
+
+public class ShipmentItemDto
+{
+    public Guid Id { get; set; }
+    public Guid ProductId { get; set; }
+    public string? ProductName { get; set; }
+    public string? SKU { get; set; }
+    public string? Unit { get; set; }
+    public decimal? Quantity { get; set; }
+    public decimal? UnitPrice { get; set; }
+    public decimal? TotalValue { get; set; }
+    public decimal? GrossWeight { get; set; }
+    public decimal? NetWeight { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class CreateShipmentItemDto
+{
+    public Guid ProductId { get; set; }
+    public decimal? Quantity { get; set; }
+    public decimal? UnitPrice { get; set; }
+    public decimal? GrossWeight { get; set; }
+    public decimal? NetWeight { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class UpsertShipmentItemsDto
+{
+    public List<CreateShipmentItemDto> Items { get; set; } = new();
 }
 
 public class CreateShipmentDto

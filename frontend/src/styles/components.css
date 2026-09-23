@@ -175,7 +175,7 @@ textarea.form-control {
   border-radius: 6px;
   box-shadow: var(--shadow-dropdown);
   width: 100%;
-  max-width: 680px;
+  max-width: 1020px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -230,6 +230,16 @@ textarea.form-control {
   padding: 18px;
   overflow-y: auto;
   flex: 1;
+}
+
+#modalFooter {
+  padding: 12px 18px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 /* Toast Container */
@@ -452,4 +462,216 @@ textarea.form-control {
 .modal-tab-btn.active {
   color: var(--amis-blue);
   border-bottom-color: var(--amis-blue);
+}
+
+/* =========================================================
+   CONFIRM DIALOG (Custom - thay thế window.confirm)
+   ========================================================= */
+
+#xnkConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+#xnkConfirmOverlay.active {
+  display: flex;
+  animation: confirmOverlayIn 0.18s ease-out;
+}
+
+@keyframes confirmOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.xnk-confirm-dialog {
+  background: var(--bg-surface);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22), 0 8px 20px rgba(0, 0, 0, 0.12);
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+  animation: confirmDialogIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes confirmDialogIn {
+  from { opacity: 0; transform: scale(0.88) translateY(-12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.xnk-confirm-icon-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 28px 24px 0;
+}
+
+.xnk-confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xnk-confirm-icon.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.xnk-confirm-icon.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.xnk-confirm-icon.info {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.xnk-confirm-body {
+  padding: 16px 24px 20px;
+  text-align: center;
+}
+
+.xnk-confirm-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 8px;
+}
+
+.xnk-confirm-message {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.xnk-confirm-highlight {
+  display: inline-block;
+  background: #fef2f2;
+  color: #dc2626;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.xnk-confirm-footer {
+  display: flex;
+  gap: 10px;
+  padding: 0 24px 24px;
+  justify-content: center;
+}
+
+.xnk-confirm-footer .btn {
+  flex: 1;
+  max-width: 160px;
+  padding: 9px 18px;
+  font-size: 13.5px;
+  border-radius: 8px;
+}
+
+/* Toast - premium version */
+#toastShelf {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #94a3b8;
+  min-width: 260px;
+  max-width: 380px;
+  animation: toastSlideIn 0.28s cubic-bezier(0.34, 1.3, 0.64, 1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(60px) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.toast-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.toast-success {
+  border-left-color: #22c55e;
+}
+.toast-success .toast-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.toast-error {
+  border-left-color: #ef4444;
+}
+.toast-error .toast-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.toast-info {
+  border-left-color: #3b82f6;
+}
+.toast-info .toast-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.toast-warning {
+  border-left-color: #f59e0b;
+}
+.toast-warning .toast-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 1px;
+}
+
+.toast-msg {
+  font-size: 12.5px;
+  color: var(--text-muted);
 }
