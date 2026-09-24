@@ -43,7 +43,7 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
 
     public async Task<bool> SkuExistsAsync(string sku, Guid? excludeId = null)
     {
-        var query = _dbSet.Where(p => p.SKU == sku);
+        var query = _dbSet.IgnoreQueryFilters().Where(p => p.SKU == sku);
         if (excludeId.HasValue) query = query.Where(p => p.Id != excludeId.Value);
         return await query.AnyAsync();
     }
@@ -220,7 +220,7 @@ public class ShipmentRepository : GenericRepository<Shipment>, IShipmentReposito
 
     public async Task<bool> CodeExistsAsync(string code, Guid? excludeId = null)
     {
-        var query = _dbSet.Where(s => s.ShipmentCode == code);
+        var query = _dbSet.IgnoreQueryFilters().Where(s => s.ShipmentCode == code);
         if (excludeId.HasValue) query = query.Where(s => s.Id != excludeId.Value);
         return await query.AnyAsync();
     }
@@ -248,9 +248,9 @@ public class InvoiceRepository : GenericRepository<Invoice>, IInvoiceRepository
                        .Include(i => i.Shipment)
                        .FirstOrDefaultAsync(i => i.Id == id);
 
-    public async Task<bool> NumberExistsAsync(string number, Guid? excludeId = null)
+    public async Task<bool> NumberExistsAsync(string number, XNK.Core.Enums.InvoiceType type, Guid? excludeId = null)
     {
-        var query = _dbSet.Where(i => i.InvoiceNumber == number);
+        var query = _dbSet.IgnoreQueryFilters().Where(i => i.InvoiceNumber == number && i.Type == type);
         if (excludeId.HasValue) query = query.Where(i => i.Id != excludeId.Value);
         return await query.AnyAsync();
     }

@@ -44,7 +44,7 @@ public interface IInvoiceRepository : IGenericRepository<Invoice>
 {
     Task<PagedResultDto<Invoice>> GetPagedAsync(string? search, Guid? shipmentId, int page, int pageSize);
     Task<Invoice?> GetWithItemsAsync(Guid id);
-    Task<bool> NumberExistsAsync(string number, Guid? excludeId = null);
+    Task<bool> NumberExistsAsync(string number, XNK.Core.Enums.InvoiceType type, Guid? excludeId = null);
 }
 
 public interface IPackingListRepository : IGenericRepository<PackingList>

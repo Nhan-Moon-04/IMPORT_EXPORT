@@ -1,5 +1,5 @@
 // frontend/src/features/invoices/invoices.js
-import { api, toast, openModal, closeModal } from '../../core/api.js';
+import { api, toast, openModal, closeModal, API_BASE, getToken } from '../../core/api.js';
 
 let currentInvoices = [];
 let currentDocType = 'Invoice';
@@ -117,16 +117,19 @@ function renderInvoiceRows(items) {
   tbody.innerHTML = items.map(inv => `
     <tr>
       <td style="text-align:center;"><input type="checkbox" value="${inv.id}"></td>
-      <td style="font-weight:700; color:var(--amis-blue);">${inv.invoiceNumber}</td>
+      <td style="font-weight:700; color:var(--amis-green);">${inv.invoiceNumber}</td>
       <td>${inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('vi-VN') : '---'}</td>
       <td><span class="status-chip chip-transit">${inv.type || 'Commercial'}</span></td>
       <td style="font-weight:600;">${inv.shipmentCode || '---'}</td>
       <td style="text-align:center;">${inv.itemCount || (inv.items ? inv.items.length : 0)}</td>
-      <td style="font-weight:700; color:var(--amis-green);">${Number(inv.totalAmount || 0).toLocaleString()}</td>
+      <td style="font-weight:700; color:var(--amis-green);">${Number(inv.totalValue || 0).toLocaleString()}</td>
       <td><strong>${inv.currency || 'USD'}</strong></td>
       <td style="text-align:center;">
         <button class="btn btn-default btn-sm btn-view-invoice" data-id="${inv.id}" style="padding:4px 8px; font-size:11px; margin-right:4px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Xem
+        </button>
+        <button class="btn btn-default btn-sm btn-download-doc" data-id="${inv.id}" style="padding:4px 8px; font-size:11px; margin-right:4px;" title="Tải file đính kèm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Tải File
         </button>
         <button class="btn btn-default btn-sm btn-del-invoice" data-id="${inv.id}" data-num="${inv.invoiceNumber}" style="padding:4px 8px; font-size:11px; color: var(--amis-red);">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Xóa
@@ -137,6 +140,10 @@ function renderInvoiceRows(items) {
 
   tbody.querySelectorAll('.btn-view-invoice').forEach(b => {
     b.addEventListener('click', () => viewInvoiceDetail(b.getAttribute('data-id')));
+  });
+
+  tbody.querySelectorAll('.btn-download-doc').forEach(b => {
+    b.addEventListener('click', () => downloadInvoiceDoc(b.getAttribute('data-id')));
   });
 
   tbody.querySelectorAll('.btn-del-invoice').forEach(b => {
@@ -202,7 +209,7 @@ async function viewInvoiceDetail(id) {
             <div style="display:flex; justify-content:space-between;"><span>Chiết Khấu:</span> <span>-$${Number(inv.discount || 0).toLocaleString()}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>Phí Khác:</span> <span>+$${Number(inv.otherCharges || 0).toLocaleString()}</span></div>
             <div style="display:flex; justify-content:space-between; font-size:15px; border-top:1px solid #ccc; padding-top:4px; color:var(--amis-green);">
-              <strong>TỔNG CỘNG:</strong> <strong>$${Number(inv.totalAmount || 0).toLocaleString()} ${inv.currency || 'USD'}</strong>
+              <strong>TỔNG CỘNG:</strong> <strong>$${Number(inv.totalValue || 0).toLocaleString()} ${inv.currency || 'USD'}</strong>
             </div>
           </div>
         </div>
@@ -234,15 +241,15 @@ async function openCreateInvoiceModal() {
     console.error(err);
   }
 
-  const shipmentOpts = shipments.map(s => `<option value="${s.id}">${s.code} - ${s.blNumber || s.supplierName || ''}</option>`).join('');
-  const productOpts = products.map(p => `<option value="${p.id}" data-code="${p.code}" data-price="${p.standardPrice || 2.5}">${p.code} - ${p.name}</option>`).join('');
+  const shipmentOpts = shipments.map(s => `<option value="${s.id}">${s.shipmentCode} - ${s.supplierName || s.customerName || ''}</option>`).join('');
+  const productOpts = products.map(p => `<option value="${p.id}" data-code="${p.sku}" data-price="${p.standardPrice || 2.5}">${p.sku} - ${p.name}</option>`).join('');
 
   const content = `
     <form id="create-invoice-form">
       <div class="form-row-2">
         <div class="form-group">
           <label class="form-label required">Số ${currentDocType === 'PackingList' ? 'Packing List' : 'Invoice'}</label>
-          <input type="text" id="inv-num" class="form-input" required placeholder="${currentDocType === 'PackingList' ? 'VD: PL-2026-0889' : 'VD: INV-2026-0889'}" value="${currentDocType === 'PackingList' ? 'PL' : 'INV'}-${Date.now().toString().slice(-6)}">
+          <input type="text" id="inv-num" class="form-input" required placeholder="${currentDocType === 'PackingList' ? 'VD: PL-2026-0889' : 'VD: INV-2026-0889'}" value="">
         </div>
         <div class="form-group">
           <label class="form-label required">Ngày Lập</label>
@@ -270,35 +277,30 @@ async function openCreateInvoiceModal() {
         </div>
       </div>
 
-      <div style="margin-top:16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-        <label style="font-weight:600; font-size:13px;">Chi Tiết Mặt Hàng Sợi</label>
-        <button type="button" class="btn btn-default" id="btn-add-inv-row" style="padding:4px 8px; font-size:11px;">+ Thêm Dòng</button>
+      <div id="inv-items-info" style="margin-top:16px; margin-bottom:12px; font-size:13px; color:var(--text-muted);">
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600; color:var(--text-color);">Tài liệu đính kèm (PDF, Hình ảnh...)</label>
+          <input type="file" id="inv-file" class="form-input">
+        </div>
+        
+        <div style="margin-top:16px; margin-bottom:8px;">
+          <label style="font-weight:600; font-size:13px; color:var(--text-color);">Chi Tiết Sản Phẩm (Tự động lấy từ lô hàng)</label>
+        </div>
+        <table class="misa-table" style="margin-bottom:12px;">
+          <thead>
+            <tr>
+              <th>Mặt Hàng</th>
+              <th style="width:110px;">Net Weight</th>
+              <th style="width:110px;">Gross Weight</th>
+              <th style="width:100px;">Đơn Giá ($)</th>
+              <th style="width:100px;">Thành Tiền ($)</th>
+            </tr>
+          </thead>
+          <tbody id="inv-items-body">
+            <tr><td colspan="5" style="text-align:center; color:#999; font-style:italic; padding:20px;">Vui lòng chọn lô hàng...</td></tr>
+          </tbody>
+        </table>
       </div>
-
-      <table class="misa-table" style="margin-bottom:12px;">
-        <thead>
-          <tr>
-            <th>Mặt Hàng Sợi</th>
-            <th style="width:90px;">Số Lượng (KG)</th>
-            <th style="width:70px;">ĐVT</th>
-            <th style="width:100px;">Đơn Giá ($)</th>
-            <th style="width:40px;"></th>
-          </tr>
-        </thead>
-        <tbody id="inv-items-body">
-          <tr>
-            <td>
-              <select class="form-select inv-item-prod" required>
-                ${productOpts}
-              </select>
-            </td>
-            <td><input type="number" class="form-input inv-item-qty" value="1000" min="1" required></td>
-            <td><input type="text" class="form-input inv-item-unit" value="KG"></td>
-            <td><input type="number" step="0.01" class="form-input inv-item-price" value="2.50" required></td>
-            <td style="text-align:center;"><button type="button" class="btn btn-default btn-remove-row" style="padding:2px 6px; color: var(--amis-red);">×</button></td>
-          </tr>
-        </tbody>
-      </table>
 
       <div class="modal-footer" style="padding:16px 0 0; margin-top:16px; border-top:1px solid var(--amis-border); display:flex; justify-content:flex-end; gap:8px;">
         <button type="button" class="btn btn-default" id="btn-cancel-inv">Hủy Bỏ</button>
@@ -311,46 +313,62 @@ async function openCreateInvoiceModal() {
 
   document.getElementById('btn-cancel-inv').addEventListener('click', closeModal);
 
-  document.getElementById('btn-add-inv-row').addEventListener('click', () => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><select class="form-select inv-item-prod" required>${productOpts}</select></td>
-      <td><input type="number" class="form-input inv-item-qty" value="1000" min="1" required></td>
-      <td><input type="text" class="form-input inv-item-unit" value="KG"></td>
-      <td><input type="number" step="0.01" class="form-input inv-item-price" value="2.50" required></td>
-      <td style="text-align:center;"><button type="button" class="btn btn-default btn-remove-row" style="padding:2px 6px; color: var(--amis-red);">×</button></td>
-    `;
-    tr.querySelector('.btn-remove-row').addEventListener('click', () => tr.remove());
-    document.getElementById('inv-items-body').appendChild(tr);
-  });
+  // Event khi đổi lô hàng sẽ load thông tin sản phẩm
+  document.getElementById('inv-shipment').addEventListener('change', async (e) => {
+    const shipmentId = e.target.value;
+    const tbody = document.getElementById('inv-items-body');
+    if (!shipmentId) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999; font-style:italic; padding:20px;">Vui lòng chọn lô hàng...</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Đang tải dữ liệu...</td></tr>';
+    try {
+      const itemsRes = await api.get(`/api/shipments/${shipmentId}/items`);
+      const shipmentItems = itemsRes.data?.items || itemsRes.data || [];
+      if (shipmentItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999; font-style:italic; padding:20px;">Lô hàng không có sản phẩm nào.</td></tr>';
+        return;
+      }
 
-  document.querySelectorAll('.btn-remove-row').forEach(b => {
-    b.addEventListener('click', (e) => e.target.closest('tr').remove());
+      tbody.innerHTML = shipmentItems.map(si => {
+        const qty = parseFloat(si.quantity || 0);
+        const gross = parseFloat(si.grossWeight || 0);
+        const price = parseFloat(si.unitPrice || 0);
+        const total = qty * price;
+        return `
+          <tr data-productid="${si.productId}" data-productname="${si.productName || ''}" data-sku="${si.sku || ''}" data-qty="${qty}" data-unit="${si.unit || 'KG'}" data-price="${price}">
+            <td>${si.sku} - ${si.productName}</td>
+            <td style="text-align:right;">${qty.toLocaleString()} ${si.unit || 'KG'}</td>
+            <td style="text-align:right;">${gross.toLocaleString()} ${si.unit || 'KG'}</td>
+            <td style="text-align:right;">${price.toLocaleString()}</td>
+            <td style="text-align:right; font-weight:bold;">${total.toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+    }
   });
 
   document.getElementById('create-invoice-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const rows = document.querySelectorAll('#inv-items-body tr');
-    const items = [];
-    rows.forEach(r => {
-      const prodSelect = r.querySelector('.inv-item-prod');
-      const prodId = prodSelect.value;
-      const prodCode = prodSelect.options[prodSelect.selectedIndex]?.getAttribute('data-code') || '';
-      const qty = parseFloat(r.querySelector('.inv-item-qty').value) || 0;
-      const unit = r.querySelector('.inv-item-unit').value || 'KG';
-      const price = parseFloat(r.querySelector('.inv-item-price').value) || 0;
+    const tbodyRows = document.querySelectorAll('#inv-items-body tr[data-productid]');
+    let items = [];
 
+    tbodyRows.forEach(r => {
       items.push({
-        productId: prodId,
-        description: prodCode,
-        quantity: qty,
-        unit: unit,
-        unitPrice: price
+        productId: r.getAttribute('data-productid'),
+        productName: r.getAttribute('data-productname'),
+        productCode: r.getAttribute('data-sku'),
+        description: r.getAttribute('data-sku'),
+        quantity: parseFloat(r.getAttribute('data-qty')),
+        unit: r.getAttribute('data-unit'),
+        unitPrice: parseFloat(r.getAttribute('data-price'))
       });
     });
-
     if (items.length === 0) {
-      toast('Vui lòng thêm ít nhất một mặt hàng', 'warning');
+      toast('Lô hàng không có sản phẩm nào, vui lòng chọn lại hoặc thêm sản phẩm vào lô hàng trước.', 'warning');
       return;
     }
 
@@ -364,7 +382,22 @@ async function openCreateInvoiceModal() {
     };
 
     try {
-      await api.post('/api/invoices', payload);
+      const createRes = await api.post('/api/invoices', payload);
+      const invoiceId = createRes?.data?.id;
+
+      // Xử lý upload file nếu có
+      const fileInput = document.getElementById('inv-file');
+      if (fileInput && fileInput.files.length > 0 && invoiceId) {
+        const formData = new FormData();
+        formData.append("File", fileInput.files[0]);
+        formData.append("Category", "Invoice");
+        formData.append("EntityType", "Invoice");
+        formData.append("EntityId", invoiceId);
+        if (payload.shipmentId) formData.append("ShipmentId", payload.shipmentId);
+
+        await api.upload('/api/documents/upload', formData);
+      }
+
       toast('Tạo Invoice thành công!', 'success');
       closeModal();
       await loadInvoices();
@@ -372,6 +405,40 @@ async function openCreateInvoiceModal() {
       toast(`Lỗi: ${err.message}`, 'error');
     }
   });
+}
+
+// Function tải file doc invoice
+async function downloadInvoiceDoc(invoiceId) {
+  try {
+    const res = await api.get(`/api/documents?entityType=Invoice&entityId=${invoiceId}`);
+    const docs = res.data?.items || res.data || [];
+    if (docs.length === 0) {
+      toast('Không có file nào được đính kèm cho hoá đơn này', 'info');
+      return;
+    }
+    const doc = docs[0];
+    
+    // Gọi API tải file (cần token)
+    const token = getToken();
+    const downloadRes = await fetch(`${API_BASE}/api/documents/${doc.id}/download`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!downloadRes.ok) throw new Error('Không thể tải file');
+    
+    const blob = await downloadRes.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.originalFileName || doc.fileName || 'Invoice_File';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    toast('Đã tải file thành công!', 'success');
+  } catch (err) {
+    toast(`Lỗi: ${err.message}`, 'error');
+  }
 }
 
 function confirmDeleteInvoice(id, num) {

@@ -39,13 +39,15 @@ public class InvoicesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateInvoiceDto dto)
     {
-        if (await _uow.Invoices.NumberExistsAsync(dto.InvoiceNumber))
+        var it = Enum.TryParse<InvoiceType>(dto.Type, true, out var parsedType) ? parsedType : InvoiceType.CommercialInvoice;
+
+        if (await _uow.Invoices.NumberExistsAsync(dto.InvoiceNumber, it))
             return BadRequest(ApiResponse<object>.Error("Số Invoice đã tồn tại"));
 
         var entity = new Invoice
         {
             InvoiceNumber = dto.InvoiceNumber, InvoiceDate = dto.InvoiceDate,
-            Type = Enum.TryParse<InvoiceType>(dto.Type, true, out var it) ? it : InvoiceType.CommercialInvoice,
+            Type = it,
             PaymentTerms = dto.PaymentTerms, Currency = dto.Currency,
             Discount = dto.Discount, OtherCharges = dto.OtherCharges, Notes = dto.Notes,
             ShipmentId = dto.ShipmentId, CreatedBy = User.Identity?.Name

@@ -25,7 +25,8 @@ public enum InvoiceType
     CommercialInvoice = 0,
     ProformaInvoice = 1,
     DebitNote = 2,
-    CreditNote = 3
+    CreditNote = 3,
+    PackingList = 4
 }
 
 public enum PaymentStatus
