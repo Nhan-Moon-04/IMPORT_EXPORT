@@ -1,7 +1,7 @@
 /**
  * Products Feature Module - Full CRUD & Yarn Specifications & Trade History
  */
-import { api, showToast } from "../../core/api.js";
+import { api, showToast, showConfirm } from "../../core/api.js";
 
 let productsList = [];
 let selectedId = null;
@@ -40,7 +40,7 @@ export async function renderProducts(container) {
         <table class="misa-table" id="productsTable">
           <thead>
             <tr>
-              <th style="width: 40px; text-align: center;"><input type="checkbox" id="checkAllProducts"></th>
+              <th style="width: 32px; min-width: 32px; padding: 0; text-align: center;"><input type="checkbox" id="checkAllProducts" style="margin: 0; cursor: pointer;"></th>
               <th>Mã SKU</th>
               <th>Tên Hàng Hóa</th>
               <th>Quy Cách Sợi (Yarn Spec)</th>
@@ -96,7 +96,7 @@ function renderProductsTable(items) {
     const specStr = s ? `${s.yarnType || ''} ${s.denierCount || ''}/${s.filamentCount ? s.filamentCount + 'F' : ''} ${s.sDorTBR || ''}` : '-';
     return `
       <tr data-id="${p.id}" class="${selectedId === p.id ? 'selected' : ''}">
-        <td style="text-align: center;"><input type="checkbox" class="row-checkbox" value="${p.id}" ${selectedId === p.id ? 'checked' : ''}></td>
+        <td style="width: 32px; min-width: 32px; padding: 0; text-align: center;"><input type="checkbox" class="row-checkbox" value="${p.id}" ${selectedId === p.id ? 'checked' : ''} style="margin: 0; cursor: pointer;"></td>
         <td><strong>${p.sku}</strong></td>
         <td>${p.name}</td>
         <td><span style="color: var(--misa-blue); font-weight: 600;">${specStr}</span></td>
@@ -187,6 +187,8 @@ async function openProductForm(id) {
 
   const isEdit = !!p;
   const spec = p?.specification || {};
+
+  window.openModal();
 
   const overlay = document.getElementById("modalOverlay");
   const title = document.getElementById("modalTitle");
@@ -384,14 +386,19 @@ async function openProductForm(id) {
       // Handled
     }
   };
-
-  window.openModal();
 }
 
 // ==================== DELETE PRODUCT ====================
 async function deleteProduct(id) {
   const p = productsList.find(x => x.id === id);
-  if (!confirm(`Bạn có chắc chắn muốn xóa mặt hàng [${p?.sku || id}] không?`)) return;
+  const confirmed = await showConfirm({
+    title: 'Xóa Sản Phẩm',
+    message: 'Bạn có chắc chắn muốn xóa mặt hàng này không?',
+    highlight: p?.sku || id,
+    type: 'danger',
+    confirmText: '✔ Xóa'
+  });
+  if (!confirmed) return;
 
   try {
     await api.delete(`/api/products/${id}`);
@@ -409,12 +416,14 @@ async function viewHistory(id) {
     const res = await api.get(`/api/products/${id}/history`);
     const h = res.data;
 
+    window.openModal();
+
     const title = document.getElementById("modalTitle");
     const tabs = document.getElementById("modalTabs");
     const body = document.getElementById("modalBody");
     const footer = document.getElementById("modalFooter");
 
-    tabs.style.display = "none";
+    if (tabs) tabs.style.display = "none";
     title.innerHTML = `📊 Lịch Sử Nhập/Xuất Hàng Hóa: <strong style="color: var(--misa-blue)">${h.sku}</strong> - ${h.productName}`;
 
     body.innerHTML = `
@@ -463,8 +472,6 @@ async function viewHistory(id) {
       <div></div>
       <button type="button" class="btn btn-default" onclick="window.closeModal()">Đóng</button>
     `;
-
-    window.openModal();
   } catch (err) {
     // Handled
   }

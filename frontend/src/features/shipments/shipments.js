@@ -232,12 +232,14 @@ async function openShipmentForm(id) {
 
   const currentType = s?.type || 'Import';
 
+  window.openModal();
+
   const title = document.getElementById("modalTitle");
   const tabs = document.getElementById("modalTabs");
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
 
-  tabs.style.display = "none";
+  if (tabs) tabs.style.display = "none";
   title.innerHTML = isEdit ? `✏️ Sửa Hồ Sơ Lô Hàng: <strong>${s.shipmentCode}</strong>` : `➕ Thêm Mới Hồ Sơ Lô Hàng XNK`;
 
   body.innerHTML = `
@@ -479,8 +481,6 @@ async function openShipmentForm(id) {
       // Handled
     }
   };
-
-  window.openModal();
 }
 
 // ==================== HELPERS FOR ITEMS TABLE ====================
@@ -578,12 +578,15 @@ function updateTotalFields() {
 // ==================== STATUS MODAL ====================
 async function openStatusModal(id) {
   const s = shipmentsList.find(x => x.id === id);
+
+  window.openModal();
+
   const title = document.getElementById("modalTitle");
   const tabs = document.getElementById("modalTabs");
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
 
-  tabs.style.display = "none";
+  if (tabs) tabs.style.display = "none";
   title.innerHTML = `🔄 Chuyển Trạng Thái: <strong>${s.shipmentCode}</strong>`;
 
   body.innerHTML = `
@@ -622,8 +625,6 @@ async function openStatusModal(id) {
       // Handled
     }
   };
-
-  window.openModal();
 }
 
 async function deleteShipment(id) {
