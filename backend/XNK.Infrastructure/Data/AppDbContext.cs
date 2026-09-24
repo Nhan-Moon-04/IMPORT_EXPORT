@@ -43,6 +43,11 @@ public class AppDbContext : DbContext
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
+    // Additional Tracking
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<Container> Containers => Set<Container>();
+    public DbSet<CustomsDeclaration> CustomsDeclarations => Set<CustomsDeclaration>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -56,6 +61,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PackingList>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Document>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Booking>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Container>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<CustomsDeclaration>().HasQueryFilter(e => !e.IsDeleted);
 
         // ========== User ==========
         modelBuilder.Entity<User>(entity =>
@@ -228,6 +236,38 @@ public class AppDbContext : DbContext
                   .HasForeignKey(e => e.ShipmentId)
                   .OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(e => new { e.EntityType, e.EntityId });
+        });
+
+        // ========== Booking ==========
+        modelBuilder.Entity<Booking>(entity =>
+        {
+            entity.HasIndex(e => e.BookingNumber).IsUnique();
+            entity.HasOne(e => e.Shipment)
+                  .WithMany(s => s.Bookings)
+                  .HasForeignKey(e => e.ShipmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ========== Container ==========
+        modelBuilder.Entity<Container>(entity =>
+        {
+            entity.HasIndex(e => e.ContainerNumber).IsUnique();
+            entity.HasOne(e => e.Shipment)
+                  .WithMany(s => s.Containers)
+                  .HasForeignKey(e => e.ShipmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.PayloadWeight).HasPrecision(18, 4);
+            entity.Property(e => e.TareWeight).HasPrecision(18, 4);
+        });
+
+        // ========== CustomsDeclaration ==========
+        modelBuilder.Entity<CustomsDeclaration>(entity =>
+        {
+            entity.HasIndex(e => e.DeclarationNumber).IsUnique();
+            entity.HasOne(e => e.Shipment)
+                  .WithMany(s => s.CustomsDeclarations)
+                  .HasForeignKey(e => e.ShipmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ========== AuditLog ==========

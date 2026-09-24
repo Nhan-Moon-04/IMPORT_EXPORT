@@ -136,6 +136,70 @@ public class SearchService : ISearchService
             results.AddRange(invoices);
         }
 
+        // 6. Bookings
+        if (string.IsNullOrEmpty(entityType) || entityType == "all" || entityType == "booking" || entityType == "bookings")
+        {
+            var bookings = await _db.Bookings
+                .Include(b => b.Shipment)
+                .Where(b => b.BookingNumber.ToLower().Contains(keyword) ||
+                            (b.ShippingLine != null && b.ShippingLine.ToLower().Contains(keyword)) ||
+                            (b.Vessel != null && b.Vessel.ToLower().Contains(keyword)))
+                .Take(15)
+                .Select(b => new SearchResultDto
+                {
+                    EntityType = "Booking",
+                    Id = b.Id,
+                    Title = $"Booking #{b.BookingNumber}",
+                    SubTitle = $"{b.ShippingLine} | {b.Vessel} V.{b.Voyage}",
+                    Description = $"Lô hàng: {b.Shipment.ShipmentCode} - ETD: {(b.ETD.HasValue ? b.ETD.Value.ToString("yyyy-MM-dd") : "N/A")}",
+                    Date = b.ETD ?? b.CreatedAt
+                })
+                .ToListAsync();
+            results.AddRange(bookings);
+        }
+
+        // 7. Containers
+        if (string.IsNullOrEmpty(entityType) || entityType == "all" || entityType == "container" || entityType == "containers")
+        {
+            var containers = await _db.Containers
+                .Include(c => c.Shipment)
+                .Where(c => c.ContainerNumber.ToLower().Contains(keyword) ||
+                            (c.SealNumber != null && c.SealNumber.ToLower().Contains(keyword)))
+                .Take(15)
+                .Select(c => new SearchResultDto
+                {
+                    EntityType = "Container",
+                    Id = c.Id,
+                    Title = $"Container #{c.ContainerNumber}",
+                    SubTitle = $"Seal: {c.SealNumber} | Loại: {c.ContainerType}",
+                    Description = $"Lô hàng: {c.Shipment.ShipmentCode}",
+                    Date = c.CreatedAt
+                })
+                .ToListAsync();
+            results.AddRange(containers);
+        }
+
+        // 8. CustomsDeclarations
+        if (string.IsNullOrEmpty(entityType) || entityType == "all" || entityType == "customsdeclaration" || entityType == "customsdeclarations")
+        {
+            var declarations = await _db.CustomsDeclarations
+                .Include(c => c.Shipment)
+                .Where(c => c.DeclarationNumber.ToLower().Contains(keyword) ||
+                            (c.CustomsBranch != null && c.CustomsBranch.ToLower().Contains(keyword)))
+                .Take(15)
+                .Select(c => new SearchResultDto
+                {
+                    EntityType = "CustomsDeclaration",
+                    Id = c.Id,
+                    Title = $"Tờ khai #{c.DeclarationNumber}",
+                    SubTitle = $"Loại: {c.DeclarationType} | Chi cục: {c.CustomsBranch}",
+                    Description = $"Lô hàng: {c.Shipment.ShipmentCode} - Ngày: {(c.DeclarationDate.HasValue ? c.DeclarationDate.Value.ToString("yyyy-MM-dd") : "N/A")}",
+                    Date = c.DeclarationDate ?? c.CreatedAt
+                })
+                .ToListAsync();
+            results.AddRange(declarations);
+        }
+
         return results.OrderByDescending(r => r.Date).ToList();
     }
 }

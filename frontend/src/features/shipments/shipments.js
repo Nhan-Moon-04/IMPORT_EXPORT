@@ -49,15 +49,14 @@ export async function renderShipments(container, filterType = 'All') {
           <thead>
             <tr>
               <th style="width: 40px; text-align:center;"><input type="checkbox"></th>
+              <th style="width: 40px; text-align:center;"></th> <!-- Expand button -->
               <th>Mã Lô Hàng</th>
               <th>Loại Hình</th>
               <th>Đối Tác (NCC / Khách)</th>
-              <th>Cảng Đi ➔ Cảng Đến</th>
-              <th>Điều Kiện (Incoterm)</th>
+              <th>Hành Trình</th>
               <th>Số Lượng (kg)</th>
               <th>Tổng Giá Trị</th>
               <th>Trạng Thái</th>
-              <th>Ngày Dự Kiến (ETA)</th>
               <th>Thao Tác</th>
             </tr>
           </thead>
@@ -104,19 +103,20 @@ function renderShipmentsTable(items) {
   }
 
   tbody.innerHTML = items.map(s => `
-    <tr data-id="${s.id}" class="${selectedId === s.id ? 'selected' : ''}">
+    <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}">
       <td style="text-align:center;"><input type="checkbox" class="row-checkbox" value="${s.id}" ${selectedId === s.id ? 'checked' : ''}></td>
+      <td style="text-align:center; cursor:pointer;" class="expand-btn" data-id="${s.id}">
+        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
+      </td>
       <td style="cursor:pointer;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
         <strong style="color:var(--amis-blue); text-decoration:underline;">${s.shipmentCode}</strong>
       </td>
       <td>${s.type === 'Import' ? '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">📥 Nhập khẩu</span>' : '<span class="status-chip chip-delivered" style="background:#dcfce7; color:#15803d;">📤 Xuất khẩu</span>'}</td>
       <td>${s.supplierName || s.customerName || '-'}</td>
       <td>${s.portOfLoading || '-'} ➔ ${s.portOfDischarge || '-'}</td>
-      <td><span class="status-chip chip-draft">${s.deliveryTerm || 'CIF'}</span></td>
       <td>${Number(s.totalQuantity || 0).toLocaleString()}</td>
       <td><strong>$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${s.currency || 'USD'}</strong></td>
       <td><span class="status-chip chip-warning">${s.status}</span></td>
-      <td>${s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '-'}</td>
       <td>
         <button class="btn btn-default btn-sm" onclick="window.appNavigateTo('shipment-detail', '${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
         <button class="btn btn-default btn-sm" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
@@ -124,13 +124,26 @@ function renderShipmentsTable(items) {
         <button class="btn btn-default btn-sm" style="color: var(--amis-red);" onclick="window.xnkDeleteShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
       </td>
     </tr>
+    <!-- Hidden Expandable Row -->
+    <tr id="expand-row-${s.id}" class="expand-row" style="display:none; background-color: #f8fafc; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+      <td colspan="10" style="padding: 0;">
+        <div class="expand-content" id="expand-content-${s.id}" style="padding: 16px;">
+          <!-- Detail content will be loaded here via API -->
+          <div style="text-align:center; padding: 20px; color: #64748b;">Đang tải chi tiết...</div>
+        </div>
+      </td>
+    </tr>
   `).join('');
 
   document.getElementById("shipmentPaginationText").textContent = `Tổng số: ${items.length} bản ghi`;
 
-  tbody.querySelectorAll("tr").forEach(tr => {
+  tbody.querySelectorAll(".shipment-main-row").forEach(tr => {
     tr.addEventListener("click", (e) => {
       if (e.target.tagName === "BUTTON") return;
+      if (e.target.closest('.expand-btn')) {
+        toggleExpandRow(tr.getAttribute("data-id"));
+        return;
+      }
       selectShipmentRow(tr.getAttribute("data-id"));
     });
   });
@@ -629,8 +642,131 @@ async function deleteShipment(id) {
     await api.delete(`/api/shipments/${id}`);
     showToast("Đã xóa lô hàng thành công!", "success", `Xóa ${s?.shipmentCode || ''}`);
     selectedId = null;
-    await loadShipmentsData();
+    await loadShipmentsData(currentShipmentFilter);
   } catch (err) {
     // Handled
   }
+}
+
+// -------------------------------------------------------------
+// EXPANDABLE ROW LOGIC
+// -------------------------------------------------------------
+async function toggleExpandRow(id) {
+  const tr = document.querySelector(`.shipment-main-row[data-id="${id}"]`);
+  const expandRow = document.getElementById(`expand-row-${id}`);
+  const contentDiv = document.getElementById(`expand-content-${id}`);
+  const icon = tr.querySelector('.chevron-icon');
+
+  if (!expandRow || !tr || !icon) return;
+
+  const isExpanded = expandRow.style.display !== 'none';
+
+  if (isExpanded) {
+    // Collapse
+    expandRow.style.display = 'none';
+    icon.style.transform = 'rotate(0deg)';
+  } else {
+    // Expand
+    expandRow.style.display = 'table-row';
+    icon.style.transform = 'rotate(90deg)';
+    
+    // Check if already loaded
+    if (!contentDiv.classList.contains('loaded')) {
+      contentDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #64748b;">Đang tải chi tiết lô hàng...</div>';
+      try {
+        const res = await api.get(`/api/shipments/${id}`);
+        const shipment = res.data;
+        renderExpandContent(contentDiv, shipment);
+        contentDiv.classList.add('loaded');
+      } catch (err) {
+        contentDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--amis-red);">Lỗi khi tải chi tiết lô hàng.</div>';
+      }
+    }
+  }
+}
+
+function renderExpandContent(container, data) {
+  // We want a tabbed or grid layout for Invoice, Declaration, Booking, Container, Products
+  const formatter = new Intl.NumberFormat('en-US');
+  
+  // Products table
+  let productsHtml = '<div style="padding: 10px; color: #64748b;">Chưa có sản phẩm nào.</div>';
+  if (data.items && data.items.length > 0) {
+    productsHtml = `
+      <table class="misa-table" style="margin-top: 8px;">
+        <thead style="background: #f1f5f9;">
+          <tr>
+            <th>SKU</th>
+            <th>Tên Sản Phẩm</th>
+            <th>ĐVT</th>
+            <th>Số Lượng</th>
+            <th>Đơn Giá</th>
+            <th>Thành Tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.items.map(i => `
+            <tr>
+              <td>${i.sku || '-'}</td>
+              <td>${i.productName || '-'}</td>
+              <td>${i.unit || '-'}</td>
+              <td>${formatter.format(i.quantity || 0)}</td>
+              <td>$${formatter.format(i.unitPrice || 0)}</td>
+              <td><strong>$${formatter.format(i.totalValue || 0)}</strong></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // Related documents layout
+  container.innerHTML = `
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 8px 16px;">
+      
+      <!-- Cột Trái: Sản phẩm -->
+      <div>
+        <h4 style="margin: 0 0 12px 0; color: var(--amis-blue); border-bottom: 2px solid var(--amis-blue); padding-bottom: 4px; display:inline-block;">Sản phẩm thuộc lô (${data.itemCount || 0})</h4>
+        ${productsHtml}
+      </div>
+
+      <!-- Cột Phải: Chứng từ liên quan -->
+      <div>
+        <h4 style="margin: 0 0 12px 0; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;">Chứng Từ & Vận Tải</h4>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Bookings -->
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+            <div style="font-weight: 600; color: #475569; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Bookings
+            </div>
+            ${data.bookings && data.bookings.length > 0 ? 
+              data.bookings.map(b => `<div style="font-size: 13px;">• <strong style="color:var(--amis-blue)">${b.bookingNumber}</strong> | Hãng tàu: ${b.shippingLine || '-'} | ETD: ${b.etd ? new Date(b.etd).toLocaleDateString('vi-VN') : '-'}</div>`).join('') 
+              : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Booking</div>'}
+          </div>
+
+          <!-- Containers -->
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+            <div style="font-weight: 600; color: #475569; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg> Containers
+            </div>
+            ${data.containers && data.containers.length > 0 ? 
+              data.containers.map(c => `<div style="font-size: 13px;">• <strong>${c.containerNumber}</strong> | Seal: ${c.sealNumber || '-'} | Loại: ${c.containerType || '-'}</div>`).join('') 
+              : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Container</div>'}
+          </div>
+
+          <!-- Tờ khai -->
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+            <div style="font-weight: 600; color: #475569; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Tờ Khai Hải Quan
+            </div>
+            ${data.customsDeclarations && data.customsDeclarations.length > 0 ? 
+              data.customsDeclarations.map(c => `<div style="font-size: 13px;">• <strong style="color:var(--amis-blue)">${c.declarationNumber}</strong> | Ngày: ${c.declarationDate ? new Date(c.declarationDate).toLocaleDateString('vi-VN') : '-'} | Loại: ${c.declarationType || '-'}</div>`).join('') 
+              : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Tờ khai</div>'}
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  `;
 }

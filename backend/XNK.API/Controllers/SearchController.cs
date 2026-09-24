@@ -18,14 +18,14 @@ public class SearchController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Search([FromQuery] string? keyword, [FromQuery] string? entityType)
+    public async Task<IActionResult> Search([FromQuery(Name = "query")] string? query, [FromQuery] string? entityType)
     {
-        var query = new SearchQueryDto
+        var searchQuery = new SearchQueryDto
         {
-            Keyword = keyword,
+            Keyword = query,
             EntityType = entityType
         };
-        var results = await _searchService.SearchAsync(query);
+        var results = await _searchService.SearchAsync(searchQuery);
         return Ok(ApiResponse<List<SearchResultDto>>.Ok(results));
     }
 }

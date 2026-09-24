@@ -25,6 +25,7 @@ public interface IProductRepository : IGenericRepository<Product>
 public interface ISupplierRepository : IGenericRepository<Supplier>
 {
     Task<PagedResultDto<Supplier>> GetPagedAsync(string? search, string? country, int page, int pageSize);
+    Task<SupplierHistoryDto?> GetHistoryAsync(Guid id);
 }
 
 public interface ICustomerRepository : IGenericRepository<Customer>

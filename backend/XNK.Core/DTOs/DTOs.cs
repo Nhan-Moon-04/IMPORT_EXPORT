@@ -145,6 +145,29 @@ public class CreateSupplierDto
     public string? Notes { get; set; }
 }
 
+public class SupplierHistoryDto
+{
+    public Guid SupplierId { get; set; }
+    public string CompanyName { get; set; } = string.Empty;
+    public string? Country { get; set; }
+    public int TotalShipments { get; set; }
+    public decimal TotalValue { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public DateTime? LatestShipmentDate { get; set; }
+    public List<SupplierHistoryItemDto> History { get; set; } = new();
+}
+
+public class SupplierHistoryItemDto
+{
+    public Guid ShipmentId { get; set; }
+    public string ShipmentCode { get; set; } = string.Empty;
+    public DateTime? Date { get; set; }
+    public string? InvoiceNumber { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal TotalValue { get; set; }
+    public string Status { get; set; } = string.Empty;
+}
+
 // ==================== CUSTOMER ====================
 public class CustomerDto
 {
@@ -203,6 +226,43 @@ public class ShipmentDto
     public int DocumentCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<ShipmentItemDto> Items { get; set; } = new();
+    public List<BookingDto> Bookings { get; set; } = new();
+    public List<ContainerDto> Containers { get; set; } = new();
+    public List<CustomsDeclarationDto> CustomsDeclarations { get; set; } = new();
+}
+
+public class BookingDto
+{
+    public Guid Id { get; set; }
+    public string BookingNumber { get; set; } = string.Empty;
+    public DateTime? ETD { get; set; }
+    public DateTime? ETA { get; set; }
+    public string? ShippingLine { get; set; }
+    public string? Vessel { get; set; }
+    public string? Voyage { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class ContainerDto
+{
+    public Guid Id { get; set; }
+    public string ContainerNumber { get; set; } = string.Empty;
+    public string? SealNumber { get; set; }
+    public string? ContainerType { get; set; }
+    public decimal? PayloadWeight { get; set; }
+    public decimal? TareWeight { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class CustomsDeclarationDto
+{
+    public Guid Id { get; set; }
+    public string DeclarationNumber { get; set; } = string.Empty;
+    public DateTime? DeclarationDate { get; set; }
+    public string? DeclarationType { get; set; }
+    public string? CustomsBranch { get; set; }
+    public int? Status { get; set; }
+    public string? Notes { get; set; }
 }
 
 public class ShipmentItemDto

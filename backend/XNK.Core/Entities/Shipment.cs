@@ -45,6 +45,9 @@ public class Shipment : BaseEntity
     public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     public ICollection<PackingList> PackingLists { get; set; } = new List<PackingList>();
     public ICollection<Document> Documents { get; set; } = new List<Document>();
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    public ICollection<Container> Containers { get; set; } = new List<Container>();
+    public ICollection<CustomsDeclaration> CustomsDeclarations { get; set; } = new List<CustomsDeclaration>();
 }
 
 public class ShipmentItem : BaseEntity

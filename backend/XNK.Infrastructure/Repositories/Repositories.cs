@@ -119,6 +119,41 @@ public class SupplierRepository : GenericRepository<Supplier>, ISupplierReposito
         var items = await query.OrderByDescending(s => s.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         return new PagedResultDto<Supplier> { Items = items, TotalCount = totalCount, Page = page, PageSize = pageSize };
     }
+
+    public async Task<SupplierHistoryDto?> GetHistoryAsync(Guid id)
+    {
+        var supplier = await _dbSet.FirstOrDefaultAsync(s => s.Id == id);
+        if (supplier == null) return null;
+
+        var shipments = await _context.Shipments
+            .Include(s => s.Invoices)
+            .Where(s => s.SupplierId == id)
+            .OrderByDescending(s => s.ExpectedDate ?? s.CreatedAt)
+            .ToListAsync();
+
+        var historyItems = shipments.Select(s => new SupplierHistoryItemDto
+        {
+            ShipmentId = s.Id,
+            ShipmentCode = s.ShipmentCode,
+            Date = s.ExpectedDate ?? s.CreatedAt,
+            InvoiceNumber = s.Invoices.FirstOrDefault()?.InvoiceNumber,
+            Quantity = s.TotalQuantity ?? 0,
+            TotalValue = s.TotalValue ?? 0,
+            Status = s.Status.ToString()
+        }).ToList();
+
+        return new SupplierHistoryDto
+        {
+            SupplierId = supplier.Id,
+            CompanyName = supplier.CompanyName,
+            Country = supplier.Country,
+            TotalShipments = shipments.Count,
+            TotalValue = shipments.Sum(s => s.TotalValue ?? 0),
+            TotalQuantity = shipments.Sum(s => s.TotalQuantity ?? 0),
+            LatestShipmentDate = shipments.FirstOrDefault()?.ExpectedDate ?? shipments.FirstOrDefault()?.CreatedAt,
+            History = historyItems
+        };
+    }
 }
 
 public class CustomerRepository : GenericRepository<Customer>, ICustomerRepository
@@ -178,6 +213,9 @@ public class ShipmentRepository : GenericRepository<Shipment>, IShipmentReposito
             .Include(s => s.Invoices).ThenInclude(i => i.Items)
             .Include(s => s.PackingLists).ThenInclude(pl => pl.Items)
             .Include(s => s.Documents)
+            .Include(s => s.Bookings)
+            .Include(s => s.Containers)
+            .Include(s => s.CustomsDeclarations)
             .FirstOrDefaultAsync(s => s.Id == id);
 
     public async Task<bool> CodeExistsAsync(string code, Guid? excludeId = null)

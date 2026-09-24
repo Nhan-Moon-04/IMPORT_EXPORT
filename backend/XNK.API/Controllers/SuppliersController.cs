@@ -36,6 +36,14 @@ public class SuppliersController : ControllerBase
         return Ok(ApiResponse<SupplierDto>.Ok(MapToDto(entity)));
     }
 
+    [HttpGet("{id}/history")]
+    public async Task<IActionResult> GetHistory(Guid id)
+    {
+        var history = await _uow.Suppliers.GetHistoryAsync(id);
+        if (history == null) return NotFound(ApiResponse<object>.Error("Không tìm thấy nhà cung cấp"));
+        return Ok(ApiResponse<SupplierHistoryDto>.Ok(history));
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateSupplierDto dto)
     {

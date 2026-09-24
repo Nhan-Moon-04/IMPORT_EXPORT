@@ -169,7 +169,24 @@ public class ShipmentsController : ControllerBase
         SupplierId = s.SupplierId, CustomerId = s.CustomerId,
         ItemCount = s.Items?.Count ?? 0, InvoiceCount = s.Invoices?.Count ?? 0,
         DocumentCount = s.Documents?.Count ?? 0, CreatedAt = s.CreatedAt,
-        Items = s.Items?.Select(MapItemToDto).ToList() ?? new()
+        Items = s.Items?.Select(MapItemToDto).ToList() ?? new(),
+        Bookings = s.Bookings?.Select(b => new BookingDto
+        {
+            Id = b.Id, BookingNumber = b.BookingNumber, ETD = b.ETD, ETA = b.ETA,
+            ShippingLine = b.ShippingLine, Vessel = b.Vessel, Voyage = b.Voyage, Notes = b.Notes
+        }).ToList() ?? new(),
+        Containers = s.Containers?.Select(c => new ContainerDto
+        {
+            Id = c.Id, ContainerNumber = c.ContainerNumber, SealNumber = c.SealNumber,
+            ContainerType = c.ContainerType, PayloadWeight = c.PayloadWeight,
+            TareWeight = c.TareWeight, Notes = c.Notes
+        }).ToList() ?? new(),
+        CustomsDeclarations = s.CustomsDeclarations?.Select(c => new CustomsDeclarationDto
+        {
+            Id = c.Id, DeclarationNumber = c.DeclarationNumber, DeclarationDate = c.DeclarationDate,
+            DeclarationType = c.DeclarationType, CustomsBranch = c.CustomsBranch,
+            Status = c.Status, Notes = c.Notes
+        }).ToList() ?? new()
     };
 
     private static ShipmentItemDto MapItemToDto(ShipmentItem i) => new()
