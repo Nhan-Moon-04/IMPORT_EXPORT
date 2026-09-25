@@ -2,16 +2,33 @@
 import { api, toast, openModal, closeModal, API_BASE, getToken } from '../../core/api.js';
 
 let currentInvoices = [];
+let currentFilteredInvoices = [];
+let currentPage = 1;
+let itemsPerPage = 10;
 let currentDocType = 'Invoice';
 
 export async function renderInvoices(container, docType = 'Invoice') {
   currentDocType = docType;
   
   const isPacking = docType === 'PackingList';
-  const titleAdd = isPacking ? 'Lập Phiếu Đóng Gói (Packing List)' : 'Lập Hóa Đơn (Invoice)';
-  const searchPlaceholder = isPacking ? 'Tìm số Packing List, lô hàng...' : 'Tìm số Invoice, lô hàng...';
-  const headerNum = isPacking ? 'Số Packing List' : 'Số Invoice';
-  const headerType = isPacking ? 'Loại Phiếu' : 'Loại Hóa Đơn';
+  const isSales = docType === 'SalesContract';
+  
+  let titleAdd = 'Lập Hóa Đơn (Invoice)';
+  let searchPlaceholder = 'Tìm số Invoice, lô hàng...';
+  let headerNum = 'Số Invoice';
+  let headerType = 'Loại Hóa Đơn';
+  
+  if (isPacking) {
+    titleAdd = 'Lập Phiếu Đóng Gói (Packing List)';
+    searchPlaceholder = 'Tìm số Packing List, lô hàng...';
+    headerNum = 'Số Packing List';
+    headerType = 'Loại Phiếu';
+  } else if (isSales) {
+    titleAdd = 'Lập Hợp Đồng (Sales Contract)';
+    searchPlaceholder = 'Tìm số hợp đồng, lô hàng...';
+    headerNum = 'Số Hợp Đồng';
+    headerType = 'Loại Hợp Đồng';
+  }
   
   container.innerHTML = `
     <div class="grid-card">
@@ -25,15 +42,20 @@ export async function renderInvoices(container, docType = 'Invoice') {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             Nạp Lại
           </button>
+          <span id="invoice-selected-count" style="display:none; margin-left: 15px; font-weight: 600; font-size: 13px; align-items:center;">Đã chọn: 0</span>
+          <button class="btn btn-default btn-sm" id="btn-bulk-delete-invoices" style="display:none; align-items:center; color: #ef4444; border-color: #ef4444; padding: 4px 10px; margin-left: 10px;" title="Xóa dữ liệu đã chọn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Xóa
+          </button>
         </div>
         <div class="toolbar-group" style="display:flex; gap:10px;">
           <input type="date" id="filter-date-from" class="form-input" title="Từ ngày">
           <input type="date" id="filter-date-to" class="form-input" title="Đến ngày">
-          <select id="filter-invoice-type" class="form-input">
+          <select id="filter-invoice-type" class="form-input" style="${isPacking || isSales ? 'display:none;' : ''}">
             <option value="">Tất cả hóa đơn</option>
             <option value="CommercialInvoice">Commercial</option>
             <option value="ProformaInvoice">Proforma</option>
-            <option value="TaxInvoice">Tax</option>
+            <option value="DebitNote">Debit Note</option>
           </select>
           <select id="filter-shipment-type" class="form-input">
             <option value="">Loại hình XNK</option>
@@ -63,9 +85,17 @@ export async function renderInvoices(container, docType = 'Invoice') {
         </table>
       </div>
 
-      <div class="misa-pagination">
-        <div class="pagination-info" id="invoices-pagination-info">Tổng: 0 hóa đơn</div>
-        <div class="pagination-controls"><span>Hiển thị 50 dòng/trang</span></div>
+      <div class="misa-pagination" style="display:flex; justify-content:space-between; align-items:center; padding: 10px;">
+        <div class="pagination-info" id="invoices-pagination-info">Tổng: 0 bản ghi</div>
+        <div class="pagination-controls" style="display:flex; gap:10px; align-items:center;">
+          <select id="invoices-items-per-page" class="form-input" style="width:auto; padding:4px;">
+            <option value="10">10 dòng/trang</option>
+            <option value="20">20 dòng/trang</option>
+            <option value="50">50 dòng/trang</option>
+            <option value="100">100 dòng/trang</option>
+          </select>
+          <div id="invoices-pagination-buttons" style="display:flex; gap:5px;"></div>
+        </div>
       </div>
     </div>
   `;
@@ -74,6 +104,36 @@ export async function renderInvoices(container, docType = 'Invoice') {
   document.getElementById('btn-refresh-invoices').addEventListener('click', () => loadInvoices());
   ['invoice-search-input', 'filter-date-from', 'filter-date-to', 'filter-invoice-type', 'filter-shipment-type'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', filterInvoices);
+  });
+
+  const chkAll = document.getElementById('chk-all-invoices');
+  if (chkAll) {
+    chkAll.addEventListener('click', (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll('.chk-row-invoice');
+      const checked = document.querySelectorAll('.chk-row-invoice:checked');
+      const shouldCheck = checked.length < checkboxes.length;
+      
+      checkboxes.forEach(chk => {
+        chk.checked = shouldCheck;
+      });
+      e.target.checked = shouldCheck;
+      e.target.indeterminate = false;
+      updateInvoiceBulkActions();
+    });
+  }
+
+  document.getElementById('invoices-items-per-page')?.addEventListener('change', (e) => {
+    itemsPerPage = parseInt(e.target.value);
+    currentPage = 1;
+    renderPaginatedInvoices();
+  });
+
+  document.getElementById('btn-bulk-delete-invoices')?.addEventListener('click', () => {
+    const checked = Array.from(document.querySelectorAll('.chk-row-invoice:checked')).map(c => c.value);
+    if (checked.length >= 2) {
+      bulkDeleteInvoices(checked);
+    }
   });
 
   await loadInvoices();
@@ -90,12 +150,14 @@ async function loadInvoices() {
     // Filter by type
     if (currentDocType === 'PackingList') {
       data = data.filter(d => d.type === 'PackingList');
+    } else if (currentDocType === 'SalesContract') {
+      data = data.filter(d => d.type === 'SalesContract');
     } else {
-      data = data.filter(d => d.type !== 'PackingList');
+      data = data.filter(d => d.type !== 'PackingList' && d.type !== 'SalesContract');
     }
     
     currentInvoices = data;
-    renderInvoiceRows(data);
+    filterInvoices();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red; padding:20px;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
   }
@@ -111,11 +173,14 @@ function filterInvoices() {
   let filtered = currentInvoices;
 
   if (q) {
-    filtered = filtered.filter(i => 
-      (i.invoiceNumber && i.invoiceNumber.toLowerCase().includes(q)) ||
-      (i.partnerName && i.partnerName.toLowerCase().includes(q)) ||
-      (i.type && i.type.toLowerCase().includes(q))
-    );
+    filtered = filtered.filter(i => {
+      const invNum = (i.invoiceNumber || '').toLowerCase();
+      const partner = (i.partnerName || '').toLowerCase();
+      const typeStr = (i.type || '').toLowerCase();
+      const totalStr = (i.totalValue || 0).toString();
+      const dateStr = i.invoiceDate ? new Date(i.invoiceDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '';
+      return invNum.includes(q) || partner.includes(q) || typeStr.includes(q) || totalStr.includes(q) || dateStr.includes(q);
+    });
   }
   
   if (invType) {
@@ -136,42 +201,91 @@ function filterInvoices() {
     filtered = filtered.filter(i => new Date(i.invoiceDate).getTime() <= dTo);
   }
 
-  renderInvoiceRows(filtered);
+  currentFilteredInvoices = filtered;
+  currentPage = 1;
+  renderPaginatedInvoices();
 }
+
+function renderPaginatedInvoices() {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const pageItems = currentFilteredInvoices.slice(startIndex, endIndex);
+  
+  renderInvoiceRows(pageItems);
+  
+  const info = document.getElementById('invoices-pagination-info');
+  if (info) info.textContent = `Tổng cộng: ${currentFilteredInvoices.length} bản ghi`;
+  
+  renderInvoicePaginationButtons();
+  
+  const checkAll = document.getElementById('chk-all-invoices');
+  if (checkAll) {
+    checkAll.checked = false;
+    checkAll.indeterminate = false;
+  }
+  updateInvoiceBulkActions();
+}
+
+function renderInvoicePaginationButtons() {
+  const container = document.getElementById('invoices-pagination-buttons');
+  if (!container) return;
+  
+  const totalPages = Math.ceil(currentFilteredInvoices.length / itemsPerPage);
+  let html = '';
+  
+  html += `<button class="btn btn-default btn-sm" style="padding:4px 8px;" ${currentPage === 1 || totalPages === 0 ? 'disabled' : ''} onclick="window.xnkGoToInvoicePage(${currentPage - 1})">Trước</button>`;
+  
+  for(let i=1; i<=totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+      html += `<button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-default'}" style="padding:4px 8px;" onclick="window.xnkGoToInvoicePage(${i})">${i}</button>`;
+    } else if (i === currentPage - 3 || i === currentPage + 3) {
+      html += `<span style="padding:4px 8px;">...</span>`;
+    }
+  }
+  
+  html += `<button class="btn btn-default btn-sm" style="padding:4px 8px;" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''} onclick="window.xnkGoToInvoicePage(${currentPage + 1})">Sau</button>`;
+  
+  container.innerHTML = html;
+}
+
+window.xnkGoToInvoicePage = function(page) {
+  currentPage = page;
+  renderPaginatedInvoices();
+};
 
 function renderInvoiceRows(items) {
   const tbody = document.getElementById('invoices-table-body');
-  const info = document.getElementById('invoices-pagination-info');
   if (!tbody) return;
-
-  if (info) info.textContent = `Tổng cộng: ${items.length} bản ghi`;
 
   if (items.length === 0) {
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#6b7280;">Không có dữ liệu</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = items.map(inv => `
+  tbody.innerHTML = items.map(inv => {
+    const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : inv.type || 'Commercial';
+    const dateStr = inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
+    return `
     <tr>
-      <td style="text-align:center;"><input type="checkbox" value="${inv.id}"></td>
+      <td style="text-align:center;"><input type="checkbox" class="chk-row-invoice" value="${inv.id}"></td>
       <td style="font-weight:700; color:var(--amis-green);">${inv.invoiceNumber}</td>
-      <td>${inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('vi-VN') : '---'}</td>
-      <td><span class="status-chip chip-transit">${inv.type || 'Commercial'}</span></td>
+      <td style="white-space: nowrap;">${dateStr}</td>
+      <td><span class="status-chip chip-transit">${displayType}</span></td>
       <td style="font-weight:600;">${inv.partnerName || '---'}</td>
       <td style="font-weight:700; color:var(--amis-green);">${Number(inv.totalValue || 0).toLocaleString()} ${inv.currency || 'USD'}</td>
-      <td style="text-align:center;">
-        <button class="btn btn-default btn-sm btn-view-invoice" data-id="${inv.id}" style="padding:4px 8px; font-size:11px; margin-right:4px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Xem
+      <td style="text-align:center; white-space: nowrap;">
+        <button class="btn btn-default btn-sm btn-view-invoice" data-id="${inv.id}" style="padding:6px; margin-right:4px;" title="Xem chi tiết">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         </button>
-        <button class="btn btn-default btn-sm btn-download-doc" data-id="${inv.id}" style="padding:4px 8px; font-size:11px; margin-right:4px;" title="Tải file đính kèm">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Tải File
+        <button class="btn btn-default btn-sm btn-download-doc" data-id="${inv.id}" style="padding:6px; margin-right:4px;" title="Tải file đính kèm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
-        <button class="btn btn-default btn-sm btn-del-invoice" data-id="${inv.id}" data-num="${inv.invoiceNumber}" style="padding:4px 8px; font-size:11px; color: var(--amis-red);">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Xóa
+        <button class="btn btn-default btn-sm btn-del-invoice" data-id="${inv.id}" data-num="${inv.invoiceNumber}" style="padding:6px; color: var(--amis-red);" title="Xóa">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 
   tbody.querySelectorAll('.btn-view-invoice').forEach(b => {
     b.addEventListener('click', () => viewInvoiceDetail(b.getAttribute('data-id')));
@@ -186,6 +300,53 @@ function renderInvoiceRows(items) {
       confirmDeleteInvoice(b.getAttribute('data-id'), b.getAttribute('data-num'));
     });
   });
+
+  tbody.querySelectorAll('.chk-row-invoice').forEach(chk => {
+    chk.addEventListener('change', updateInvoiceBulkActions);
+  });
+  updateInvoiceBulkActions();
+}
+
+function updateInvoiceBulkActions() {
+  const checkboxes = document.querySelectorAll('.chk-row-invoice');
+  const checked = document.querySelectorAll('.chk-row-invoice:checked');
+  const checkAll = document.getElementById('chk-all-invoices');
+  const btnDelete = document.getElementById('btn-bulk-delete-invoices');
+  const countText = document.getElementById('invoice-selected-count');
+
+  if (checkAll) {
+    checkAll.checked = checkboxes.length > 0 && checkboxes.length === checked.length;
+    checkAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+  }
+
+  if (checked.length >= 2) {
+    if(btnDelete) btnDelete.style.display = 'inline-flex';
+    if(countText) {
+      countText.style.display = 'inline-flex';
+      countText.textContent = `Đã chọn: ${checked.length}`;
+    }
+  } else {
+    if(btnDelete) btnDelete.style.display = 'none';
+    if(countText) countText.style.display = 'none';
+  }
+}
+
+async function bulkDeleteInvoices(ids) {
+  if (!confirm(`Bạn có chắc chắn muốn xóa ${ids.length} hóa đơn đã chọn không?`)) return;
+  try {
+    for (const id of ids) {
+      await api.delete(`/api/invoices/${id}`);
+    }
+    toast('Đã xóa thành công', 'success');
+    loadInvoices();
+    const checkAll = document.getElementById('chk-all-invoices');
+    if (checkAll) {
+      checkAll.checked = false;
+      checkAll.indeterminate = false;
+    }
+  } catch(err) {
+    toast(`Lỗi khi xóa: ${err.message}`, 'error');
+  }
 }
 
 async function viewInvoiceDetail(id) {
@@ -280,12 +441,34 @@ async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null
   const shipmentOpts = shipments.map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} - ${s.supplierName || s.customerName || ''}</option>`).join('');
   const productOpts = products.map(p => `<option value="${p.id}" data-code="${p.sku}" data-price="${p.standardPrice || 2.5}">${p.sku} - ${p.name}</option>`).join('');
 
+  const docToCreate = forceType || currentDocType;
+  const isCrtPacking = docToCreate === 'PackingList';
+  const isCrtSales = docToCreate === 'SalesContract';
+  
+  let crtNumLabel = 'Số Invoice';
+  let crtNumPlaceholder = 'VD: INV-2026-0889';
+  let crtTypeOptions = `
+      <option value="CommercialInvoice">Commercial Invoice (Thương mại)</option>
+      <option value="ProformaInvoice">Proforma Invoice (Tạm tính)</option>
+      <option value="DebitNote">Debit Note</option>
+  `;
+  
+  if (isCrtPacking) {
+    crtNumLabel = 'Số Packing List';
+    crtNumPlaceholder = 'VD: PL-2026-0889';
+    crtTypeOptions = `<option value="PackingList">Packing List (Phiếu đóng gói)</option>`;
+  } else if (isCrtSales) {
+    crtNumLabel = 'Số Hợp Đồng';
+    crtNumPlaceholder = 'VD: SC-2026-0889';
+    crtTypeOptions = `<option value="SalesContract">Sales Contract (Hợp đồng mua bán)</option>`;
+  }
+
   const content = `
     <form id="create-invoice-form">
       <div class="form-row-2">
         <div class="form-group">
-          <label class="form-label required">Số ${(forceType === 'PackingList' || currentDocType === 'PackingList') ? 'Packing List' : 'Invoice'}</label>
-          <input type="text" id="inv-num" class="form-input" required placeholder="${(forceType === 'PackingList' || currentDocType === 'PackingList') ? 'VD: PL-2026-0889' : 'VD: INV-2026-0889'}" value="">
+          <label class="form-label required">${crtNumLabel}</label>
+          <input type="text" id="inv-num" class="form-input" required placeholder="${crtNumPlaceholder}" value="">
         </div>
         <div class="form-group">
           <label class="form-label required">Ngày Lập</label>
@@ -303,12 +486,7 @@ async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null
         <div class="form-group">
           <label class="form-label">Phân Loại</label>
           <select id="inv-type" class="form-select">
-            ${(forceType === 'PackingList' || currentDocType === 'PackingList')
-              ? `<option value="PackingList">Packing List (Phiếu đóng gói)</option>`
-              : `<option value="CommercialInvoice">Commercial Invoice (Thương mại)</option>
-                 <option value="ProformaInvoice">Proforma Invoice (Tạm tính)</option>
-                 <option value="DebitNote">Debit Note</option>`
-            }
+            ${crtTypeOptions}
           </select>
         </div>
       </div>

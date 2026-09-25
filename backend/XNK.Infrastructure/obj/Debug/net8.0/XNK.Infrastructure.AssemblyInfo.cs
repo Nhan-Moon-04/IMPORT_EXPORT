@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("XNK.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b54bc407d13bb161d4a32f936e08b441b45a3f10")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+02dfb35821e56a64f0be61b7e7a61716a77d33d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("XNK.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("XNK.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -34,6 +34,7 @@ const ROUTE_TITLES = {
   'shipment-detail': 'Chi Tiết Lô Hàng (10 Tabs Nghiệp Vụ)',
   'orders': 'Đơn Mua / Bán Sợi (PO / SO)',
   'invoices': 'Hóa Đơn Thương Mại (Commercial Invoices)',
+  'sales-contracts': 'Hợp Đồng Bán Hàng (Sales Contracts)',
   'packing-lists': 'Phiếu Đóng Gói (Packing Lists)',
   'documents': 'Kho Chứng Từ & Upload File',
   'booking': 'Booking Vận Tải Biển',
@@ -359,6 +360,9 @@ export function navigateTo(tab, updateHistory = true, param = null) {
 
     case 'invoices':
       renderInvoices(mainContent, 'Invoice');
+      break;
+    case 'sales-contracts':
+      renderInvoices(mainContent, 'SalesContract');
       break;
     case 'packing-lists':
       renderInvoices(mainContent, 'PackingList');

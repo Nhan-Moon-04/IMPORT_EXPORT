@@ -23,7 +23,8 @@ public enum InvoiceType
     ProformaInvoice = 1,
     DebitNote = 2,
     CreditNote = 3,
-    PackingList = 4
+    PackingList = 4,
+    SalesContract = 5
 }
 
 public enum PaymentStatus
