@@ -26,7 +26,20 @@ export async function renderInvoices(container, docType = 'Invoice') {
             Nạp Lại
           </button>
         </div>
-        <div class="toolbar-group">
+        <div class="toolbar-group" style="display:flex; gap:10px;">
+          <input type="date" id="filter-date-from" class="form-input" title="Từ ngày">
+          <input type="date" id="filter-date-to" class="form-input" title="Đến ngày">
+          <select id="filter-invoice-type" class="form-input">
+            <option value="">Tất cả hóa đơn</option>
+            <option value="CommercialInvoice">Commercial</option>
+            <option value="ProformaInvoice">Proforma</option>
+            <option value="TaxInvoice">Tax</option>
+          </select>
+          <select id="filter-shipment-type" class="form-input">
+            <option value="">Loại hình XNK</option>
+            <option value="Import">Nhập khẩu</option>
+            <option value="Export">Xuất khẩu</option>
+          </select>
           <input type="text" id="invoice-search-input" class="form-input" style="width: 250px;" placeholder="${searchPlaceholder}">
         </div>
       </div>
@@ -39,10 +52,8 @@ export async function renderInvoices(container, docType = 'Invoice') {
               <th>${headerNum}</th>
               <th>Ngày Lập</th>
               <th>${headerType}</th>
-              <th>Lô Hàng Liên Quan</th>
-              <th>Số Lượng Mặt Hàng</th>
+              <th>Đối Tác (NCC/Khách)</th>
               <th>Tổng Tiền</th>
-              <th>Đồng Tiền</th>
               <th style="width:140px; text-align:center;">Thao Tác</th>
             </tr>
           </thead>
@@ -61,7 +72,9 @@ export async function renderInvoices(container, docType = 'Invoice') {
 
   document.getElementById('btn-add-invoice').addEventListener('click', () => openCreateInvoiceModal());
   document.getElementById('btn-refresh-invoices').addEventListener('click', () => loadInvoices());
-  document.getElementById('invoice-search-input').addEventListener('input', (e) => filterInvoices(e.target.value));
+  ['invoice-search-input', 'filter-date-from', 'filter-date-to', 'filter-invoice-type', 'filter-shipment-type'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', filterInvoices);
+  });
 
   await loadInvoices();
 }
@@ -88,17 +101,41 @@ async function loadInvoices() {
   }
 }
 
-function filterInvoices(val) {
-  const q = val.toLowerCase().trim();
-  if (!q) {
-    renderInvoiceRows(currentInvoices);
-    return;
+function filterInvoices() {
+  const q = document.getElementById('invoice-search-input')?.value.toLowerCase().trim() || '';
+  const dateFrom = document.getElementById('filter-date-from')?.value;
+  const dateTo = document.getElementById('filter-date-to')?.value;
+  const invType = document.getElementById('filter-invoice-type')?.value;
+  const shipType = document.getElementById('filter-shipment-type')?.value;
+
+  let filtered = currentInvoices;
+
+  if (q) {
+    filtered = filtered.filter(i => 
+      (i.invoiceNumber && i.invoiceNumber.toLowerCase().includes(q)) ||
+      (i.partnerName && i.partnerName.toLowerCase().includes(q)) ||
+      (i.type && i.type.toLowerCase().includes(q))
+    );
   }
-  const filtered = currentInvoices.filter(i => 
-    (i.invoiceNumber && i.invoiceNumber.toLowerCase().includes(q)) ||
-    (i.shipmentCode && i.shipmentCode.toLowerCase().includes(q)) ||
-    (i.type && i.type.toLowerCase().includes(q))
-  );
+  
+  if (invType) {
+    filtered = filtered.filter(i => i.type === invType);
+  }
+
+  if (shipType) {
+    filtered = filtered.filter(i => i.shipmentType === shipType);
+  }
+
+  if (dateFrom) {
+    const dFrom = new Date(dateFrom).setHours(0,0,0,0);
+    filtered = filtered.filter(i => new Date(i.invoiceDate).setHours(0,0,0,0) >= dFrom);
+  }
+
+  if (dateTo) {
+    const dTo = new Date(dateTo).setHours(23,59,59,999);
+    filtered = filtered.filter(i => new Date(i.invoiceDate).getTime() <= dTo);
+  }
+
   renderInvoiceRows(filtered);
 }
 
@@ -120,10 +157,8 @@ function renderInvoiceRows(items) {
       <td style="font-weight:700; color:var(--amis-green);">${inv.invoiceNumber}</td>
       <td>${inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('vi-VN') : '---'}</td>
       <td><span class="status-chip chip-transit">${inv.type || 'Commercial'}</span></td>
-      <td style="font-weight:600;">${inv.shipmentCode || '---'}</td>
-      <td style="text-align:center;">${inv.itemCount || (inv.items ? inv.items.length : 0)}</td>
-      <td style="font-weight:700; color:var(--amis-green);">${Number(inv.totalValue || 0).toLocaleString()}</td>
-      <td><strong>${inv.currency || 'USD'}</strong></td>
+      <td style="font-weight:600;">${inv.partnerName || '---'}</td>
+      <td style="font-weight:700; color:var(--amis-green);">${Number(inv.totalValue || 0).toLocaleString()} ${inv.currency || 'USD'}</td>
       <td style="text-align:center;">
         <button class="btn btn-default btn-sm btn-view-invoice" data-id="${inv.id}" style="padding:4px 8px; font-size:11px; margin-right:4px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Xem
@@ -227,7 +262,8 @@ async function viewInvoiceDetail(id) {
   }
 }
 
-async function openCreateInvoiceModal() {
+window.xnkCreateInvoiceModal = openCreateInvoiceModal;
+async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null) {
   let shipments = [];
   let products = [];
   try {
@@ -241,15 +277,15 @@ async function openCreateInvoiceModal() {
     console.error(err);
   }
 
-  const shipmentOpts = shipments.map(s => `<option value="${s.id}">${s.shipmentCode} - ${s.supplierName || s.customerName || ''}</option>`).join('');
+  const shipmentOpts = shipments.map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} - ${s.supplierName || s.customerName || ''}</option>`).join('');
   const productOpts = products.map(p => `<option value="${p.id}" data-code="${p.sku}" data-price="${p.standardPrice || 2.5}">${p.sku} - ${p.name}</option>`).join('');
 
   const content = `
     <form id="create-invoice-form">
       <div class="form-row-2">
         <div class="form-group">
-          <label class="form-label required">Số ${currentDocType === 'PackingList' ? 'Packing List' : 'Invoice'}</label>
-          <input type="text" id="inv-num" class="form-input" required placeholder="${currentDocType === 'PackingList' ? 'VD: PL-2026-0889' : 'VD: INV-2026-0889'}" value="">
+          <label class="form-label required">Số ${(forceType === 'PackingList' || currentDocType === 'PackingList') ? 'Packing List' : 'Invoice'}</label>
+          <input type="text" id="inv-num" class="form-input" required placeholder="${(forceType === 'PackingList' || currentDocType === 'PackingList') ? 'VD: PL-2026-0889' : 'VD: INV-2026-0889'}" value="">
         </div>
         <div class="form-group">
           <label class="form-label required">Ngày Lập</label>
@@ -267,7 +303,7 @@ async function openCreateInvoiceModal() {
         <div class="form-group">
           <label class="form-label">Phân Loại</label>
           <select id="inv-type" class="form-select">
-            ${currentDocType === 'PackingList' 
+            ${(forceType === 'PackingList' || currentDocType === 'PackingList')
               ? `<option value="PackingList">Packing List (Phiếu đóng gói)</option>`
               : `<option value="CommercialInvoice">Commercial Invoice (Thương mại)</option>
                  <option value="ProformaInvoice">Proforma Invoice (Tạm tính)</option>

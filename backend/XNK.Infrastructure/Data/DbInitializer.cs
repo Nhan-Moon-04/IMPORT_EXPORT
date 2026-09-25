@@ -195,7 +195,7 @@ public static class DbInitializer
             TotalGrossWeight = 19800,
             TotalValue = 42550.00m,
             Currency = "USD",
-            Status = ShipmentStatus.InTransit,
+            Status = ShipmentStatus.Paid30,
             Notes = "Lô hàng sợi FDY nhập từ Long Cheng Wu, tàu WAN HAI 273 V.S012",
             SupplierId = supplierLcw.Id,
             CreatedAt = DateTime.UtcNow.AddDays(-10)
@@ -214,7 +214,7 @@ public static class DbInitializer
             TotalGrossWeight = 16200,
             TotalValue = 35250.00m,
             Currency = "USD",
-            Status = ShipmentStatus.CustomsCleared,
+            Status = ShipmentStatus.Completed,
             Notes = "Lô hàng sợi DTY nhập từ Formosa đã thông quan",
             SupplierId = supplierFormosa.Id,
             CreatedAt = DateTime.UtcNow.AddDays(-40)

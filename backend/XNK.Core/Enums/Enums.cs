@@ -9,13 +9,10 @@ public enum ShipmentType
 public enum ShipmentStatus
 {
     Draft = 0,
-    PreparingDocuments = 1,
-    BookingRequested = 2,
-    BookingConfirmed = 3,
-    InTransit = 4,
-    Arrived = 5,
-    CustomsProcessing = 6,
-    CustomsCleared = 7,
+    PendingPayment = 10,
+    Paid30 = 11,
+    Paid70 = 12,
+    PendingImport = 13,
     Completed = 8,
     Cancelled = 9
 }

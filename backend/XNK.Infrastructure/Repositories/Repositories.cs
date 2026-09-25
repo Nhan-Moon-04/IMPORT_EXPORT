@@ -232,7 +232,7 @@ public class InvoiceRepository : GenericRepository<Invoice>, IInvoiceRepository
 
     public async Task<PagedResultDto<Invoice>> GetPagedAsync(string? search, Guid? shipmentId, int page, int pageSize)
     {
-        var query = _dbSet.Include(i => i.Shipment).AsQueryable();
+        var query = _dbSet.Include(i => i.Shipment).ThenInclude(s => s.Supplier).Include(i => i.Shipment).ThenInclude(s => s.Customer).AsQueryable();
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(i => i.InvoiceNumber.Contains(search));
         if (shipmentId.HasValue)
@@ -245,7 +245,8 @@ public class InvoiceRepository : GenericRepository<Invoice>, IInvoiceRepository
 
     public async Task<Invoice?> GetWithItemsAsync(Guid id)
         => await _dbSet.Include(i => i.Items).ThenInclude(ii => ii.Product)
-                       .Include(i => i.Shipment)
+                       .Include(i => i.Shipment).ThenInclude(s => s.Supplier)
+                       .Include(i => i.Shipment).ThenInclude(s => s.Customer)
                        .FirstOrDefaultAsync(i => i.Id == id);
 
     public async Task<bool> NumberExistsAsync(string number, XNK.Core.Enums.InvoiceType type, Guid? excludeId = null)

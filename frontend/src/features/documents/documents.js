@@ -253,7 +253,8 @@ function setupEvents() {
   };
 }
 
-function openUploadDocumentModal() {
+window.xnkUploadDocumentModal = openUploadDocumentModal;
+function openUploadDocumentModal(defaultShipmentId = null) {
   const content = `
     <div style="padding: 10px 0;">
       <div class="dropzone" id="modalDocumentDropzone" style="cursor: pointer; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 30px; text-align: center; transition: all 0.2s;">
@@ -295,7 +296,7 @@ function openUploadDocumentModal() {
             <label class="form-label">Liên Kết Lô Hàng (Shipment)</label>
             <select id="modalDocShipmentId" class="form-select">
               <option value="">-- Không liên kết --</option>
-              ${shipments.map(s => `<option value="${s.id}">${s.shipmentCode} (${s.type})</option>`).join('')}
+            ${shipments.map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} (${s.type})</option>`).join('')}
             </select>
           </div>
         </div>

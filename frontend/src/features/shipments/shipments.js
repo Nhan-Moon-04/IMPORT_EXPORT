@@ -102,8 +102,22 @@ function renderShipmentsTable(items) {
     return;
   }
 
-  tbody.innerHTML = items.map(s => `
-    <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}">
+  tbody.innerHTML = items.map(s => {
+    const isCompleted = s.status === 'Completed';
+    const statusMap = {
+      Draft: "Bản nháp",
+      PendingPayment: "Chờ thanh toán",
+      Paid30: "Đã thanh toán 30%",
+      Paid70: "Đã thanh toán 70%",
+      PendingImport: "Chờ nhập hàng",
+      Completed: "Đã hoàn thành",
+      Cancelled: "Đã hủy"
+    };
+    const sLabel = statusMap[s.status] || s.status;
+    const bgClass = isCompleted ? 'background: #f1f5f9; opacity: 0.85;' : '';
+
+    return `
+    <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}" style="${bgClass}">
       <td style="text-align:center;"><input type="checkbox" class="row-checkbox" value="${s.id}" ${selectedId === s.id ? 'checked' : ''}></td>
       <td style="text-align:center; cursor:pointer;" class="expand-btn" data-id="${s.id}">
         <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
@@ -116,12 +130,16 @@ function renderShipmentsTable(items) {
       <td>${s.portOfLoading || '-'} ➔ ${s.portOfDischarge || '-'}</td>
       <td>${Number(s.totalQuantity || 0).toLocaleString()}</td>
       <td><strong>$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${s.currency || 'USD'}</strong></td>
-      <td><span class="status-chip chip-warning">${s.status}</span></td>
-      <td>
-        <button class="btn btn-default btn-sm" onclick="window.appNavigateTo('shipment-detail', '${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-        <button class="btn btn-default btn-sm" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-        <button class="btn btn-default btn-sm" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg></button>
-        <button class="btn btn-default btn-sm" style="color: var(--amis-red);" onclick="window.xnkDeleteShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+      <td><span class="status-chip ${isCompleted ? 'chip-delivered' : 'chip-warning'}">${sLabel}</span></td>
+      <td style="white-space: nowrap;">
+        <button class="btn btn-default btn-sm" title="Chi tiết" onclick="window.appNavigateTo('shipment-detail', '${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+        <button class="btn btn-default btn-sm" title="Tải xuống tất cả file" onclick="window.xnkDownloadAllShipmentDocs('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+        ${isCompleted 
+          ? `<button class="btn btn-default btn-sm" title="Mở khóa (Đổi trạng thái)" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--amis-red)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>`
+          : `<button class="btn btn-default btn-sm" title="Sửa lô hàng" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+             <button class="btn btn-default btn-sm" title="Cập nhật hành trình" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg></button>
+             <button class="btn btn-default btn-sm" title="Xóa" style="color: var(--amis-red);" onclick="window.xnkDeleteShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`
+        }
       </td>
     </tr>
     <!-- Hidden Expandable Row -->
@@ -133,7 +151,8 @@ function renderShipmentsTable(items) {
         </div>
       </td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
 
   document.getElementById("shipmentPaginationText").textContent = `Tổng số: ${items.length} bản ghi`;
 
@@ -179,15 +198,25 @@ function setupShipmentEvents() {
     if (selectedId) openStatusModal(selectedId);
   });
 
-  window.xnkEditShipment = (id) => openShipmentForm(id);
-  window.xnkStatusShipment = (id) => openStatusModal(id);
-  window.xnkDeleteShipment = (id) => deleteShipment(id);
+
 }
 
 // ==================== SHIPMENT FORM ====================
+window.xnkEditShipment = openShipmentForm;
 async function openShipmentForm(id) {
   let s = null;
-  if (id) s = shipmentsList.find(x => x.id === id);
+  if (id) {
+    s = shipmentsList.find(x => x.id === id);
+    if (!s) {
+      try {
+        const res = await api.get(`/api/shipments/${id}`);
+        s = res.data;
+      } catch (e) {
+        showToast("Không thể tải thông tin lô hàng", "error");
+        return;
+      }
+    }
+  }
   const isEdit = !!s;
 
   // Load all data in parallel
@@ -576,8 +605,16 @@ function updateTotalFields() {
 }
 
 // ==================== STATUS MODAL ====================
+window.xnkStatusShipment = openStatusModal;
 async function openStatusModal(id) {
-  const s = shipmentsList.find(x => x.id === id);
+  let s = shipmentsList.find(x => x.id === id);
+  if (!s) {
+    try {
+      s = (await api.get(`/api/shipments/${id}`)).data;
+    } catch (e) {
+      showToast("Lỗi", "error"); return;
+    }
+  }
 
   window.openModal();
 
@@ -594,15 +631,12 @@ async function openStatusModal(id) {
       <label class="form-label required">Chọn Trạng Thái Mới</label>
       <select id="newStatusSelect" class="form-select" style="font-size: 14px; padding: 8px;">
         <option value="Draft">Draft (Bản nháp)</option>
-        <option value="PreparingDocuments">Preparing Documents (Đang chuẩn bị chứng từ)</option>
-        <option value="BookingRequested">Booking Requested (Đã gửi yêu cầu Booking)</option>
-        <option value="BookingConfirmed">Booking Confirmed (Đã xác nhận Booking)</option>
-        <option value="InTransit">In Transit (Đang trên biển / Đang vận chuyển)</option>
-        <option value="Arrived">Arrived (Đã cập cảng đến)</option>
-        <option value="CustomsProcessing">Customs Processing (Đang làm thủ tục hải quan)</option>
-        <option value="CustomsCleared">Customs Cleared (Đã thông quan)</option>
-        <option value="Completed">Completed (Đã nhập kho / Hoàn tất)</option>
-        <option value="Cancelled">Cancelled (Đã hủy)</option>
+        <option value="PendingPayment">Chờ thanh toán</option>
+        <option value="Paid30">Đã thanh toán 30%</option>
+        <option value="Paid70">Đã thanh toán 70%</option>
+        <option value="PendingImport">Chờ nhập hàng</option>
+        <option value="Completed">Đã hoàn thành</option>
+        <option value="Cancelled">Đã hủy</option>
       </select>
     </div>
   `;
@@ -627,6 +661,7 @@ async function openStatusModal(id) {
   };
 }
 
+window.xnkDeleteShipment = deleteShipment;
 async function deleteShipment(id) {
   const s = shipmentsList.find(x => x.id === id);
   const confirmed = await showConfirm({
@@ -771,3 +806,91 @@ function renderExpandContent(container, data) {
     </div>
   `;
 }
+
+window.xnkDownloadAllShipmentDocs = async function(shipmentId) {
+  try {
+    const res = await api.get('/api/documents?shipmentId=' + shipmentId);
+    const docs = res.data?.items || res.data || [];
+    
+    if (docs.length === 0) {
+      showToast('Lô hàng này chưa có file nào được tải lên.', 'warning');
+      return;
+    }
+
+    const content = `
+      <div style="padding: 10px 0;">
+        <p style="margin-bottom: 10px; color: var(--text-muted); font-size: 13px;">Chọn các file bạn muốn tải xuống:</p>
+        <div style="max-height: 350px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+          ${docs.map((d, i) => `
+            <label style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom: 1px solid #f1f5f9; cursor:pointer;">
+              <input type="checkbox" class="doc-dl-chk" value="${d.id}" data-name="${d.originalFileName || d.fileName}" checked>
+              <span>
+                <strong>${d.originalFileName || d.fileName}</strong> 
+                <span style="font-size:11px; color:#94a3b8; margin-left:8px;">(${(d.fileSize/1024).toFixed(1)} KB)</span>
+              </span>
+            </label>
+          `).join('')}
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px;">
+          <label style="font-size:13px; cursor:pointer;"><input type="checkbox" id="doc-dl-checkall" checked> Chọn tất cả</label>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-default" onclick="window.closeModal()">Đóng</button>
+            <button class="btn btn-primary" id="btn-dl-selected-docs">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
+              Tải Xuống
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    window.openModal('Tải File Lô Hàng', content);
+
+    const chkAll = document.getElementById('doc-dl-checkall');
+    const chks = document.querySelectorAll('.doc-dl-chk');
+
+    chkAll.addEventListener('change', (e) => {
+      chks.forEach(c => c.checked = e.target.checked);
+    });
+    
+    chks.forEach(c => c.addEventListener('change', () => {
+      const allChecked = Array.from(chks).every(x => x.checked);
+      chkAll.checked = allChecked;
+    }));
+
+    document.getElementById('btn-dl-selected-docs').addEventListener('click', async () => {
+      const selected = Array.from(chks).filter(c => c.checked);
+      if (selected.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 file để tải', 'warning');
+        return;
+      }
+      
+      const token = localStorage.getItem('xnk_token');
+      let count = 0;
+      
+      for (const sel of selected) {
+        try {
+          const downloadRes = await fetch('http://localhost:5000/api/documents/' + sel.value + '/download', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (downloadRes.ok) {
+            const blob = await downloadRes.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = sel.getAttribute('data-name');
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            count++;
+          }
+        } catch(e) {}
+      }
+      showToast('Đã tải xuống ' + count + ' file.', 'success');
+      window.closeModal();
+    });
+  } catch(e) {
+    showToast('Lỗi tải danh sách file', 'error');
+  }
+};

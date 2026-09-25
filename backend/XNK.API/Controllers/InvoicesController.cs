@@ -88,7 +88,10 @@ public class InvoicesController : ControllerBase
         Type = i.Type.ToString(), PaymentTerms = i.PaymentTerms, Currency = i.Currency,
         SubTotal = i.SubTotal, Discount = i.Discount, OtherCharges = i.OtherCharges,
         TotalValue = i.TotalValue, Notes = i.Notes, ShipmentId = i.ShipmentId,
-        ShipmentCode = i.Shipment?.ShipmentCode, CreatedAt = i.CreatedAt,
+        ShipmentCode = i.Shipment?.ShipmentCode, 
+        PartnerName = i.Shipment?.Supplier?.CompanyName ?? i.Shipment?.Customer?.CompanyName,
+        ShipmentType = i.Shipment?.Type.ToString(),
+        CreatedAt = i.CreatedAt,
         Items = i.Items?.Select(ii => new InvoiceItemDto
         {
             Id = ii.Id, ProductName = ii.ProductName, ProductCode = ii.ProductCode,

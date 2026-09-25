@@ -336,6 +336,8 @@ public class InvoiceDto
     public string? Notes { get; set; }
     public Guid ShipmentId { get; set; }
     public string? ShipmentCode { get; set; }
+    public string? PartnerName { get; set; }
+    public string? ShipmentType { get; set; }
     public List<InvoiceItemDto> Items { get; set; } = new();
     public DateTime CreatedAt { get; set; }
 }
