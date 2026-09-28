@@ -65,6 +65,12 @@ public interface IAuditLogRepository
     Task<PagedResultDto<AuditLog>> GetPagedAsync(string? userId, string? module, DateTime? from, DateTime? to, int page, int pageSize);
 }
 
+public interface ICustomsDeclarationRepository : IGenericRepository<CustomsDeclaration>
+{
+    Task<PagedResultDto<CustomsDeclaration>> GetPagedAsync(string? search, Guid? shipmentId, int page, int pageSize);
+    Task<bool> DeclarationNumberExistsAsync(string number, Guid? excludeId = null);
+}
+
 public interface IUnitOfWork : IDisposable
 {
     IProductRepository Products { get; }
@@ -75,5 +81,6 @@ public interface IUnitOfWork : IDisposable
     IPackingListRepository PackingLists { get; }
     IDocumentRepository Documents { get; }
     IAuditLogRepository AuditLogs { get; }
+    ICustomsDeclarationRepository CustomsDeclarations { get; }
     Task<int> SaveChangesAsync();
 }

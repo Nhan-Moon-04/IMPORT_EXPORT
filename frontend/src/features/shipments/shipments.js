@@ -164,22 +164,22 @@ function renderShipmentsTable(items) {
 
     const productText = (s.productNames && s.productNames.length > 0) 
       ? s.productNames.join(', ') 
-      : (s.items?.[0]?.productName || 'Sợi Dệt 75D');
+      : (s.items?.[0]?.productName || '---');
 
     const invoiceText = (s.invoiceNumbers && s.invoiceNumbers.length > 0)
       ? s.invoiceNumbers.join(', ')
-      : 'INV-2026-001';
+      : '---';
 
     const declText = (s.declarationNumbers && s.declarationNumbers.length > 0)
       ? s.declarationNumbers.join(', ')
-      : '105928371900';
+      : '---';
 
     const contText = (s.containerNumbers && s.containerNumbers.length > 0)
       ? s.containerNumbers.join(', ')
-      : 'COSU8937218';
+      : '---';
 
-    const etdText = s.bookings?.[0]?.etd ? new Date(s.bookings[0].etd).toLocaleDateString('vi-VN') : '20/09/2026';
-    const etaText = s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '26/09/2026';
+    const etdText = s.bookings?.[0]?.etd ? new Date(s.bookings[0].etd).toLocaleDateString('vi-VN') : '---';
+    const etaText = s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '---';
 
     let rowHtml = `
     <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}" style="${bgClass}">

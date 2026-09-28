@@ -3,6 +3,7 @@ import { api, toast, openModal, closeModal, showConfirm } from '../../core/api.j
 import { openShipmentForm } from '../shipments/shipments.js';
 import { openUploadDocumentModal } from '../documents/documents.js';
 import { openCreateInvoiceModal } from '../invoices/invoices.js';
+import { openCreateCustomsModal } from '../customs/customs.js';
 
 // ─── Timeline Storage ─────────────────────────────────────────────────────────
 // Mỗi lô hàng có mảng entries riêng trong localStorage
@@ -167,9 +168,9 @@ export async function renderShipmentDetail(container, shipmentId) {
     const salesContracts= invoices.filter(i => i.type === 'SalesContract');
     const packingLists  = invoices.filter(i => i.type === 'PackingList');
 
-    const primaryInvoiceNumber     = trueInvoices[0]?.invoiceNumber   || 'LCW-INV-2026-001';
-    const primaryContractNumber    = salesContracts[0]?.invoiceNumber  || 'PL-2026-001';
-    const primaryDeclarationNumber = shipment.customsDeclarations?.[0]?.declarationNumber || '105928371900';
+    const primaryInvoiceNumber     = trueInvoices[0]?.invoiceNumber   || '---';
+    const primaryContractNumber    = salesContracts[0]?.invoiceNumber  || '---';
+    const primaryDeclarationNumber = shipment.customsDeclarations?.[0]?.declarationNumber || '---';
 
     const bookings   = shipment.bookings  || [];
     const containers = shipment.containers || [];
@@ -185,8 +186,8 @@ export async function renderShipmentDetail(container, shipmentId) {
     const currency     = shipment.currency || 'USD';
     const totalVnd     = totalVal * exchangeRate;
 
-    const shpCode        = shipment.shipmentCode || shipment.code || 'SHP-20260901-VTX';
-    const supplierTitle  = shipment.supplierName || shipment.customerName || 'Công ty TNHH Dệt May Việt Nam (VINTEX)';
+    const shpCode        = shipment.shipmentCode || shipment.code || '---';
+    const supplierTitle  = shipment.supplierName || shipment.customerName || '---';
     const partnerCode    = (shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
     
     const contactPerson = partnerContactPerson;
@@ -277,6 +278,38 @@ export async function renderShipmentDetail(container, shipmentId) {
     }).join('') : `<tr><td colspan="13" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
 
 
+
+    // ── Build customs rows ──────────────────────────────────────────────
+    const customsHtml = customs.length === 0 ? `<div class="sd-card"><div class="sd-card-body" style="text-align:center;color:#64748b;padding:24px;">Chưa có tờ khai hải quan nào.</div></div>` : customs.map(cd => {
+      const d = cd.declarationDate ? new Date(cd.declarationDate).toLocaleDateString('vi-VN') : '---';
+      const st = cd.status === 1 ? '<span class="chip chip-green">LUỒNG XANH</span>'
+               : cd.status === 2 ? '<span class="chip chip-orange">LUỒNG VÀNG</span>'
+               : cd.status === 3 ? '<span class="chip chip-red">LUỒNG ĐỎ</span>'
+               : '<span class="chip chip-slate">CHƯA PHÂN LUỒNG</span>';
+      
+      return `
+        <div class="sd-card" style="margin-bottom:12px;">
+          <div class="sd-card-header">
+            <div class="sd-card-header-left">
+              📋 Tờ khai hải quan
+              ${st}
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="sd-btn-sm btn-secondary" onclick="window.viewCustomsDoc('${cd.id}')">Xem/Tải File</button>
+              <button class="sd-btn-sm btn-primary" onclick="window.editCustomsDeclaration('${cd.id}', () => { document.getElementById('sd-back-link').click(); setTimeout(() => window.appNavigateTo('shipment-detail?id=${shipmentId}'), 100); })">Sửa</button>
+              <button class="sd-btn-sm btn-danger" onclick="window.deleteCustomsDeclaration('${cd.id}', () => { document.getElementById('sd-back-link').click(); setTimeout(() => window.appNavigateTo('shipment-detail?id=${shipmentId}'), 100); })">Xóa</button>
+            </div>
+          </div>
+          <div class="sd-card-body" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:12px;">
+            <div class="sd-field"><div class="sd-field-label">Số tờ khai HQ</div><div class="sd-field-value" style="color:#b45309;font-weight:600;">${cd.declarationNumber || '---'}</div></div>
+            <div class="sd-field"><div class="sd-field-label">Ngày đăng ký</div><div class="sd-field-value">${d}</div></div>
+            <div class="sd-field"><div class="sd-field-label">Chi cục Hải quan</div><div class="sd-field-value" style="font-size:11px;">${cd.customsBranch || '---'}</div></div>
+            <div class="sd-field"><div class="sd-field-label">Loại hình</div><div class="sd-field-value">${cd.declarationType || '---'}</div></div>
+            <div class="sd-field" style="grid-column: span 4;"><div class="sd-field-label">Ghi chú</div><div class="sd-field-value">${cd.notes || '---'}</div></div>
+          </div>
+        </div>
+      `;
+    }).join('');
 
     // ── Render HTML ─────────────────────────────────────────────────────
     container.innerHTML = `
@@ -771,28 +804,14 @@ export async function renderShipmentDetail(container, shipmentId) {
 
               <!-- ═══ TAB: HẢI QUAN ═══ -->
               <div class="sd-pane" id="sd-pane-customs">
-                <div class="sd-card">
-                  <div class="sd-card-header">
-                    <div class="sd-card-header-left">
-                      📋 Khai báo hải quan (VNACCS)
-                      <span class="chip chip-green">LUỒNG XANH</span>
-                    </div>
-                    <div style="display:flex;gap:6px;">
-                      <a href="https://customs.gov.vn/tra-cuu" target="_blank" class="sd-btn-sm">🔗 Cổng Hải Quan</a>
-                      <button class="sd-btn-sm">+ Quản lý tờ khai</button>
-                    </div>
-                  </div>
-                  <div class="sd-card-body" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:12px;">
-                    <div class="sd-field"><div class="sd-field-label">Số tờ khai HQ</div><div class="sd-field-value" style="color:#b45309;">${primaryDeclarationNumber}</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Ngày đăng ký</div><div class="sd-field-value">24/09/2026</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Chi cục Hải quan</div><div class="sd-field-value" style="font-size:11px;">HQ CK Cảng Sài Gòn KV1</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Loại hình</div><div class="sd-field-value">A11 (Nhập tiêu dùng)</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Ngày thông quan</div><div class="sd-field-value" style="color:var(--amis-green);">25/09/2026 10:15</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Thuế NK & GTGT</div><div class="sd-field-value">0₫ (Form E ưu đãi 0%)</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Người khai HQ</div><div class="sd-field-value">Nguyễn Văn Khai</div></div>
-                    <div class="sd-field"><div class="sd-field-label">Phân luồng</div><div class="sd-field-value"><span class="chip chip-green">XANH</span></div></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
+                  <h3 style="font-size:16px; margin:0; color:var(--text-color);">Danh Sách Tờ Khai</h3>
+                  <div style="display:flex;gap:6px;">
+                    <a href="https://customs.gov.vn/tra-cuu" target="_blank" class="sd-btn-sm" style="background:#0f172a;color:#fff;border:none;">🔗 Cổng Hải Quan</a>
+                    <button class="sd-btn-sm" id="sd-btn-add-customs">+ Thêm tờ khai HQ</button>
                   </div>
                 </div>
+                ${customsHtml}
               </div>
 
               <!-- ═══ TAB: CHI PHÍ ═══ -->
@@ -1074,6 +1093,15 @@ export async function renderShipmentDetail(container, shipmentId) {
     container.querySelector('#sd-btn-add-invoice')?.addEventListener('click', () => {
       if (openCreateInvoiceModal) openCreateInvoiceModal(shipment.id, 'CommercialInvoice');
       else window.appNavigateTo('invoices');
+    });
+
+    // Add customs declaration
+    container.querySelector('#sd-btn-add-customs')?.addEventListener('click', () => {
+      if (openCreateCustomsModal) openCreateCustomsModal(shipment.id, () => {
+        // Re-render shipment detail on success
+        renderShipmentDetail(container, shipmentId);
+      });
+      else window.appNavigateTo('customs-declarations');
     });
 
     // ── TIMELINE EVENT HANDLERS ─────────────────────────────────────────

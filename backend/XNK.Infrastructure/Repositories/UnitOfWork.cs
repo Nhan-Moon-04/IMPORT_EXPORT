@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
     private IPackingListRepository? _packingLists;
     private IDocumentRepository? _documents;
     private IAuditLogRepository? _auditLogs;
+    private ICustomsDeclarationRepository? _customsDeclarations;
 
     public UnitOfWork(AppDbContext context)
     {
@@ -28,6 +29,7 @@ public class UnitOfWork : IUnitOfWork
     public IPackingListRepository PackingLists => _packingLists ??= new PackingListRepository(_context);
     public IDocumentRepository Documents => _documents ??= new DocumentRepository(_context);
     public IAuditLogRepository AuditLogs => _auditLogs ??= new AuditLogRepository(_context);
+    public ICustomsDeclarationRepository CustomsDeclarations => _customsDeclarations ??= new CustomsDeclarationRepository(_context);
 
     public async Task<int> SaveChangesAsync()
         => await _context.SaveChangesAsync();

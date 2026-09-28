@@ -267,6 +267,20 @@ public class CustomsDeclarationDto
     public string? CustomsBranch { get; set; }
     public int? Status { get; set; }
     public string? Notes { get; set; }
+    public Guid ShipmentId { get; set; }
+    public string? ShipmentCode { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateCustomsDeclarationDto
+{
+    public string DeclarationNumber { get; set; } = string.Empty;
+    public DateTime? DeclarationDate { get; set; }
+    public string? DeclarationType { get; set; }
+    public string? CustomsBranch { get; set; }
+    public int? Status { get; set; }
+    public string? Notes { get; set; }
+    public Guid ShipmentId { get; set; }
 }
 
 public class ShipmentItemDto
