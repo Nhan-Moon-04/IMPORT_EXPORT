@@ -251,31 +251,30 @@ export async function renderShipmentDetail(container, shipmentId) {
     }
 
     // ── Build product rows ──────────────────────────────────────────────
-    const sampleItem = {
-      productCode: 'P-75D', productName: 'Sợi Polyester 75D',
-      hsCode: '5402.33.00', origin: 'Đài Loan (TW)', unit: 'kg',
-      quantity: 222, unitPrice: 2.00, totalPrice: 444, netWeight: 20, grossWeight: 22,
-      specification: '750/36F', lotBatch: 'LOT001',
-    };
-    const displayItems = items.length > 0 ? items : [sampleItem];
+    const displayItems = items;
 
-    const productRows = displayItems.map((it, idx) => `
+    const productRows = displayItems.length ? displayItems.map((it, idx) => {
+      const q = Number(it.quantity || 0);
+      const p = Number(it.unitPrice || 0);
+      const rowTotal = it.totalPrice ? Number(it.totalPrice) : (q * p);
+      return `
       <tr>
         <td style="text-align:center;color:#64748b;">${idx + 1}</td>
-        <td style="font-weight:700;color:var(--amis-blue);">${it.productCode || 'P-75D'}</td>
-        <td><strong>${it.productName || 'Sợi Polyester 75D'}</strong></td>
-        <td style="font-family:monospace;color:#475569;">${it.hsCode || '5402.33.00'}</td>
-        <td>${it.origin || 'Đài Loan (TW)'}</td>
-        <td style="text-align:center;">${it.unit || 'kg'}</td>
-        <td style="text-align:right;font-weight:600;">${Number(it.quantity || 0).toLocaleString()}</td>
-        <td style="text-align:right;">$${Number(it.unitPrice || 2).toFixed(2)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(it.totalPrice || 444).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-        <td style="text-align:right;">${Number(it.netWeight   || 20).toFixed(0)} kg</td>
-        <td style="text-align:right;">${Number(it.grossWeight || 22).toFixed(0)} kg</td>
-        <td style="color:#64748b;">${it.specification || '750/36F'}</td>
-        <td style="color:#64748b;">${it.lotBatch || 'LOT001'}</td>
+        <td style="font-weight:700;color:var(--amis-blue);">${it.productCode || it.sku || '---'}</td>
+        <td><strong>${it.productName || '---'}</strong></td>
+        <td style="font-family:monospace;color:#475569;">${it.hsCode || '---'}</td>
+        <td>${it.origin || '---'}</td>
+        <td style="text-align:center;">${it.unit || '---'}</td>
+        <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
+        <td style="text-align:right;">$${p.toFixed(2)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
+        <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
+        <td style="color:#64748b;">${it.specification || '---'}</td>
+        <td style="color:#64748b;">${it.lotBatch || '---'}</td>
       </tr>
-    `).join('');
+      `;
+    }).join('') : `<tr><td colspan="13" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
 
 
 
@@ -432,12 +431,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <span class="sd-info-key">Trạng thái</span>
                         <span class="sd-info-val"><span class="${statusClass}">${statusLabel}</span></span>
                       </div>
-                      <div class="sd-info-row">
-                        <span class="sd-info-key">Ghi chú</span>
-                        <span class="sd-info-val" style="max-width:200px;white-space:normal;word-break:break-word;font-weight:400;font-size:11.5px;color:#64748b;text-align:right;">
-                          ${shipment.notes || '---'}
-                        </span>
-                      </div>
+
                       <div class="sd-divider"></div>
                       <div class="sd-info-row">
                         <span class="sd-info-key">ETD</span>
@@ -925,11 +919,8 @@ export async function renderShipmentDetail(container, shipmentId) {
             <div class="sd-price-callout">
               <div class="sd-price-label">TỔNG GIÁ TRỊ LÔ HÀNG</div>
               <div class="sd-price-amount">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-              <div class="sd-price-vnd">≈ ${Number(totalVnd).toLocaleString('vi-VN')} ₫</div>
               <div class="sd-price-meta">
                 <div>Đơn vị tiền tệ: <strong>${currency}</strong></div>
-                <div>Tỷ giá: <strong>${exchangeRate.toLocaleString()}</strong></div>
-                <div>Quy mô: <strong>${Number(totalQty).toLocaleString()} kg</strong> (${totalPackages} kiện)</div>
               </div>
             </div>
 
