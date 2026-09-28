@@ -478,7 +478,7 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
       <div class="form-row-2">
         <div class="form-group">
           <label class="form-label">Lô Hàng Liên Quan</label>
-          <select id="inv-shipment" class="form-select">
+          <select id="inv-shipment" class="form-select" ${defaultShipmentId ? 'disabled' : ''}>
             <option value="">-- Chọn lô hàng (tùy chọn) --</option>
             ${shipmentOpts}
           </select>
@@ -527,9 +527,7 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
 
   document.getElementById('btn-cancel-inv').addEventListener('click', closeModal);
 
-  // Event khi đổi lô hàng sẽ load thông tin sản phẩm
-  document.getElementById('inv-shipment').addEventListener('change', async (e) => {
-    const shipmentId = e.target.value;
+  const loadShipmentItems = async (shipmentId) => {
     const tbody = document.getElementById('inv-items-body');
     if (!shipmentId) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999; font-style:italic; padding:20px;">Vui lòng chọn lô hàng...</td></tr>';
@@ -563,6 +561,15 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
     }
+  };
+
+  if (defaultShipmentId) {
+    loadShipmentItems(defaultShipmentId);
+  }
+
+  // Event khi đổi lô hàng sẽ load thông tin sản phẩm
+  document.getElementById('inv-shipment').addEventListener('change', async (e) => {
+    loadShipmentItems(e.target.value);
   });
 
   document.getElementById('create-invoice-form').addEventListener('submit', async (e) => {

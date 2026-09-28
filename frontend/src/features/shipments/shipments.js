@@ -226,7 +226,26 @@ function renderShipmentsTable(items) {
       rowHtml += `<td style="text-align:right; font-weight:700; color:var(--amis-green);">$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>`;
     }
     if (cols.status) {
-      rowHtml += `<td><span class="status-chip ${isCompleted ? 'chip-delivered' : 'chip-warning'}">${sLabel}</span></td>`;
+      // Đọc trạng thái mới nhất từ timeline (localStorage)
+      const tlEntries = (() => {
+        try { return JSON.parse(localStorage.getItem(`xnk_timeline_${s.id}`) || '[]'); } catch { return []; }
+      })();
+      const latestText = tlEntries.length > 0 ? tlEntries[tlEntries.length - 1].text : null;
+
+      if (latestText) {
+        // Truncate nếu dài hơn 22 ký tự
+        const MAX = 22;
+        const display = latestText.length > MAX ? latestText.slice(0, MAX) + '…' : latestText;
+        const needsTooltip = latestText.length > MAX;
+        rowHtml += `<td>
+          <span class="status-chip chip-warning" style="max-width:160px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;"
+            ${needsTooltip ? `title="${latestText.replace(/"/g, '&quot;')}"` : ''}>
+            ${display}
+          </span>
+        </td>`;
+      } else {
+        rowHtml += `<td><span class="status-chip ${isCompleted ? 'chip-delivered' : 'chip-warning'}">${sLabel}</span></td>`;
+      }
     }
 
     rowHtml += `
@@ -264,6 +283,27 @@ function renderShipmentsTable(items) {
     });
   });
 }
+
+// ── Live-update cột Trạng Thái khi có entry timeline mới ──────────────────
+window.addEventListener('xnk:timeline-updated', (e) => {
+  const { shipmentId } = e.detail || {};
+  if (!shipmentId) return;
+  const mainRow = document.querySelector(`tr[data-id="${shipmentId}"].shipment-main-row`);
+  if (!mainRow) return;
+  const tlEntries = (() => {
+    try { return JSON.parse(localStorage.getItem(`xnk_timeline_${shipmentId}`) || '[]'); } catch { return []; }
+  })();
+  const latestText = tlEntries.length > 0 ? tlEntries[tlEntries.length - 1].text : null;
+  // Ô trạng thái là ô áp cuối (trước Thao tác)
+  const cells = mainRow.querySelectorAll('td');
+  const statusCell = cells[cells.length - 2];
+  if (!statusCell || !latestText) return;
+  const MAX = 22;
+  const display = latestText.length > MAX ? latestText.slice(0, MAX) + '…' : latestText;
+  statusCell.innerHTML = `<span class="status-chip chip-warning"
+    style="max-width:160px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;"
+    ${latestText.length > MAX ? `title="${latestText.replace(/"/g,'&quot;')}"` : ''}>${display}</span>`;
+});
 
 function selectShipmentRow(id) {
   selectedId = id;
@@ -367,8 +407,12 @@ function openColumnConfigModal() {
 }
 
 // ==================== SHIPMENT FORM ====================
+export function openShipmentForm(id) {
+  window.appNavigateTo('shipment-form', id);
+}
 window.xnkEditShipment = openShipmentForm;
-export async function openShipmentForm(id) {
+
+export async function renderShipmentForm(container, id) {
   let s = null;
   if (id) {
     s = shipmentsList.find(x => x.id === id);
@@ -426,115 +470,134 @@ export async function openShipmentForm(id) {
 
   const currentType = s?.type || 'Import';
 
-  window.openModal();
+  const isEditTitle = isEdit ? `Chỉnh sửa lô hàng` : `Thêm mới lô hàng`;
 
-  const title = document.getElementById("modalTitle");
-  const tabs = document.getElementById("modalTabs");
-  const body = document.getElementById("modalBody");
-  const footer = document.getElementById("modalFooter");
+  container.innerHTML = `
+    <div class="sd-page">
+      <div class="sd-breadcrumb">
+        <a href="#" onclick="window.appNavigateTo('shipments'); return false;">Tất cả lô hàng</a>
+        <span class="sd-breadcrumb-sep">›</span>
+        <span class="sd-breadcrumb-cur">${isEditTitle}</span>
+      </div>
 
-  if (tabs) tabs.style.display = "none";
-  title.innerHTML = isEdit ? `✏️ Sửa Hồ Sơ Lô Hàng: <strong>${s.shipmentCode}</strong>` : `➕ Thêm Mới Hồ Sơ Lô Hàng XNK`;
-
-  body.innerHTML = `
-    <form id="shipmentForm">
-      <div class="form-row-3">
-        <div class="form-group">
-          <label class="form-label required">Mã Lô Hàng (Shipment Code)</label>
-          <input type="text" id="sCode" class="form-input" required value="${s?.shipmentCode || ''}" placeholder="VD: SHP-2026-0901">
+      <form id="shipmentForm" style="display:contents">
+      <div class="sd-header">
+        <div class="sd-header-row1" style="justify-content: space-between; align-items: center;">
+          <div style="display:flex; align-items:center; gap: 16px;">
+            <div class="sd-icon-box">🚢</div>
+            <div class="sd-title-group">
+              <input type="text" id="sCode" class="form-input" style="font-size:20px; font-weight:700; width: 280px; margin-bottom: 4px; padding: 4px 8px; border-radius:4px; border:1px solid #cbd5e1;" required value="${s?.shipmentCode || ''}" placeholder="Nhập Mã Lô Hàng *">
+              <div class="sd-company" style="font-size:13px; color:#64748b; font-weight: 500;">
+                Mã Lô Hàng XNK (Bắt buộc)
+              </div>
+            </div>
+          </div>
+          <div class="sd-header-actions">
+            <button type="button" class="btn btn-default" onclick="window.appNavigateTo('shipments')">Hủy bỏ</button>
+            <button type="button" id="btnSaveShipment" class="btn btn-primary">✔ Cất (Lưu)</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label required">Loại Hình</label>
-          <select id="sType" class="form-select">
+      </div>
+
+      <div class="sd-infobar">
+        <div class="sd-field">
+          <div class="sd-field-label">Loại hình *</div>
+          <select id="sType" class="form-select" style="width:100%; margin-top:4px; height:32px;">
             <option value="Import" ${currentType === 'Import' ? 'selected' : ''}>📥 Nhập khẩu</option>
             <option value="Export" ${currentType === 'Export' ? 'selected' : ''}>📤 Xuất khẩu</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Ngày Dự Kiến (ETA/ETD)</label>
-          <input type="date" id="sExpectedDate" class="form-input" value="${s?.expectedDate ? s.expectedDate.split('T')[0] : ''}">
-        </div>
-      </div>
-
-      <div class="form-row-2">
-        <div class="form-group" id="supplierGroup" style="${currentType === 'Export' ? 'display:none;' : ''}">
-          <label class="form-label">🏭 Nhà Cung Cấp <span style="color:#0369a1; font-size:11px;">(Lô nhập)</span></label>
-          <select id="sSupplierId" class="form-select">
+        <div class="sd-field" id="supplierGroup" style="${currentType === 'Export' ? 'display:none;' : ''}">
+          <div class="sd-field-label">Đối tác (NCC) *</div>
+          <select id="sSupplierId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
             <option value="">-- Chọn Nhà Cung Cấp --</option>
-            ${suppliers.map(sup => `<option value="${sup.id}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country})</option>`).join('')}
+            ${suppliers.map(sup => {
+              const contact = (sup.contactPerson || sup.contactName || '') + (sup.phone ? ' - ' + sup.phone : '');
+              return `<option value="${sup.id}" data-contact="${escapeHtml(contact)}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country || 'VN'})</option>`;
+            }).join('')}
           </select>
         </div>
-        <div class="form-group" id="customerGroup" style="${currentType === 'Import' ? 'display:none;' : ''}">
-          <label class="form-label">🤝 Khách Hàng <span style="color:#15803d; font-size:11px;">(Lô xuất)</span></label>
-          <select id="sCustomerId" class="form-select">
+        <div class="sd-field" id="customerGroup" style="${currentType === 'Import' ? 'display:none;' : ''}">
+          <div class="sd-field-label">Đối tác (KH) *</div>
+          <select id="sCustomerId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
             <option value="">-- Chọn Khách Hàng --</option>
-            ${customers.map(c => `<option value="${c.id}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`).join('')}
+            ${customers.map(c => {
+              const contact = (c.contactPerson || c.contactName || '') + (c.phone ? ' - ' + c.phone : '');
+              return `<option value="${c.id}" data-contact="${escapeHtml(contact)}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`;
+            }).join('')}
           </select>
         </div>
-      </div>
-
-      <div class="form-row-3">
-        <div class="form-group">
-          <label class="form-label">Cảng Đi (Port of Loading)</label>
-          <input type="text" id="sPol" class="form-input" value="${s?.portOfLoading || ''}" placeholder="VD: Kaohsiung Port, Taiwan">
+        <div class="sd-field">
+          <div class="sd-field-label">Ngày tạo lập *</div>
+          <input type="date" id="sCreatedAt" class="form-input" required value="${s?.createdAt ? s.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]}" style="width:100%; margin-top:4px; height:32px;">
         </div>
-        <div class="form-group">
-          <label class="form-label">Cảng Đến (Port of Discharge)</label>
-          <input type="text" id="sPod" class="form-input" value="${s?.portOfDischarge || ''}" placeholder="VD: Cat Lai Port, HCMC">
+        <div class="sd-field">
+          <div class="sd-field-label">Ngày dự kiến ETA</div>
+          <input type="date" id="sExpectedDate" class="form-input" value="${s?.expectedDate ? s.expectedDate.split('T')[0] : ''}" style="width:100%; margin-top:4px; height:32px;">
         </div>
-        <div class="form-group">
-          <label class="form-label">Điều kiện giao hàng (Incoterm)</label>
-          <select id="sTerm" class="form-select">
-            <option value="CIF" ${s?.deliveryTerm === 'CIF' ? 'selected' : ''}>CIF</option>
+        <div class="sd-field">
+          <div class="sd-field-label">Cảng xếp hàng (POL)</div>
+          <input type="text" id="sPol" class="form-input" value="${s?.portOfLoading || 'Cat Lai Port, Ho Chi Minh City'}" style="width:100%; margin-top:4px; height:32px;">
+        </div>
+        <div class="sd-field">
+          <div class="sd-field-label">Cảng dỡ hàng (POD)</div>
+          <input type="text" id="sPod" class="form-input" value="${s?.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City'}" style="width:100%; margin-top:4px; height:32px;">
+        </div>
+        <div class="sd-field">
+          <div class="sd-field-label">Incoterm</div>
+          <select id="sTerm" class="form-select" style="width:100%; margin-top:4px; height:32px;">
+            <option value="CIF" ${(!s || s?.deliveryTerm === 'CIF') ? 'selected' : ''}>CIF</option>
             <option value="FOB" ${s?.deliveryTerm === 'FOB' ? 'selected' : ''}>FOB</option>
             <option value="EXW" ${s?.deliveryTerm === 'EXW' ? 'selected' : ''}>EXW</option>
             <option value="CFR" ${s?.deliveryTerm === 'CFR' ? 'selected' : ''}>CFR</option>
             <option value="DDP" ${s?.deliveryTerm === 'DDP' ? 'selected' : ''}>DDP</option>
           </select>
         </div>
+        <div class="sd-field">
+          <div class="sd-field-label">Người liên hệ *</div>
+          <input type="text" id="sContactPerson" class="form-input" readonly value="${s?.contactPerson || ''}" style="width:100%; margin-top:4px; height:32px; background:#f8fafc; color:#64748b; border-color:#e2e8f0; cursor:not-allowed;" placeholder="Tự động liên kết">
+        </div>
+        <div class="sd-field">
+          <div class="sd-field-label">Tổng SL NW (kg) *</div>
+          <input type="number" step="0.01" id="sQty" class="form-input" required value="${s?.totalQuantity || ''}" style="width:100%; margin-top:4px; height:32px;">
+        </div>
+        <div class="sd-field">
+          <div class="sd-field-label">Tổng TL GW (kg)</div>
+          <input type="number" step="0.01" id="sGrossWeight" class="form-input" value="${s?.totalGrossWeight || ''}" style="width:100%; margin-top:4px; height:32px;">
+        </div>
+        <div class="sd-field">
+          <div class="sd-field-label">Tổng trị giá (USD) *</div>
+          <input type="number" step="0.01" id="sValue" class="form-input" required value="${s?.totalValue || ''}" style="width:100%; margin-top:4px; height:32px;">
+        </div>
+        <div class="sd-field" style="grid-column: span 3;">
+          <div class="sd-field-label">Ghi chú</div>
+          <input type="text" id="sNotes" class="form-input" value="${s?.notes || ''}" style="width:100%; margin-top:4px; height:32px;">
+        </div>
       </div>
 
-      <div class="form-row-3">
-        <div class="form-group">
-          <label class="form-label required">Tổng số lượng NW (kg)</label>
-          <input type="number" step="0.01" id="sQty" class="form-input" required value="${s?.totalQuantity || ''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tổng trọng lượng GW (kg)</label>
-          <input type="number" step="0.01" id="sGrossWeight" class="form-input" value="${s?.totalGrossWeight || ''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label required">Tổng trị giá (USD)</label>
-          <input type="number" step="0.01" id="sValue" class="form-input" required value="${s?.totalValue || ''}">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Ghi Chú</label>
-        <textarea id="sNotes" class="form-textarea" rows="2">${s?.notes || ''}</textarea>
-      </div>
-
-      <!-- ===== DANH SÁCH SẢN PHẨM ===== -->
-      <div style="margin-top: 18px; border-top: 2px solid var(--border-color); padding-top: 14px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <label class="form-label" style="margin: 0; font-size: 14px; font-weight: 700;">
-            📦 Danh Sách Sản Phẩm Trong Lô
-          </label>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <select id="productPickerSelect" class="form-select" style="width: 320px; font-size: 13px;">
-              <option value="">-- Chọn sản phẩm để thêm --</option>
-              ${allProducts.map(p => `<option value="${p.id}" data-name="${escapeHtml(p.name)}" data-sku="${escapeHtml(p.sku)}" data-unit="${escapeHtml(p.unit || '')}">${p.sku} - ${p.name}${p.unit ? ' (' + p.unit + ')' : ''}</option>`).join('')}
-            </select>
-            <button type="button" id="btnAddProduct" class="btn btn-primary" style="white-space: nowrap; font-size: 13px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm
-            </button>
+      <div class="sd-body" style="background:#fff; border-top:1px solid #e2e8f0;">
+        <div class="sd-content" style="width:100%; border-right: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 24px 24px 0 24px;">
+            <label class="form-label" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main);">
+              Danh Sách Sản Phẩm Trong Lô
+            </label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="productPickerSelect" class="form-select" style="width: 320px; font-size: 13px;">
+                <option value="">-- Chọn sản phẩm để thêm --</option>
+                ${allProducts.map(p => `<option value="${p.id}" data-name="${escapeHtml(p.name)}" data-sku="${escapeHtml(p.sku)}" data-unit="${escapeHtml(p.unit || '')}">${p.sku} - ${p.name}${p.unit ? ' (' + p.unit + ')' : ''}</option>`).join('')}
+              </select>
+              <button type="button" id="btnAddProduct" class="btn btn-primary" style="white-space: nowrap; font-size: 13px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm dòng
+              </button>
+            </div>
+          </div>
+          <div id="shipmentItemsContainer" style="padding: 0 24px 24px 24px;">
+            ${renderFormItemsTable()}
           </div>
         </div>
-        <div id="shipmentItemsContainer">
-          ${renderFormItemsTable()}
-        </div>
       </div>
-    </form>
+      </form>
+    </div>
   `;
 
   // Wire up type change to show/hide supplier/customer
@@ -552,6 +615,26 @@ export async function openShipmentForm(id) {
       document.getElementById("sSupplierId").value = '';
     }
   });
+
+  const onPartnerChange = (e) => {
+    const sel = e.target;
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.value) {
+      const contact = opt.getAttribute("data-contact");
+      if (contact) {
+        document.getElementById("sContactPerson").value = contact;
+      }
+    }
+  };
+  document.getElementById("sSupplierId").addEventListener("change", onPartnerChange);
+  document.getElementById("sCustomerId").addEventListener("change", onPartnerChange);
+
+  // Khởi tạo liên kết data khi mở form
+  if (currentType === 'Import') {
+    document.getElementById("sSupplierId").dispatchEvent(new Event('change'));
+  } else {
+    document.getElementById("sCustomerId").dispatchEvent(new Event('change'));
+  }
 
   // Wire up add product button
   document.getElementById("btnAddProduct").addEventListener("click", async () => {
@@ -613,10 +696,7 @@ export async function openShipmentForm(id) {
     }
   });
 
-  footer.innerHTML = `
-    <button type="button" class="btn btn-default" onclick="window.closeModal()">Hủy bỏ</button>
-    <button type="button" id="btnSaveShipment" class="btn btn-primary">✔ Cất (Lưu)</button>
-  `;
+
 
   document.getElementById("btnSaveShipment").onclick = async () => {
     const shipmentCode = document.getElementById("sCode").value.trim();
@@ -625,15 +705,33 @@ export async function openShipmentForm(id) {
       return;
     }
 
+    const contactPerson = document.getElementById("sContactPerson").value.trim();
+    if (!contactPerson) {
+      showToast("Vui lòng nhập Người liên hệ", "error");
+      return;
+    }
+
+    const sType = document.getElementById("sType").value;
+    if (sType === 'Import' && !document.getElementById("sSupplierId")?.value) {
+      showToast("Vui lòng chọn Đối tác NCC", "error");
+      return;
+    }
+    if (sType === 'Export' && !document.getElementById("sCustomerId")?.value) {
+      showToast("Vui lòng chọn Đối tác Khách hàng", "error");
+      return;
+    }
+
     const payload = {
       shipmentCode,
-      type: document.getElementById("sType").value,
+      type: sType,
       expectedDate: document.getElementById("sExpectedDate").value ? new Date(document.getElementById("sExpectedDate").value).toISOString() : null,
+      createdAt: document.getElementById("sCreatedAt").value ? new Date(document.getElementById("sCreatedAt").value).toISOString() : null,
       supplierId: document.getElementById("sSupplierId")?.value || null,
       customerId: document.getElementById("sCustomerId")?.value || null,
       portOfLoading: document.getElementById("sPol").value.trim() || null,
       portOfDischarge: document.getElementById("sPod").value.trim() || null,
       deliveryTerm: document.getElementById("sTerm").value,
+      contactPerson,
       totalQuantity: parseFloat(document.getElementById("sQty").value) || 0,
       totalGrossWeight: parseFloat(document.getElementById("sGrossWeight").value) || 0,
       totalValue: parseFloat(document.getElementById("sValue").value) || 0,
@@ -669,8 +767,7 @@ export async function openShipmentForm(id) {
         await api.post(`/api/shipments/${savedId}/items`, { items: [] });
       }
 
-      window.closeModal();
-      await loadShipmentsData();
+      window.appNavigateTo('shipment-detail', savedId);
     } catch (err) {
       // Handled
     }

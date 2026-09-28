@@ -6,7 +6,7 @@ import { renderDashboard } from './features/dashboard/dashboard.js';
 import { renderProducts } from './features/products/products.js';
 import { renderProductHistory } from './features/products/productHistory.js';
 import { renderHsCodes } from './features/products/hsCodes.js';
-import { renderShipments } from './features/shipments/shipments.js';
+import { renderShipments, renderShipmentForm } from './features/shipments/shipments.js';
 import { renderShipmentDetail } from './features/shipments/shipmentDetail.js';
 import { renderOrders } from './features/orders/orders.js';
 import { renderInvoices } from './features/invoices/invoices.js';
@@ -33,6 +33,7 @@ const ROUTE_TITLES = {
   'shipments-export': 'Lô Hàng Xuất Khẩu Sợi',
   'shipments': 'Tất Cả Lô Hàng & Vận Đơn',
   'shipment-detail': 'Chứng Từ Lô Hàng Xuất Nhập Khẩu',
+  'shipment-form': 'Thêm / Sửa Lô Hàng',
   'orders': 'Đơn Mua / Bán Sợi (PO / SO)',
   'invoices': 'Hóa Đơn Thương Mại (Commercial Invoices)',
   'sales-contracts': 'Hợp Đồng Bán Hàng (Sales Contracts)',
@@ -100,8 +101,8 @@ function parseCurrentUrl() {
 
   // Check path parts e.g. /shipments/SHP-20260806-LCW
   const parts = path.split('/');
-  if (parts.length >= 2 && (parts[0] === 'shipments' || parts[0] === 'shipment-detail')) {
-    return { tab: 'shipment-detail', param: parts[1] };
+  if (parts.length >= 2 && (parts[0] === 'shipments' || parts[0] === 'shipment-detail' || parts[0] === 'shipment-form')) {
+    return { tab: parts[0], param: parts[1] };
   }
 
   const baseTab = parts[0] || 'dashboard';
@@ -292,7 +293,7 @@ export function navigateTo(tab, updateHistory = true, param = null) {
   // Build target path
   let targetPath = `/${tab}`;
   if (param) {
-    targetPath = tab === 'shipment-detail' ? `/shipment-detail?id=${param}` : `/${tab}/${param}`;
+    targetPath = (tab === 'shipment-detail' || tab === 'shipment-form') ? `/${tab}?id=${param}` : `/${tab}/${param}`;
   }
 
   // Update browser URL
@@ -360,6 +361,10 @@ export function navigateTo(tab, updateHistory = true, param = null) {
 
     case 'shipment-detail':
       renderShipmentDetail(mainContent, param || 'SHP-20260806-LCW');
+      break;
+      
+    case 'shipment-form':
+      renderShipmentForm(mainContent, param);
       break;
 
     case 'orders':

@@ -4,6 +4,58 @@ import { openShipmentForm } from '../shipments/shipments.js';
 import { openUploadDocumentModal } from '../documents/documents.js';
 import { openCreateInvoiceModal } from '../invoices/invoices.js';
 
+// ─── Timeline Storage ─────────────────────────────────────────────────────────
+// Mỗi lô hàng có mảng entries riêng trong localStorage
+// Entry: { id, text, ts, by }
+
+export function tlKey(shipmentId) {
+  return `xnk_timeline_${shipmentId}`;
+}
+
+export function tlLoad(shipmentId) {
+  try {
+    return JSON.parse(localStorage.getItem(tlKey(shipmentId)) || '[]');
+  } catch { return []; }
+}
+
+export function tlSave(shipmentId, entries) {
+  localStorage.setItem(tlKey(shipmentId), JSON.stringify(entries));
+  // Broadcast event so shipments list can re-read status
+  window.dispatchEvent(new CustomEvent('xnk:timeline-updated', { detail: { shipmentId } }));
+}
+
+export function tlAdd(shipmentId, text, by = 'admin') {
+  const entries = tlLoad(shipmentId);
+  entries.push({
+    id: Date.now().toString(),
+    text: text.trim(),
+    ts: new Date().toLocaleString('vi-VN'),
+    by,
+  });
+  tlSave(shipmentId, entries);
+  return entries;
+}
+
+export function tlDelete(shipmentId, entryId) {
+  const entries = tlLoad(shipmentId).filter(e => e.id !== entryId);
+  tlSave(shipmentId, entries);
+  return entries;
+}
+
+export function tlEdit(shipmentId, entryId, newText) {
+  const entries = tlLoad(shipmentId).map(e =>
+    e.id === entryId ? { ...e, text: newText.trim(), edited: true } : e
+  );
+  tlSave(shipmentId, entries);
+  return entries;
+}
+
+/** Lấy text entry mới nhất – dùng làm Trạng Thái ngoài danh sách */
+export function tlLatestStatus(shipmentId) {
+  const entries = tlLoad(shipmentId);
+  return entries.length > 0 ? entries[entries.length - 1].text : null;
+}
+
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 const ICON = {
   ship:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1 2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1"/><path d="M4 18V14l8-4 4 2v6"/><path d="M12 2v6"/><path d="M8 6h8"/></svg>`,
@@ -66,8 +118,8 @@ export async function renderShipmentDetail(container, shipmentId) {
     ]);
 
     shipment  = shpRes?.data;
-    invoices  = invRes?.data?.items  || invRes?.data  || [];
-    documents = docRes?.data?.items  || docRes?.data  || [];
+    invoices  = (invRes?.data?.items  || invRes?.data  || []).filter(i => i.shipmentId === shipmentId);
+    documents = (docRes?.data?.items  || docRes?.data  || []).filter(d => d.shipmentId === shipmentId);
 
     if (!shipment) {
       const listRes = await api.get('/api/shipments');
@@ -88,11 +140,28 @@ export async function renderShipmentDetail(container, shipmentId) {
 
     // ── Normalize & calculate ───────────────────────────────────────────
     const items            = shipment.items || [];
-    const totalQty         = items.reduce((s, i) => s + (i.quantity || 0), 0) || shipment.totalQuantity || 222;
-    const totalNetWeight   = items.reduce((s, i) => s + (i.netWeight   || i.quantity * 0.09), 0) || 20;
-    const totalGrossWeight = items.reduce((s, i) => s + (i.grossWeight || i.quantity * 0.10), 0) || 22;
-    const totalPackages    = shipment.totalPackages || 10;
-    const totalVal         = items.reduce((s, i) => s + (i.totalPrice || (i.quantity * i.unitPrice) || 0), 0) || shipment.totalValue || 444;
+    const totalQty         = shipment.totalQuantity || items.reduce((s, i) => s + (i.quantity || 0), 0) || 0;
+    const totalNetWeight   = items.reduce((s, i) => s + (i.netWeight   || 0), 0) || 0;
+    const totalGrossWeight = shipment.totalGrossWeight || items.reduce((s, i) => s + (i.grossWeight || 0), 0) || 0;
+    const totalPackages    = shipment.totalPackages || 0;
+    const totalVal         = shipment.totalValue || items.reduce((s, i) => s + (i.totalPrice || (i.quantity * i.unitPrice) || 0), 0) || 0;
+
+    let partnerContactPerson = '---';
+    let partnerContactPhone = '---';
+    let partnerContactEmail = '---';
+    try {
+      if (shipment.type === 'Export' && shipment.customerId) {
+        const cRes = await api.get(`/api/customers/${shipment.customerId}`);
+        partnerContactPerson = cRes.data?.contactPerson || cRes.data?.contactName || '---';
+        partnerContactPhone = cRes.data?.phone || '---';
+        partnerContactEmail = cRes.data?.email || '---';
+      } else if (shipment.supplierId) {
+        const sRes = await api.get(`/api/suppliers/${shipment.supplierId}`);
+        partnerContactPerson = sRes.data?.contactPerson || sRes.data?.contactName || '---';
+        partnerContactPhone = sRes.data?.phone || '---';
+        partnerContactEmail = sRes.data?.email || '---';
+      }
+    } catch(e) {}
 
     const trueInvoices  = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract');
     const salesContracts= invoices.filter(i => i.type === 'SalesContract');
@@ -118,37 +187,68 @@ export async function renderShipmentDetail(container, shipmentId) {
 
     const shpCode        = shipment.shipmentCode || shipment.code || 'SHP-20260901-VTX';
     const supplierTitle  = shipment.supplierName || shipment.customerName || 'Công ty TNHH Dệt May Việt Nam (VINTEX)';
-    const partnerCode    = (shipment.supplierCode || 'FORMOSA').toUpperCase();
-    const contactPerson  = shipment.contactPerson || 'David Chen';
-    const contactPhone   = shipment.contactPhone  || '+886 4 1234 5678';
-    const contactEmail   = shipment.contactEmail  || 'david@formosa.com';
-    const polDisplay     = shipment.portOfLoading   || 'Cat Lai Port, Ho Chi Minh City';
-    const podDisplay     = shipment.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City';
-    const incotermDisplay= shipment.deliveryTerm    || shipment.incoterms || 'CIF';
-    const blNumberDisplay= shipment.blNumber        || 'COSU63281928';
-    const etaDisplay     = shipment.expectedDate ? new Date(shipment.expectedDate).toLocaleDateString('vi-VN') : '26/09/2026';
+    const partnerCode    = (shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
+    
+    const contactPerson = partnerContactPerson;
+    const contactPhone  = partnerContactPhone;
+    const contactEmail  = partnerContactEmail;
+    
+    const polDisplay     = shipment.portOfLoading   || '---';
+    const podDisplay     = shipment.portOfDischarge || '---';
+    const incotermDisplay= shipment.deliveryTerm    || shipment.incoterms || '---';
+    const blNumberDisplay= shipment.blNumber        || '---';
+    const etaDisplay     = shipment.expectedDate ? new Date(shipment.expectedDate).toLocaleDateString('vi-VN') : '---';
     const etdDisplay     = shipment.etd ? new Date(shipment.etd).toLocaleDateString('vi-VN') : '---';
     const createdDisplay = shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString('vi-VN') : '24/09/2026';
     const transitDays    = 12;
     const supplierCodeLine = `Mã: ${partnerCode}`;
 
     const docCounts = {
-      invoices:     trueInvoices.length  || 1,
-      packingLists: packingLists.length  || 1,
-      customs:      customs.length       || 1,
-      booking:      bookings.length      || 1,
-      containers:   containers.length    || 1,
-      total:        documents.length     || 4,
+      contracts:    salesContracts.length,
+      invoices:     trueInvoices.length,
+      packingLists: packingLists.length,
+      customs:      customs.length,
+      booking:      bookings.length,
+      containers:   containers.length,
+      total:        documents.length,
     };
 
-    // ── Timeline steps ──────────────────────────────────────────────────
-    const timelineSteps = [
-      { label: 'Tạo lô hàng',   date: '24/06/2026 09:15', by: 'Người tạo: admin', done: true },
-      { label: 'Nhận booking',  date: '25/06/2026 14:30', by: `Booking: BK-20260901`, done: true },
-      { label: 'Hàng lên tàu',  date: '', by: `Vessel: —`, done: false },
-      { label: 'Đến cảng',      date: '26/09/2026 06:00', by: '', done: true },
-      { label: 'Thông quan',    date: '27/08/2026 10:20', by: '', done: true, chip: { label: 'Đã thông quan', cls: 'chip chip-green' } },
-    ];
+    // ── Timeline (chat-style, from localStorage) ────────────────────────
+    // Lấy user hiện tại
+    const currentUser = (() => {
+      try { return JSON.parse(localStorage.getItem('xnk_user') || '{}').username || 'admin'; } catch { return 'admin'; }
+    })();
+
+    /** Render danh sách entries thành HTML */
+    function buildTimelineHtml(entries) {
+      if (entries.length === 0) {
+        return `<div style="text-align:center;color:#94a3b8;font-size:12px;padding:16px 0;">
+          Chưa có cập nhật nào. Nhập nội dung bên dưới và nhấn <strong>Enter</strong> để ghi nhận.
+        </div>`;
+      }
+      return entries.map((e, idx) => `
+        <div class="tl-entry" data-id="${e.id}" data-idx="${idx}">
+          <div class="tl-entry-avatar">${(e.by || 'A')[0].toUpperCase()}</div>
+          <div class="tl-entry-body" id="tl-body-${e.id}">
+            <div class="tl-entry-header">
+              <span class="tl-entry-by">${e.by || 'admin'}</span>
+              <span class="tl-entry-ts">${e.ts}</span>
+              ${e.edited ? '<span class="tl-edited">(đã sửa)</span>' : ''}
+              ${idx === entries.length - 1 ? '<span class="tl-latest-badge">Trạng thái mới nhất</span>' : ''}
+            </div>
+            <div class="tl-entry-text" id="tl-text-${e.id}">${e.text}</div>
+          </div>
+          <div class="tl-entry-actions">
+            <button class="tl-btn" title="Sửa" onclick="window.__tlEdit('${e.id}')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </button>
+            <button class="tl-btn tl-btn-del" title="Xóa" onclick="window.__tlDelete('${e.id}')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
 
     // ── Build product rows ──────────────────────────────────────────────
     const sampleItem = {
@@ -177,20 +277,7 @@ export async function renderShipmentDetail(container, shipmentId) {
       </tr>
     `).join('');
 
-    const tlHtml = timelineSteps.map(step => `
-      <div class="sd-tl-item">
-        <div class="sd-tl-dot-wrap">
-          <div class="sd-tl-dot ${step.done ? 'done' : ''}"></div>
-          <div class="sd-tl-line"></div>
-        </div>
-        <div class="sd-tl-content">
-          <div class="sd-tl-title">${step.label}</div>
-          ${step.date ? `<div class="sd-tl-meta">${step.date}</div>` : ''}
-          ${step.by   ? `<div class="sd-tl-meta">${step.by}</div>`   : ''}
-          ${step.chip ? `<div class="sd-tl-badge"><span class="${step.chip.cls}">${step.chip.label}</span></div>` : ''}
-        </div>
-      </div>
-    `).join('');
+
 
     // ── Render HTML ─────────────────────────────────────────────────────
     container.innerHTML = `
@@ -294,6 +381,9 @@ export async function renderShipmentDetail(container, shipmentId) {
               <button class="sd-tab" data-pane="items">
                 Hàng hóa <span class="sd-tab-badge">${displayItems.length}</span>
               </button>
+              <button class="sd-tab" data-pane="contracts">
+                Sales Contract <span class="sd-tab-badge">${docCounts.contracts}</span>
+              </button>
               <button class="sd-tab" data-pane="invoices">
                 Invoice <span class="sd-tab-badge">${docCounts.invoices}</span>
               </button>
@@ -333,10 +423,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <span class="sd-info-key">Mã lô hàng</span>
                         <span class="sd-info-val" style="color:var(--amis-blue);font-family:monospace;">${shpCode}</span>
                       </div>
-                      <div class="sd-info-row">
-                        <span class="sd-info-key">Sản phẩm chính</span>
-                        <span class="sd-info-val">${displayItems[0]?.productName || 'Sợi Polyester 75D'}</span>
-                      </div>
+
                       <div class="sd-info-row">
                         <span class="sd-info-key">Loại hình</span>
                         <span class="sd-info-val"><span class="${typeClass}">${typeLabel}</span></span>
@@ -346,9 +433,9 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <span class="sd-info-val"><span class="${statusClass}">${statusLabel}</span></span>
                       </div>
                       <div class="sd-info-row">
-                        <span class="sd-info-key">Mô tả</span>
+                        <span class="sd-info-key">Ghi chú</span>
                         <span class="sd-info-val" style="max-width:200px;white-space:normal;word-break:break-word;font-weight:400;font-size:11.5px;color:#64748b;text-align:right;">
-                          ${shipment.description || `Nhập khẩu lô hàng sợi dệt từ ${supplierTitle} theo điều kiện ${incotermDisplay}`}
+                          ${shipment.notes || '---'}
                         </span>
                       </div>
                       <div class="sd-divider"></div>
@@ -387,21 +474,31 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </div>
                   </div>
 
-                  <!-- Timeline lô hàng -->
-                  <div class="sd-card">
+                  <!-- Timeline lô hàng (chat-style) -->
+                  <div class="sd-card" style="display:flex;flex-direction:column;">
                     <div class="sd-card-header">
                       <div class="sd-card-header-left">
-                        ⚡ Timeline lô hàng
+                        💬 Timeline / Trạng thái lô hàng
                       </div>
+                      <span style="font-size:11px;color:#94a3b8;">Entry mới nhất = Trạng thái ngoài danh sách</span>
                     </div>
-                    <div class="sd-card-body">
-                      <div class="sd-timeline">
-                        ${tlHtml}
-                      </div>
-                      <div style="margin-top:10px;">
-                        <input type="text" placeholder="Tìm kiếm lịch sử..."
-                          style="width:100%;padding:5px 8px;font-size:12px;border:1px solid #e2e8f0;border-radius:4px;outline:none;background:#f8fafc;color:#475569;">
-                      </div>
+                    <!-- List entries -->
+                    <div class="tl-list" id="tl-list-${shipmentId}">
+                      ${buildTimelineHtml(tlLoad(shipmentId))}
+                    </div>
+                    <!-- Input box -->
+                    <div class="tl-input-wrap">
+                      <div class="tl-input-avatar">${currentUser[0].toUpperCase()}</div>
+                      <input
+                        id="tl-input-${shipmentId}"
+                        class="tl-input"
+                        type="text"
+                        placeholder="Nhập trạng thái... (Enter để ghi nhận)"
+                        autocomplete="off"
+                      />
+                      <button class="tl-send-btn" id="tl-send-${shipmentId}" title="Gửi (Enter)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -539,6 +636,40 @@ export async function renderShipmentDetail(container, shipmentId) {
                 </div>
               </div>
 
+              <!-- ═══ TAB: SALES CONTRACT ═══ -->
+              <div class="sd-pane" id="sd-pane-contracts">
+                <div class="sd-table-wrap">
+                  <table class="sd-table">
+                    <thead><tr>
+                      <th>#</th><th>Số Hợp Đồng</th><th>Phân Loại</th>
+                      <th>Ngày Lập</th><th>Điều kiện TT</th>
+                      <th style="text-align:right;">Tổng Giá Trị</th>
+                      <th>Tiền Tệ</th><th>Trạng Thái</th><th>Thao Tác</th>
+                    </tr></thead>
+                    <tbody>
+                      ${salesContracts.length ? salesContracts.map((c, i) => `
+                        <tr>
+                          <td>${i + 1}</td>
+                          <td style="font-weight:700;color:#15803d;">${c.invoiceNumber || '---'}</td>
+                          <td><span class="chip chip-green">Sales Contract</span></td>
+                          <td>${c.issueDate ? new Date(c.issueDate).toLocaleDateString('vi-VN') : '---'}</td>
+                          <td>${c.paymentTerm || '---'}</td>
+                          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(c.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td>${c.currency || 'USD'}</td>
+                          <td><span class="chip chip-green">${c.status || 'Hiệu lực'}</span></td>
+                          <td><button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')">Xem</button></td>
+                        </tr>
+                      `).join('') : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+                    </tbody>
+                  </table>
+                  <div class="sd-table-toolbar">
+                    <div class="sd-table-toolbar-left">
+                      <button class="sd-btn-sm" id="sd-btn-add-contract">+ Tạo Hợp Đồng</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- ═══ TAB: INVOICE ═══ -->
               <div class="sd-pane" id="sd-pane-invoices">
                 <div class="sd-table-wrap">
@@ -550,28 +681,19 @@ export async function renderShipmentDetail(container, shipmentId) {
                       <th>Tiền Tệ</th><th>Trạng Thái</th><th>Thao Tác</th>
                     </tr></thead>
                     <tbody>
-                      <tr>
-                        <td>1</td>
-                        <td style="font-weight:700;color:var(--amis-blue);">${primaryInvoiceNumber}</td>
-                        <td><span class="chip chip-blue">Commercial Invoice</span></td>
-                        <td>25/09/2026</td>
-                        <td>TTR 30% advance, 70% against B/L</td>
-                        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                        <td>USD</td>
-                        <td><span class="chip chip-green">Đã duyệt</span></td>
-                        <td><button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')">Xem</button></td>
-                      </tr>
-                      <tr>
-                        <td>2</td>
-                        <td style="font-weight:700;color:#15803d;">${primaryContractNumber}</td>
-                        <td><span class="chip chip-green">Packing List</span></td>
-                        <td>20/09/2026</td>
-                        <td>—</td>
-                        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                        <td>USD</td>
-                        <td><span class="chip chip-green">Hiệu lực</span></td>
-                        <td><button class="sd-btn-sm" onclick="window.appNavigateTo('packing-lists')">Xem</button></td>
-                      </tr>
+                      ${trueInvoices.length ? trueInvoices.map((inv, i) => `
+                        <tr>
+                          <td>${i + 1}</td>
+                          <td style="font-weight:700;color:var(--amis-blue);">${inv.invoiceNumber || '---'}</td>
+                          <td><span class="chip chip-blue">Commercial Invoice</span></td>
+                          <td>${inv.issueDate ? new Date(inv.issueDate).toLocaleDateString('vi-VN') : '---'}</td>
+                          <td>${inv.paymentTerm || '---'}</td>
+                          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(inv.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td>${inv.currency || 'USD'}</td>
+                          <td><span class="chip chip-green">${inv.status || 'Đã duyệt'}</span></td>
+                          <td><button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')">Xem</button></td>
+                        </tr>
+                      `).join('') : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -594,22 +716,24 @@ export async function renderShipmentDetail(container, shipmentId) {
                       <th>Đóng gói</th><th>Số Cont / Chì</th><th>Thao Tác</th>
                     </tr></thead>
                     <tbody>
-                      <tr>
-                        <td>1</td>
-                        <td style="font-weight:700;color:var(--amis-blue);">PL-${shpCode}</td>
-                        <td>25/09/2026</td>
-                        <td>${totalPackages} Pallets</td>
-                        <td style="text-align:right;">${totalNetWeight} kg</td>
-                        <td style="text-align:right;">${totalGrossWeight} kg</td>
-                        <td>Palletized & shrink wrapped</td>
-                        <td>COSU8937218 / COSU-SL-918274</td>
-                        <td><button class="sd-btn-sm" onclick="window.appNavigateTo('packing-lists')">Chi tiết</button></td>
-                      </tr>
+                      ${packingLists.length ? packingLists.map((p, i) => `
+                        <tr>
+                          <td>${i + 1}</td>
+                          <td style="font-weight:700;color:var(--amis-blue);">${p.invoiceNumber || '---'}</td>
+                          <td>${p.issueDate ? new Date(p.issueDate).toLocaleDateString('vi-VN') : '---'}</td>
+                          <td>${p.totalPackages || totalPackages} Pallets</td>
+                          <td style="text-align:right;">${p.netWeight || totalNetWeight} kg</td>
+                          <td style="text-align:right;">${p.grossWeight || totalGrossWeight} kg</td>
+                          <td>${p.packagingType || 'Palletized & shrink wrapped'}</td>
+                          <td>${p.containerNumber || '---'}</td>
+                          <td><button class="sd-btn-sm" onclick="window.appNavigateTo('packing-lists')">Chi tiết</button></td>
+                        </tr>
+                      `).join('') : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
                     <div class="sd-table-toolbar-left">
-                      <button class="sd-btn-sm">+ Tạo Packing List</button>
+                      <button class="sd-btn-sm" id="sd-btn-add-packing">+ Tạo Packing List</button>
                     </div>
                   </div>
                 </div>
@@ -961,6 +1085,100 @@ export async function renderShipmentDetail(container, shipmentId) {
       else window.appNavigateTo('invoices');
     });
 
+    // ── TIMELINE EVENT HANDLERS ─────────────────────────────────────────
+
+    /** Re-render danh sách entries vào tl-list */
+    function refreshTlList() {
+      const listEl = document.getElementById(`tl-list-${shipmentId}`);
+      if (listEl) listEl.innerHTML = buildTimelineHtml(tlLoad(shipmentId));
+    }
+
+    // Thêm entry khi Enter hoặc click nút Gửi
+    const tlInput = document.getElementById(`tl-input-${shipmentId}`);
+    const tlSendBtn = document.getElementById(`tl-send-${shipmentId}`);
+
+    const submitTimeline = () => {
+      const text = tlInput?.value?.trim();
+      if (!text) return;
+      tlAdd(shipmentId, text, currentUser);
+      tlInput.value = '';
+      refreshTlList();
+      // Scroll xuống cuối list
+      const listEl = document.getElementById(`tl-list-${shipmentId}`);
+      if (listEl) listEl.scrollTop = listEl.scrollHeight;
+      toast(`Đã ghi nhận: "${text}"`, 'success');
+    };
+
+    tlInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitTimeline();
+      }
+    });
+    tlSendBtn?.addEventListener('click', submitTimeline);
+
+    // Xóa entry – gắn vào window vì dùng onclick inline
+    window.__tlDelete = async (entryId) => {
+      const confirmed = await showConfirm({
+        title: 'Xóa mục timeline?',
+        message: 'Mục này sẽ bị xóa vĩnh viễn.',
+        confirmText: 'Xóa',
+        type: 'danger',
+      });
+      if (!confirmed) return;
+      tlDelete(shipmentId, entryId);
+      refreshTlList();
+      toast('Đã xóa mục timeline', 'success');
+    };
+
+    // Sửa entry – chuyển text thành input inline
+    window.__tlEdit = (entryId) => {
+      const textEl = document.getElementById(`tl-text-${entryId}`);
+      if (!textEl) return;
+      const oldText = textEl.textContent;
+
+      // Tạo input inline
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:2px;';
+      wrapper.innerHTML = `
+        <input type="text" value="${oldText.replace(/"/g, '&quot;')}"
+          style="flex:1;padding:4px 8px;font-size:12px;border:1px solid var(--amis-blue);border-radius:4px;outline:none;"
+          id="tl-edit-input-${entryId}" autocomplete="off">
+        <button style="padding:3px 8px;font-size:11.5px;background:var(--amis-blue);color:#fff;border:none;border-radius:3px;cursor:pointer;" id="tl-edit-ok-${entryId}">Lưu</button>
+        <button style="padding:3px 8px;font-size:11.5px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:3px;cursor:pointer;" id="tl-edit-cancel-${entryId}">Hủy</button>
+      `;
+      textEl.replaceWith(wrapper);
+
+      const editInput = document.getElementById(`tl-edit-input-${entryId}`);
+      editInput?.focus();
+
+      const saveEdit = () => {
+        const newText = editInput?.value?.trim();
+        if (!newText) return;
+        tlEdit(shipmentId, entryId, newText);
+        refreshTlList();
+        toast('Đã cập nhật mục timeline', 'success');
+      };
+
+      document.getElementById(`tl-edit-ok-${entryId}`)?.addEventListener('click', saveEdit);
+      document.getElementById(`tl-edit-cancel-${entryId}`)?.addEventListener('click', () => refreshTlList());
+      editInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveEdit();
+        if (e.key === 'Escape') refreshTlList();
+      });
+    };
+
+    // Tạo chứng từ trực tiếp từ chi tiết lô hàng
+    document.getElementById('sd-btn-add-contract')?.addEventListener('click', () => {
+      openCreateInvoiceModal(shipmentId, 'SalesContract');
+    });
+    document.getElementById('sd-btn-add-invoice')?.addEventListener('click', () => {
+      openCreateInvoiceModal(shipmentId, 'CommercialInvoice');
+    });
+    document.getElementById('sd-btn-add-packing')?.addEventListener('click', () => {
+      openCreateInvoiceModal(shipmentId, 'PackingList');
+    });
+
   } catch (err) {
     container.innerHTML = `
       <div class="sd-page" style="padding:24px;color:var(--amis-red);">
@@ -968,3 +1186,4 @@ export async function renderShipmentDetail(container, shipmentId) {
       </div>`;
   }
 }
+
