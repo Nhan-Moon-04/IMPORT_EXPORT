@@ -180,7 +180,15 @@ public class ShipmentRepository : GenericRepository<Shipment>, IShipmentReposito
 
     public async Task<PagedResultDto<Shipment>> GetPagedAsync(string? search, string? type, string? status, int page, int pageSize, string? sortBy, bool sortDesc)
     {
-        var query = _dbSet.Include(s => s.Supplier).Include(s => s.Customer).AsQueryable();
+        var query = _dbSet
+            .Include(s => s.Supplier)
+            .Include(s => s.Customer)
+            .Include(s => s.Items).ThenInclude(i => i.Product)
+            .Include(s => s.Invoices)
+            .Include(s => s.Containers)
+            .Include(s => s.CustomsDeclarations)
+            .Include(s => s.Bookings)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(s => s.ShipmentCode.Contains(search) || 

@@ -229,6 +229,10 @@ public class ShipmentDto
     public List<BookingDto> Bookings { get; set; } = new();
     public List<ContainerDto> Containers { get; set; } = new();
     public List<CustomsDeclarationDto> CustomsDeclarations { get; set; } = new();
+    public List<string> InvoiceNumbers { get; set; } = new();
+    public List<string> ProductNames { get; set; } = new();
+    public List<string> ContainerNumbers { get; set; } = new();
+    public List<string> DeclarationNumbers { get; set; } = new();
 }
 
 public class BookingDto

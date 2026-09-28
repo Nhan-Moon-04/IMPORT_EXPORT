@@ -18,6 +18,7 @@ import { renderShipping } from './features/shipping/shipping.js';
 import { renderFinance } from './features/finance/finance.js';
 import { renderReports } from './features/reports/reports.js';
 import { renderSystem } from './features/system/system.js';
+import { renderSearchCenter } from './features/search/search.js';
 
 let currentTab = 'dashboard';
 let currentParam = null;
@@ -31,7 +32,7 @@ const ROUTE_TITLES = {
   'shipments-import': 'Lô Hàng Nhập Khẩu Sợi',
   'shipments-export': 'Lô Hàng Xuất Khẩu Sợi',
   'shipments': 'Tất Cả Lô Hàng & Vận Đơn',
-  'shipment-detail': 'Chi Tiết Lô Hàng (10 Tabs Nghiệp Vụ)',
+  'shipment-detail': 'Chứng Từ Lô Hàng Xuất Nhập Khẩu',
   'orders': 'Đơn Mua / Bán Sợi (PO / SO)',
   'invoices': 'Hóa Đơn Thương Mại (Commercial Invoices)',
   'sales-contracts': 'Hợp Đồng Bán Hàng (Sales Contracts)',
@@ -56,7 +57,14 @@ const ROUTE_TITLES = {
   'users': 'Người Dùng & Phân Quyền',
   'audit-logs': 'Nhật Ký Hệ Thống (Audit Log)',
   'backup': 'Sao Lưu Dữ Liệu PostgreSQL',
-  'settings': 'Cấu Hình Hệ Thống'
+  'settings': 'Cấu Hình Hệ Thống',
+  'search': '🔎 Tra Cứu Tổng Hợp Toàn Hệ Thống',
+  'search-products': 'Tra Cứu Sản Phẩm',
+  'search-suppliers': 'Tra Cứu Nhà Cung Cấp',
+  'search-customers': 'Tra Cứu Khách Hàng',
+  'search-invoices': 'Tra Cứu Invoice & Hợp Đồng',
+  'search-customs': 'Tra Cứu Tờ Khai Hải Quan',
+  'search-containers': 'Tra Cứu Container & Seal'
 };
 
 // Application Bootstrap
@@ -411,6 +419,28 @@ export function navigateTo(tab, updateHistory = true, param = null) {
     case 'backup':
     case 'settings':
       renderSystem(mainContent, tab);
+      break;
+
+    case 'search':
+      renderSearchCenter(mainContent, 'all', param);
+      break;
+    case 'search-products':
+      renderSearchCenter(mainContent, 'products', param);
+      break;
+    case 'search-suppliers':
+      renderSearchCenter(mainContent, 'suppliers', param);
+      break;
+    case 'search-customers':
+      renderSearchCenter(mainContent, 'customers', param);
+      break;
+    case 'search-invoices':
+      renderSearchCenter(mainContent, 'invoices', param);
+      break;
+    case 'search-customs':
+      renderSearchCenter(mainContent, 'customs', param);
+      break;
+    case 'search-containers':
+      renderSearchCenter(mainContent, 'containers', param);
       break;
 
     default:

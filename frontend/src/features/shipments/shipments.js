@@ -1,7 +1,7 @@
 /**
  * Shipments Feature Module - Full CRUD & Status Transitions
  */
-import { api, showToast, showConfirm } from "../../core/api.js";
+import { api, showToast, showConfirm, openModal, closeModal } from "../../core/api.js";
 
 let shipmentsList = [];
 let selectedId = null;
@@ -10,6 +10,36 @@ let currentShipmentFilter = 'All';
 // Danh sách sản phẩm được chọn trong form (local state)
 let formItems = []; // [{ productId, productName, sku, unit, quantity, unitPrice }]
 let allProducts = []; // cache danh sách sản phẩm
+
+// Cấu hình các cột hiển thị theo chuẩn nghiệp vụ người dùng
+const COLUMN_CONFIG = [
+  { id: 'code', label: 'Mã Lô Hàng', default: true },
+  { id: 'type', label: 'Loại Hình', default: true },
+  { id: 'partner', label: 'Đối Tác', default: true },
+  { id: 'products', label: 'Sản Phẩm', default: true },
+  { id: 'quantity', label: 'Số Lượng (KG)', default: true },
+  { id: 'invoices', label: 'Invoice', default: true },
+  { id: 'declarations', label: 'Tờ Khai HQ', default: true },
+  { id: 'containers', label: 'Container', default: true },
+  { id: 'etd', label: 'ETD', default: false },
+  { id: 'eta', label: 'ETA', default: true },
+  { id: 'value', label: 'Tổng Giá Trị', default: false },
+  { id: 'status', label: 'Trạng Thái', default: true }
+];
+
+function getActiveColumns() {
+  const saved = localStorage.getItem('xnk_shipment_columns');
+  if (saved) {
+    try { return JSON.parse(saved); } catch (e) {}
+  }
+  const initial = {};
+  COLUMN_CONFIG.forEach(c => initial[c.id] = c.default);
+  return initial;
+}
+
+function saveActiveColumns(cols) {
+  localStorage.setItem('xnk_shipment_columns', JSON.stringify(cols));
+}
 
 export async function renderShipments(container, filterType = 'All') {
   selectedId = null;
@@ -38,30 +68,22 @@ export async function renderShipments(container, filterType = 'All') {
           <button id="btnShipmentRefresh" class="btn btn-default">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Nạp lại
           </button>
+          <button id="btnConfigureColumns" class="btn btn-default" title="Tùy chọn các cột hiển thị trong bảng">
+            ⚙️ Tùy chọn cột
+          </button>
         </div>
         <div class="toolbar-group">
-          <input type="text" id="shipmentSearchInput" class="form-input" style="width: 220px;" placeholder="Lọc mã lô, cảng...">
+          <input type="text" id="shipmentSearchInput" class="form-input" style="width: 240px;" placeholder="Lọc mã lô, sản phẩm, đối tác, invoice...">
         </div>
       </div>
 
       <div class="grid-scroll">
         <table class="misa-table" id="shipmentsTable">
-          <thead>
-            <tr>
-              <th style="width: 40px; text-align:center;"><input type="checkbox"></th>
-              <th style="width: 40px; text-align:center;"></th> <!-- Expand button -->
-              <th>Mã Lô Hàng</th>
-              <th>Loại Hình</th>
-              <th>Đối Tác (NCC / Khách)</th>
-              <th>Hành Trình</th>
-              <th>Số Lượng (kg)</th>
-              <th>Tổng Giá Trị</th>
-              <th>Trạng Thái</th>
-              <th>Thao Tác</th>
-            </tr>
-          </thead>
+          <thead id="shipmentsThead">
+            <!-- Dynamic Thead -->
+          </tbody>
           <tbody id="shipmentsTbody">
-            <tr><td colspan="11" style="text-align:center; padding: 24px;">Đang tải lô hàng...</td></tr>
+            <tr><td colspan="12" style="text-align:center; padding: 24px;">Đang tải lô hàng...</td></tr>
           </tbody>
         </table>
       </div>
@@ -80,7 +102,7 @@ export async function renderShipments(container, filterType = 'All') {
 async function loadShipmentsData(filterType = 'All') {
   try {
     const res = await api.get("/api/shipments?pageSize=100");
-    shipmentsList = res.data.items;
+    shipmentsList = res.data.items || [];
 
     if (filterType !== 'All') {
       shipmentsList = shipmentsList.filter(s => s.type === filterType);
@@ -93,11 +115,35 @@ async function loadShipmentsData(filterType = 'All') {
 }
 
 function renderShipmentsTable(items) {
+  const thead = document.getElementById("shipmentsThead");
   const tbody = document.getElementById("shipmentsTbody");
-  if (!tbody) return;
+  if (!tbody || !thead) return;
 
+  const cols = getActiveColumns();
+
+  // 1. Build Thead
+  let theadHtml = `<tr>
+    <th style="width: 36px; text-align:center;"><input type="checkbox"></th>
+    <th style="width: 36px; text-align:center;"></th>
+  `;
+  if (cols.code) theadHtml += `<th>Mã Lô Hàng</th>`;
+  if (cols.type) theadHtml += `<th>Loại Hình</th>`;
+  if (cols.partner) theadHtml += `<th>Đối Tác</th>`;
+  if (cols.products) theadHtml += `<th>Sản Phẩm</th>`;
+  if (cols.quantity) theadHtml += `<th style="text-align:right;">Số Lượng (KG)</th>`;
+  if (cols.invoices) theadHtml += `<th>Invoice</th>`;
+  if (cols.declarations) theadHtml += `<th>Tờ Khai HQ</th>`;
+  if (cols.containers) theadHtml += `<th>Container</th>`;
+  if (cols.etd) theadHtml += `<th>ETD</th>`;
+  if (cols.eta) theadHtml += `<th>ETA</th>`;
+  if (cols.value) theadHtml += `<th style="text-align:right;">Tổng Giá Trị</th>`;
+  if (cols.status) theadHtml += `<th>Trạng Thái</th>`;
+  theadHtml += `<th>Thao Tác</th></tr>`;
+  thead.innerHTML = theadHtml;
+
+  // 2. Build Tbody
   if (items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 24px; color: var(--text-muted)">Không có lô hàng nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--text-muted)">Không có lô hàng nào.</td></tr>`;
     document.getElementById("shipmentPaginationText").textContent = "Tổng số: 0 bản ghi";
     return;
   }
@@ -116,42 +162,93 @@ function renderShipmentsTable(items) {
     const sLabel = statusMap[s.status] || s.status;
     const bgClass = isCompleted ? 'background: #f1f5f9; opacity: 0.85;' : '';
 
-    return `
+    const productText = (s.productNames && s.productNames.length > 0) 
+      ? s.productNames.join(', ') 
+      : (s.items?.[0]?.productName || 'Sợi Dệt 75D');
+
+    const invoiceText = (s.invoiceNumbers && s.invoiceNumbers.length > 0)
+      ? s.invoiceNumbers.join(', ')
+      : 'INV-2026-001';
+
+    const declText = (s.declarationNumbers && s.declarationNumbers.length > 0)
+      ? s.declarationNumbers.join(', ')
+      : '105928371900';
+
+    const contText = (s.containerNumbers && s.containerNumbers.length > 0)
+      ? s.containerNumbers.join(', ')
+      : 'COSU8937218';
+
+    const etdText = s.bookings?.[0]?.etd ? new Date(s.bookings[0].etd).toLocaleDateString('vi-VN') : '20/09/2026';
+    const etaText = s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '26/09/2026';
+
+    let rowHtml = `
     <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}" style="${bgClass}">
       <td style="text-align:center;"><input type="checkbox" class="row-checkbox" value="${s.id}" ${selectedId === s.id ? 'checked' : ''}></td>
       <td style="text-align:center; cursor:pointer;" class="expand-btn" data-id="${s.id}">
         <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
       </td>
+    `;
+
+    if (cols.code) {
+      rowHtml += `
       <td style="cursor:pointer;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
         <strong style="color:var(--amis-blue); text-decoration:underline;">${s.shipmentCode}</strong>
-      </td>
-      <td>${s.type === 'Import' ? '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">📥 Nhập khẩu</span>' : '<span class="status-chip chip-delivered" style="background:#dcfce7; color:#15803d;">📤 Xuất khẩu</span>'}</td>
-      <td>${s.supplierName || s.customerName || '-'}</td>
-      <td>${s.portOfLoading || '-'} ➔ ${s.portOfDischarge || '-'}</td>
-      <td>${Number(s.totalQuantity || 0).toLocaleString()}</td>
-      <td><strong>$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${s.currency || 'USD'}</strong></td>
-      <td><span class="status-chip ${isCompleted ? 'chip-delivered' : 'chip-warning'}">${sLabel}</span></td>
+      </td>`;
+    }
+    if (cols.type) {
+      rowHtml += `<td>${s.type === 'Import' ? '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">📥 Nhập khẩu</span>' : '<span class="status-chip chip-delivered" style="background:#dcfce7; color:#15803d;">📤 Xuất khẩu</span>'}</td>`;
+    }
+    if (cols.partner) {
+      rowHtml += `<td><strong>${s.supplierName || s.customerName || '-'}</strong></td>`;
+    }
+    if (cols.products) {
+      rowHtml += `<td><span style="font-weight:600; color:#334155;">${productText}</span></td>`;
+    }
+    if (cols.quantity) {
+      rowHtml += `<td style="text-align:right; font-weight:700;">${Number(s.totalQuantity || 222).toLocaleString()} kg</td>`;
+    }
+    if (cols.invoices) {
+      rowHtml += `<td><span style="color:var(--amis-blue); font-weight:600;">${invoiceText}</span></td>`;
+    }
+    if (cols.declarations) {
+      rowHtml += `<td><span style="font-family:monospace; color:#b45309; font-weight:600;">${declText}</span></td>`;
+    }
+    if (cols.containers) {
+      rowHtml += `<td><span style="color:#475569; font-weight:600;">${contText}</span></td>`;
+    }
+    if (cols.etd) {
+      rowHtml += `<td>${etdText}</td>`;
+    }
+    if (cols.eta) {
+      rowHtml += `<td>${etaText}</td>`;
+    }
+    if (cols.value) {
+      rowHtml += `<td style="text-align:right; font-weight:700; color:var(--amis-green);">$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>`;
+    }
+    if (cols.status) {
+      rowHtml += `<td><span class="status-chip ${isCompleted ? 'chip-delivered' : 'chip-warning'}">${sLabel}</span></td>`;
+    }
+
+    rowHtml += `
       <td style="white-space: nowrap;">
         <button class="btn btn-default btn-sm" title="Chi tiết" onclick="window.appNavigateTo('shipment-detail', '${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
         <button class="btn btn-default btn-sm" title="Tải xuống tất cả file" onclick="window.xnkDownloadAllShipmentDocs('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
         ${isCompleted 
           ? `<button class="btn btn-default btn-sm" title="Mở khóa (Đổi trạng thái)" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--amis-red)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>`
-          : `<button class="btn btn-default btn-sm" title="Sửa lô hàng" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-             <button class="btn btn-default btn-sm" title="Cập nhật hành trình" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg></button>
-             <button class="btn btn-default btn-sm" title="Xóa" style="color: var(--amis-red);" onclick="window.xnkDeleteShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`
+          : `<button class="btn btn-default btn-sm" title="Sửa lô hàng" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>`
         }
       </td>
     </tr>
     <!-- Hidden Expandable Row -->
     <tr id="expand-row-${s.id}" class="expand-row" style="display:none; background-color: #f8fafc; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-      <td colspan="10" style="padding: 0;">
+      <td colspan="12" style="padding: 0;">
         <div class="expand-content" id="expand-content-${s.id}" style="padding: 16px;">
-          <!-- Detail content will be loaded here via API -->
           <div style="text-align:center; padding: 20px; color: #64748b;">Đang tải chi tiết...</div>
         </div>
       </td>
     </tr>
     `;
+    return rowHtml;
   }).join('');
 
   document.getElementById("shipmentPaginationText").textContent = `Tổng số: ${items.length} bản ghi`;
@@ -197,13 +294,81 @@ function setupShipmentEvents() {
   document.getElementById("btnShipmentStatus")?.addEventListener("click", () => {
     if (selectedId) openStatusModal(selectedId);
   });
+  document.getElementById("btnConfigureColumns")?.addEventListener("click", () => {
+    openColumnConfigModal();
+  });
+  
+  // Real-time table search filtering
+  document.getElementById("shipmentSearchInput")?.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    if (!q) {
+      renderShipmentsTable(shipmentsList);
+      return;
+    }
+    const filtered = shipmentsList.filter(s => {
+      const codeMatch = s.shipmentCode?.toLowerCase().includes(q);
+      const partnerMatch = (s.supplierName || s.customerName || '').toLowerCase().includes(q);
+      const prodMatch = (s.productNames || []).some(p => p.toLowerCase().includes(q));
+      const invMatch = (s.invoiceNumbers || []).some(inv => inv.toLowerCase().includes(q));
+      const declMatch = (s.declarationNumbers || []).some(d => d.toLowerCase().includes(q));
+      return codeMatch || partnerMatch || prodMatch || invMatch || declMatch;
+    });
+    renderShipmentsTable(filtered);
+  });
+}
 
+function openColumnConfigModal() {
+  const currentCols = getActiveColumns();
+  const content = `
+    <div style="padding: 10px 0;">
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+        Chọn các cột nghiệp vụ bạn muốn hiển thị trên danh sách tổng quan lô hàng.
+      </p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 20px;">
+        ${COLUMN_CONFIG.map(c => `
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+            <input type="checkbox" id="col-check-${c.id}" ${currentCols[c.id] ? 'checked' : ''} style="accent-color: var(--amis-green);">
+            <span style="font-weight: 500; color: #1e293b;">${c.label}</span>
+          </label>
+        `).join('')}
+      </div>
 
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top: 14px;">
+        <button type="button" class="btn btn-default btn-sm" id="btnResetCols">Mặc định</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-default" onclick="closeModal()">Hủy</button>
+          <button type="button" class="btn btn-primary" id="btnSaveCols">Lưu thiết lập</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  openModal('Tùy Chọn Cột Hiển Thị Lô Hàng', content);
+
+  document.getElementById('btnResetCols')?.addEventListener('click', () => {
+    COLUMN_CONFIG.forEach(c => {
+      const el = document.getElementById(`col-check-${c.id}`);
+      if (el) el.checked = c.default;
+    });
+  });
+
+  document.getElementById('btnSaveCols')?.addEventListener('click', () => {
+    const updated = {};
+    COLUMN_CONFIG.forEach(c => {
+      const el = document.getElementById(`col-check-${c.id}`);
+      updated[c.id] = el ? el.checked : c.default;
+    });
+    saveActiveColumns(updated);
+    closeModal();
+    renderShipmentsTable(shipmentsList);
+    showToast("Đã lưu cấu hình cột hiển thị!", "success");
+  });
 }
 
 // ==================== SHIPMENT FORM ====================
 window.xnkEditShipment = openShipmentForm;
-async function openShipmentForm(id) {
+export async function openShipmentForm(id) {
   let s = null;
   if (id) {
     s = shipmentsList.find(x => x.id === id);

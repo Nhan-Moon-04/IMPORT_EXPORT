@@ -424,7 +424,7 @@ async function viewInvoiceDetail(id) {
 }
 
 window.xnkCreateInvoiceModal = openCreateInvoiceModal;
-async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null) {
+export async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null) {
   let shipments = [];
   let products = [];
   try {

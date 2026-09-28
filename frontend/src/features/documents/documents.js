@@ -254,7 +254,7 @@ function setupEvents() {
 }
 
 window.xnkUploadDocumentModal = openUploadDocumentModal;
-function openUploadDocumentModal(defaultShipmentId = null) {
+export function openUploadDocumentModal(defaultShipmentId = null) {
   const content = `
     <div style="padding: 10px 0;">
       <div class="dropzone" id="modalDocumentDropzone" style="cursor: pointer; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 30px; text-align: center; transition: all 0.2s;">

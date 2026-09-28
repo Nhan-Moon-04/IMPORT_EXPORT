@@ -128,6 +128,27 @@ textarea.form-control {
   color: #b91c1c;
 }
 
+.search-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  cursor: pointer;
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 14px;
+  transition: all 0.15s ease;
+}
+.search-chip:hover {
+  background: #e2e8f0;
+  color: var(--amis-blue, #0266b3);
+}
+.search-chip.active-chip {
+  background: var(--amis-blue, #0266b3);
+  border-color: var(--amis-blue, #0266b3);
+  color: #ffffff;
+  font-weight: 600;
+}
+
 /* Dropzone */
 .dropzone {
   border: 2px dashed #93c5fd;

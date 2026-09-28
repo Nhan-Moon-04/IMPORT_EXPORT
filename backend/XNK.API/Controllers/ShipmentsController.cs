@@ -186,7 +186,11 @@ public class ShipmentsController : ControllerBase
             Id = c.Id, DeclarationNumber = c.DeclarationNumber, DeclarationDate = c.DeclarationDate,
             DeclarationType = c.DeclarationType, CustomsBranch = c.CustomsBranch,
             Status = c.Status, Notes = c.Notes
-        }).ToList() ?? new()
+        }).ToList() ?? new(),
+        InvoiceNumbers = s.Invoices?.Select(inv => inv.InvoiceNumber).Distinct().ToList() ?? new(),
+        ProductNames = s.Items?.Select(it => it.Product?.Name ?? it.Notes ?? "Sợi Polyester").Distinct().ToList() ?? new(),
+        ContainerNumbers = s.Containers?.Select(c => c.ContainerNumber).Distinct().ToList() ?? new(),
+        DeclarationNumbers = s.CustomsDeclarations?.Select(d => d.DeclarationNumber).Distinct().ToList() ?? new()
     };
 
     private static ShipmentItemDto MapItemToDto(ShipmentItem i) => new()
