@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("XNK.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+768ad149f4e4ecb22772caffa2164cc4de3ba8f3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6b6d5bcc55493a8bb8e4bf6745d9a7b516ac8fc8")]
 [assembly: System.Reflection.AssemblyProductAttribute("XNK.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("XNK.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

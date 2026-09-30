@@ -115,7 +115,9 @@ public class SupplierDto
 {
     public Guid Id { get; set; }
     public string CompanyName { get; set; } = string.Empty;
+    public string Name => CompanyName;
     public string? TradeName { get; set; }
+    public string? Code => TradeName;
     public string? Address { get; set; }
     public string? Country { get; set; }
     public string? TaxCode { get; set; }
@@ -131,9 +133,21 @@ public class SupplierDto
 
 public class CreateSupplierDto
 {
+    private string _companyName = string.Empty;
     [Required, MaxLength(200)]
-    public string CompanyName { get; set; } = string.Empty;
-    public string? TradeName { get; set; }
+    public string CompanyName
+    {
+        get => !string.IsNullOrEmpty(_companyName) ? _companyName : (Name ?? string.Empty);
+        set => _companyName = value;
+    }
+    public string? Name { get; set; }
+    public string? Code { get; set; }
+    private string? _tradeName;
+    public string? TradeName
+    {
+        get => _tradeName ?? Code;
+        set => _tradeName = value;
+    }
     public string? Address { get; set; }
     public string? Country { get; set; }
     public string? TaxCode { get; set; }
@@ -173,6 +187,7 @@ public class CustomerDto
 {
     public Guid Id { get; set; }
     public string CompanyName { get; set; } = string.Empty;
+    public string Name => CompanyName;
     public string? Address { get; set; }
     public string? Country { get; set; }
     public string? TaxCode { get; set; }
@@ -188,8 +203,15 @@ public class CustomerDto
 
 public class CreateCustomerDto
 {
+    private string _companyName = string.Empty;
     [Required, MaxLength(200)]
-    public string CompanyName { get; set; } = string.Empty;
+    public string CompanyName
+    {
+        get => !string.IsNullOrEmpty(_companyName) ? _companyName : (Name ?? string.Empty);
+        set => _companyName = value;
+    }
+    public string? Name { get; set; }
+    public string? Code { get; set; }
     public string? Address { get; set; }
     public string? Country { get; set; }
     public string? TaxCode { get; set; }
@@ -290,6 +312,8 @@ public class ShipmentItemDto
     public string? ProductName { get; set; }
     public string? SKU { get; set; }
     public string? Unit { get; set; }
+    public string? HSCode { get; set; }
+    public string? Origin { get; set; }
     public decimal? Quantity { get; set; }
     public decimal? UnitPrice { get; set; }
     public decimal? TotalValue { get; set; }

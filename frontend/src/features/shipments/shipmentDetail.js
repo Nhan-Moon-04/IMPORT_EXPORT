@@ -1,9 +1,44 @@
 // frontend/src/features/shipments/shipmentDetail.js
-import { api, toast, openModal, closeModal, showConfirm } from '../../core/api.js';
+import { api, toast, openModal, closeModal, showConfirm, API_BASE, getToken } from '../../core/api.js';
 import { openShipmentForm } from '../shipments/shipments.js';
 import { openUploadDocumentModal } from '../documents/documents.js';
 import { openCreateInvoiceModal } from '../invoices/invoices.js';
 import { openCreateCustomsModal } from '../customs/customs.js';
+
+// ─── Download Invoice Document Helper ────────────────────────────────────────
+window.downloadInvoiceFile = async function(invoiceId, docId, fileName) {
+  try {
+    let targetDocId = docId;
+    let targetFileName = fileName;
+    if (!targetDocId) {
+      const res = await api.get(`/api/documents?entityType=Invoice&entityId=${invoiceId}`);
+      const docs = res.data?.items || res.data || [];
+      if (docs.length === 0) {
+        toast('Không có file nào được đính kèm cho hoá đơn này', 'info');
+        return;
+      }
+      targetDocId = docs[0].id;
+      targetFileName = docs[0].originalFileName || docs[0].fileName;
+    }
+    const token = getToken();
+    const downloadRes = await fetch(`${API_BASE}/api/documents/${targetDocId}/download`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!downloadRes.ok) throw new Error('Không thể tải file');
+    const blob = await downloadRes.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = targetFileName || 'Invoice_File';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    toast('Đã tải file thành công!', 'success');
+  } catch (err) {
+    toast(`Lỗi khi tải file: ${err.message}`, 'error');
+  }
+};
 
 // ─── Timeline Storage ─────────────────────────────────────────────────────────
 // Mỗi lô hàng có mảng entries riêng trong localStorage
@@ -112,15 +147,30 @@ export async function renderShipmentDetail(container, shipmentId) {
     // ── Fetch data ──────────────────────────────────────────────────────
     let shipment = null, invoices = [], documents = [];
 
-    const [shpRes, invRes, docRes] = await Promise.all([
+    const [shpRes, invRes, docRes, prodRes, invDocsRes] = await Promise.all([
       api.get(`/api/shipments/${shipmentId}`).catch(() => null),
       api.get(`/api/invoices?shipmentId=${shipmentId}`).catch(() => ({ data: [] })),
       api.get(`/api/documents?shipmentId=${shipmentId}`).catch(() => ({ data: [] })),
+      api.get(`/api/products?pageSize=500`).catch(() => ({ data: { items: [] } })),
+      api.get(`/api/documents?entityType=Invoice&pageSize=500`).catch(() => ({ data: [] })),
     ]);
 
     shipment  = shpRes?.data;
     invoices  = (invRes?.data?.items  || invRes?.data  || []).filter(i => i.shipmentId === shipmentId);
     documents = (docRes?.data?.items  || docRes?.data  || []).filter(d => d.shipmentId === shipmentId);
+    const invoiceDocs = invDocsRes?.data?.items || invDocsRes?.data || [];
+    const combinedDocs = [...documents];
+    invoiceDocs.forEach(d => {
+      if (!combinedDocs.some(x => x.id === d.id)) combinedDocs.push(d);
+    });
+
+    const allProducts = prodRes?.data?.items || prodRes?.data || [];
+    const productMap = new Map();
+    allProducts.forEach(p => {
+      if (p.id) productMap.set(String(p.id).toLowerCase(), p);
+      if (p.sku) productMap.set(String(p.sku).trim().toLowerCase(), p);
+      if (p.name) productMap.set(String(p.name).trim().toLowerCase(), p);
+    });
 
     if (!shipment) {
       const listRes = await api.get('/api/shipments');
@@ -140,7 +190,23 @@ export async function renderShipmentDetail(container, shipmentId) {
     }
 
     // ── Normalize & calculate ───────────────────────────────────────────
-    const items            = shipment.items || [];
+    const rawItems         = shipment.items || [];
+    const items            = rawItems.map(it => {
+      const p = (it.productId && productMap.get(String(it.productId).toLowerCase()))
+        || (it.productCode && productMap.get(String(it.productCode).trim().toLowerCase()))
+        || (it.sku && productMap.get(String(it.sku).trim().toLowerCase()))
+        || (it.productName && productMap.get(String(it.productName).trim().toLowerCase()));
+
+      return {
+        ...it,
+        productId: it.productId || p?.id,
+        productCode: it.productCode || it.sku || p?.sku || '---',
+        productName: it.productName || p?.name || '---',
+        hsCode: it.hsCode || p?.hsCode || '---',
+        origin: it.origin || it.countryOfOrigin || p?.countryOfOrigin || p?.origin || '---',
+        unit: it.unit || p?.unit || 'kg',
+      };
+    });
     const totalQty         = shipment.totalQuantity || items.reduce((s, i) => s + (i.quantity || 0), 0) || 0;
     const totalNetWeight   = items.reduce((s, i) => s + (i.netWeight   || 0), 0) || 0;
     const totalGrossWeight = shipment.totalGrossWeight || items.reduce((s, i) => s + (i.grossWeight || 0), 0) || 0;
@@ -166,7 +232,22 @@ export async function renderShipmentDetail(container, shipmentId) {
 
     const trueInvoices  = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract');
     const salesContracts= invoices.filter(i => i.type === 'SalesContract');
-    const packingLists  = invoices.filter(i => i.type === 'PackingList');
+    const packingListsFromInv = invoices.filter(i => i.type === 'PackingList');
+    const packingListsFromShp = shipment.packingLists || [];
+    const packingLists = [...packingListsFromInv];
+    packingListsFromShp.forEach(pl => {
+      if (!packingLists.some(p => p.id === pl.id || (p.invoiceNumber && (p.invoiceNumber === pl.packingListNumber || p.invoiceNumber === pl.invoiceNumber)))) {
+        packingLists.push({
+          ...pl,
+          invoiceNumber: pl.packingListNumber || pl.invoiceNumber,
+          invoiceDate: pl.packingListDate || pl.invoiceDate || pl.createdAt,
+          totalPackages: pl.totalPackages,
+          netWeight: pl.totalNetWeight || pl.netWeight,
+          grossWeight: pl.totalGrossWeight || pl.grossWeight,
+          packagingType: pl.packagingType
+        });
+      }
+    });
 
     const primaryInvoiceNumber     = trueInvoices[0]?.invoiceNumber   || '---';
     const primaryContractNumber    = salesContracts[0]?.invoiceNumber  || '---';
@@ -254,28 +335,50 @@ export async function renderShipmentDetail(container, shipmentId) {
     // ── Build product rows ──────────────────────────────────────────────
     const displayItems = items;
 
-    const productRows = displayItems.length ? displayItems.map((it, idx) => {
+    const productRowsOverview = displayItems.length ? displayItems.map((it, idx) => {
       const q = Number(it.quantity || 0);
       const p = Number(it.unitPrice || 0);
       const rowTotal = it.totalPrice ? Number(it.totalPrice) : (q * p);
       return `
       <tr>
         <td style="text-align:center;color:#64748b;">${idx + 1}</td>
-        <td style="font-weight:700;color:var(--amis-blue);">${it.productCode || it.sku || '---'}</td>
-        <td><strong>${it.productName || '---'}</strong></td>
-        <td style="font-family:monospace;color:#475569;">${it.hsCode || '---'}</td>
-        <td>${it.origin || '---'}</td>
-        <td style="text-align:center;">${it.unit || '---'}</td>
+        <td style="font-weight:700;color:var(--amis-blue);">${it.productCode}</td>
+        <td><strong>${it.productName}</strong></td>
+        <td style="font-family:monospace;color:#475569;">${it.hsCode}</td>
+        <td>${it.origin}</td>
+        <td style="text-align:center;">${it.unit}</td>
         <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
         <td style="text-align:right;">$${p.toFixed(2)}</td>
         <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
         <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
         <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
-        <td style="color:#64748b;">${it.specification || '---'}</td>
-        <td style="color:#64748b;">${it.lotBatch || '---'}</td>
       </tr>
       `;
-    }).join('') : `<tr><td colspan="13" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
+    }).join('') : `<tr><td colspan="11" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
+
+    const productRowsItems = displayItems.length ? displayItems.map((it, idx) => {
+      const q = Number(it.quantity || 0);
+      const p = Number(it.unitPrice || 0);
+      const rowTotal = it.totalPrice ? Number(it.totalPrice) : (q * p);
+      return `
+      <tr>
+        <td style="text-align:center;color:#64748b;">${idx + 1}</td>
+        <td style="font-weight:700;color:var(--amis-blue);">${it.productCode}</td>
+        <td><strong>${it.productName}</strong></td>
+        <td style="font-family:monospace;color:#475569;">${it.hsCode}</td>
+        <td>${it.origin}</td>
+        <td style="text-align:center;">${it.unit}</td>
+        <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
+        <td style="text-align:right;">$${p.toFixed(2)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
+        <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
+        <td style="text-align:center;">
+          <button class="sd-btn-sm" onclick="window.xnkEditShipment('${shipmentId}')" title="Sửa hàng hoá">Sửa</button>
+        </td>
+      </tr>
+      `;
+    }).join('') : `<tr><td colspan="12" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
 
 
 
@@ -555,20 +658,17 @@ export async function renderShipmentDetail(container, shipmentId) {
                           <th style="text-align:right;">Thành tiền (USD)</th>
                           <th style="text-align:right;">Net Weight</th>
                           <th style="text-align:right;">Gross Weight</th>
-                          <th>Quy cách</th>
-                          <th>Lô/Batch</th>
                         </tr>
                       </thead>
                       <tbody>
-                        ${productRows}
+                        ${productRowsOverview}
                         <tr class="sd-total-row">
-                          <td colspan="6" style="text-align:right;">Tổng cộng</td>
+                          <td colspan="6" style="text-align:right;">Tổng cộng:</td>
                           <td style="text-align:right;color:var(--amis-blue);">${Number(totalQty).toLocaleString()} kg</td>
                           <td></td>
                           <td style="text-align:right;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                           <td style="text-align:right;">${totalNetWeight} kg</td>
                           <td style="text-align:right;">${totalGrossWeight} kg</td>
-                          <td colspan="2" style="color:#64748b;font-weight:400;font-size:11px;">Tổng kiện: ${totalPackages}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -579,7 +679,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           Thêm dòng
                         </button>
                       </div>
-                      <span style="font-size:11px;color:#64748b;">Tự động đồng bộ sang Packing List & Tờ khai</span>
+                      <span style="font-size:11px;color:#64748b;">Tổng kiện: <strong>${totalPackages}</strong> | Tự động đồng bộ sang Packing List & Tờ khai</span>
                     </div>
                   </div>
                 </div>
@@ -590,26 +690,24 @@ export async function renderShipmentDetail(container, shipmentId) {
                     <div class="sd-product-panel-left">
                       <div class="sd-product-thumb">🧵</div>
                       <div>
-                        <div class="sd-product-name">${displayItems[0]?.productName || 'Sợi Polyester 75D'}</div>
+                        <div class="sd-product-name">${displayItems[0]?.productName || '---'}</div>
                         <div class="sd-product-badges">
-                          <span class="chip chip-blue" style="font-size:10px;padding:1px 6px;">Dùng nhập khẩu</span>
+                          <span class="chip chip-blue" style="font-size:10px;padding:1px 6px;">Dùng ${shipment.type === 'Export' ? 'xuất khẩu' : 'nhập khẩu'}</span>
                         </div>
                         <div class="sd-product-meta">
-                          Mã SP: ${displayItems[0]?.productCode || 'P-75D'}
-                          &nbsp;|&nbsp; HS Code: ${displayItems[0]?.hsCode || '5402.33.00'}
-                          &nbsp;|&nbsp; Xuất xứ: ${displayItems[0]?.origin || 'Đài Loan (TW)'}
-                          &nbsp;|&nbsp; Quy cách: ${displayItems[0]?.specification || '750/36F'}
-                          &nbsp;|&nbsp; Nhà sản xuất: Formosa
+                          Mã SP: ${displayItems[0]?.productCode || '---'}
+                          &nbsp;|&nbsp; HS Code: ${displayItems[0]?.hsCode || '---'}
+                          &nbsp;|&nbsp; Xuất xứ: ${displayItems[0]?.origin || '---'}
                           &nbsp;|&nbsp; Đơn vị tính: ${displayItems[0]?.unit || 'kg'}
                         </div>
                       </div>
                     </div>
                     <div class="sd-product-panel-right">
                       <button class="sd-btn-sm" onclick="event.stopPropagation();window.appNavigateTo('products')">
-                        Xem lịch sử số lượng
+                        Xem danh mục sản phẩm
                       </button>
                       <button class="sd-btn-sm sd-btn-primary" onclick="event.stopPropagation();window.appNavigateTo('products')">
-                        → Chi tiết hàng hóa
+                        → Danh mục sản phẩm
                       </button>
                     </div>
                   </div>
@@ -635,13 +733,11 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <th style="text-align:right;">Thành tiền ($)</th>
                         <th style="text-align:right;">Net Weight</th>
                         <th style="text-align:right;">Gross Weight</th>
-                        <th>Quy cách</th>
-                        <th>Lô/Batch</th>
                         <th style="text-align:center;">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
-                      ${productRows}
+                      ${productRowsItems}
                       <tr class="sd-total-row">
                         <td colspan="6" style="text-align:right;">Tổng cộng (${displayItems.length} dòng):</td>
                         <td style="text-align:right;color:var(--amis-blue);">${Number(totalQty).toLocaleString()} kg</td>
@@ -649,7 +745,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <td style="text-align:right;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                         <td style="text-align:right;">${totalNetWeight} kg</td>
                         <td style="text-align:right;">${totalGrossWeight} kg</td>
-                        <td colspan="3" style="color:#64748b;font-size:11px;">Tổng kiện: <strong>${totalPackages}</strong> | Tỷ giá: 25,450</td>
+                        <td style="text-align:center;color:#64748b;font-size:11px;">Tổng kiện: <strong>${totalPackages}</strong> | Tỷ giá: 25,450</td>
                       </tr>
                     </tbody>
                   </table>
@@ -669,24 +765,51 @@ export async function renderShipmentDetail(container, shipmentId) {
                   <table class="sd-table">
                     <thead><tr>
                       <th>#</th><th>Số Hợp Đồng</th><th>Phân Loại</th>
-                      <th>Ngày Lập</th><th>Điều kiện TT</th>
+                      <th>Ngày Lập</th>
                       <th style="text-align:right;">Tổng Giá Trị</th>
-                      <th>Tiền Tệ</th><th>Trạng Thái</th><th>Thao Tác</th>
+                      <th>Tiền Tệ</th><th>Trạng Thái</th><th style="text-align:center;">Thao Tác</th>
                     </tr></thead>
                     <tbody>
-                      ${salesContracts.length ? salesContracts.map((c, i) => `
+                      ${salesContracts.length ? salesContracts.map((c, i) => {
+                        const cDate = c.invoiceDate || c.issueDate || c.createdAt;
+                        const cDateStr = cDate ? new Date(cDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
+                        const cVal = Number(c.totalValue ?? c.totalAmount ?? 0);
+
+                        const cDoc = combinedDocs.find(d => 
+                          (d.entityId && String(d.entityId).toLowerCase() === String(c.id).toLowerCase())
+                          || (d.fileName && c.invoiceNumber && d.fileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
+                          || (d.originalFileName && c.invoiceNumber && d.originalFileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
+                        );
+                        const hasFile = !!cDoc;
+
+                        return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:#15803d;">${c.invoiceNumber || '---'}</td>
                           <td><span class="chip chip-green">Sales Contract</span></td>
-                          <td>${c.issueDate ? new Date(c.issueDate).toLocaleDateString('vi-VN') : '---'}</td>
-                          <td>${c.paymentTerm || '---'}</td>
-                          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(c.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td>${cDateStr}</td>
+                          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${cVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                           <td>${c.currency || 'USD'}</td>
                           <td><span class="chip chip-green">${c.status || 'Hiệu lực'}</span></td>
-                          <td><button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')">Xem</button></td>
+                          <td style="text-align:center; white-space:nowrap;">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                              <button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')" title="Xem chi tiết hợp đồng">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:2px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>Xem
+                              </button>
+                              ${hasFile ? `
+                                <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${c.id}', '${cDoc.id}', '${cDoc.originalFileName || cDoc.fileName}')" title="Tải file đính kèm: ${cDoc.originalFileName || cDoc.fileName}" style="color:#15803d; border-color:#86efac; background:#f0fdf4; padding: 3px 6px;">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                              ` : `
+                                <button class="sd-btn-sm" disabled title="Chưa có file đính kèm" style="opacity: 0.35; cursor: not-allowed; background:#f8fafc; border-color:#e2e8f0; color:#94a3b8; padding: 3px 6px;">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                              `}
+                            </div>
+                          </td>
                         </tr>
-                      `).join('') : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+                        `;
+                      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -703,24 +826,53 @@ export async function renderShipmentDetail(container, shipmentId) {
                   <table class="sd-table">
                     <thead><tr>
                       <th>#</th><th>Số Chứng Từ</th><th>Phân Loại</th>
-                      <th>Ngày Lập</th><th>Điều kiện TT</th>
+                      <th>Ngày Lập</th>
                       <th style="text-align:right;">Tổng Giá Trị</th>
-                      <th>Tiền Tệ</th><th>Trạng Thái</th><th>Thao Tác</th>
+                      <th>Tiền Tệ</th><th>Trạng Thái</th><th style="text-align:center;">Thao Tác</th>
                     </tr></thead>
                     <tbody>
-                      ${trueInvoices.length ? trueInvoices.map((inv, i) => `
+                      ${trueInvoices.length ? trueInvoices.map((inv, i) => {
+                        const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : (inv.type || 'Commercial');
+                        const typeClass = inv.type === 'ProformaInvoice' ? 'chip chip-purple' : inv.type === 'CommercialInvoice' ? 'chip chip-blue' : inv.type === 'TaxInvoice' ? 'chip chip-green' : 'chip chip-slate';
+                        const invDate = inv.invoiceDate || inv.issueDate || inv.createdAt;
+                        const invDateStr = invDate ? new Date(invDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
+                        const totalVal = Number(inv.totalValue ?? inv.totalAmount ?? 0);
+
+                        const invDoc = combinedDocs.find(d => 
+                          (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase())
+                          || (d.fileName && inv.invoiceNumber && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+                          || (d.originalFileName && inv.invoiceNumber && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+                        );
+                        const hasFile = !!invDoc;
+
+                        return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:var(--amis-blue);">${inv.invoiceNumber || '---'}</td>
-                          <td><span class="chip chip-blue">Commercial Invoice</span></td>
-                          <td>${inv.issueDate ? new Date(inv.issueDate).toLocaleDateString('vi-VN') : '---'}</td>
-                          <td>${inv.paymentTerm || '---'}</td>
-                          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${Number(inv.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td><span class="${typeClass}">${displayType}</span></td>
+                          <td>${invDateStr}</td>
+                          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                           <td>${inv.currency || 'USD'}</td>
                           <td><span class="chip chip-green">${inv.status || 'Đã duyệt'}</span></td>
-                          <td><button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')">Xem</button></td>
+                          <td style="text-align:center; white-space:nowrap;">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                              <button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')" title="Xem chi tiết hoá đơn">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:2px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>Xem
+                              </button>
+                              ${hasFile ? `
+                                <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${inv.id}', '${invDoc.id}', '${invDoc.originalFileName || invDoc.fileName}')" title="Tải file đính kèm: ${invDoc.originalFileName || invDoc.fileName}" style="color:var(--amis-blue); border-color:#93c5fd; background:#eff6ff; padding: 3px 6px;">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                              ` : `
+                                <button class="sd-btn-sm" disabled title="Chưa có file đính kèm" style="opacity: 0.35; cursor: not-allowed; background:#f8fafc; border-color:#e2e8f0; color:#94a3b8; padding: 3px 6px;">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                              `}
+                            </div>
+                          </td>
                         </tr>
-                      `).join('') : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+                        `;
+                      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -740,22 +892,48 @@ export async function renderShipmentDetail(container, shipmentId) {
                       <th>Số Kiện</th>
                       <th style="text-align:right;">Net Weight (kg)</th>
                       <th style="text-align:right;">Gross Weight (kg)</th>
-                      <th>Đóng gói</th><th>Số Cont / Chì</th><th>Thao Tác</th>
+                      <th>Đóng gói</th><th style="text-align:center;">Thao Tác</th>
                     </tr></thead>
                     <tbody>
-                      ${packingLists.length ? packingLists.map((p, i) => `
+                      ${packingLists.length ? packingLists.map((p, i) => {
+                        const pDate = p.invoiceDate || p.packingListDate || p.issueDate || p.createdAt;
+                        const pDateStr = pDate ? new Date(pDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
+
+                        const pDoc = combinedDocs.find(d => 
+                          (d.entityId && String(d.entityId).toLowerCase() === String(p.id).toLowerCase())
+                          || (d.fileName && p.invoiceNumber && d.fileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
+                          || (d.originalFileName && p.invoiceNumber && d.originalFileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
+                        );
+                        const hasFile = !!pDoc;
+
+                        return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:var(--amis-blue);">${p.invoiceNumber || '---'}</td>
-                          <td>${p.issueDate ? new Date(p.issueDate).toLocaleDateString('vi-VN') : '---'}</td>
+                          <td>${pDateStr}</td>
                           <td>${p.totalPackages || totalPackages} Pallets</td>
                           <td style="text-align:right;">${p.netWeight || totalNetWeight} kg</td>
                           <td style="text-align:right;">${p.grossWeight || totalGrossWeight} kg</td>
                           <td>${p.packagingType || 'Palletized & shrink wrapped'}</td>
-                          <td>${p.containerNumber || '---'}</td>
-                          <td><button class="sd-btn-sm" onclick="window.appNavigateTo('packing-lists')">Chi tiết</button></td>
+                          <td style="text-align:center; white-space:nowrap;">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                              <button class="sd-btn-sm" onclick="window.appNavigateTo('packing-lists')" title="Xem chi tiết Packing List">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:2px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>Chi tiết
+                              </button>
+                              ${hasFile ? `
+                                <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${p.id}', '${pDoc.id}', '${pDoc.originalFileName || pDoc.fileName}')" title="Tải file đính kèm: ${pDoc.originalFileName || pDoc.fileName}" style="color:var(--amis-blue); border-color:#93c5fd; background:#eff6ff; padding: 3px 6px;">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                              ` : `
+                                <button class="sd-btn-sm" disabled title="Chưa có file đính kèm" style="opacity: 0.35; cursor: not-allowed; background:#f8fafc; border-color:#e2e8f0; color:#94a3b8; padding: 3px 6px;">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </button>
+                              `}
+                            </div>
+                          </td>
                         </tr>
-                      `).join('') : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+                        `;
+                      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">

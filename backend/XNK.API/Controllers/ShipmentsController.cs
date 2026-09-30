@@ -200,6 +200,8 @@ public class ShipmentsController : ControllerBase
         ProductName = i.Product?.Name,
         SKU = i.Product?.SKU,
         Unit = i.Product?.Unit,
+        HSCode = i.Product?.HSCode,
+        Origin = i.Product?.CountryOfOrigin,
         Quantity = i.Quantity,
         UnitPrice = i.UnitPrice,
         TotalValue = i.TotalValue,

@@ -400,7 +400,7 @@ export function navigateTo(tab, updateHistory = true, param = null) {
     case 'partners-suppliers':
     case 'partners-customers':
     case 'forwarders':
-      renderPartners(mainContent);
+      renderPartners(mainContent, tab);
       break;
 
     case 'costs':
