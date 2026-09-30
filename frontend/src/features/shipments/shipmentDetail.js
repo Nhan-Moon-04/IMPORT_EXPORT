@@ -691,7 +691,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                   </table>
                   <div class="sd-table-toolbar">
                     <div class="sd-table-toolbar-left">
-                      <button class="sd-btn-sm" id="sd-btn-add-contract">+ Tạo Hợp Đồng</button>
+                      <button class="sd-btn-sm" id="sd-btn-add-contract" ${isCompleted ? 'style="display:none;"' : ''}>+ Tạo Hợp Đồng</button>
                     </div>
                   </div>
                 </div>
@@ -725,7 +725,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                   </table>
                   <div class="sd-table-toolbar">
                     <div class="sd-table-toolbar-left">
-                      <button class="sd-btn-sm" id="sd-btn-add-invoice">+ Tạo Invoice</button>
+                      <button class="sd-btn-sm" id="sd-btn-add-invoice" ${isCompleted ? 'style="display:none;"' : ''}>+ Tạo Invoice</button>
                     </div>
                   </div>
                 </div>
@@ -760,7 +760,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                   </table>
                   <div class="sd-table-toolbar">
                     <div class="sd-table-toolbar-left">
-                      <button class="sd-btn-sm" id="sd-btn-add-packing">+ Tạo Packing List</button>
+                      <button class="sd-btn-sm" id="sd-btn-add-packing" ${isCompleted ? 'style="display:none;"' : ''}>+ Tạo Packing List</button>
                     </div>
                   </div>
                 </div>
@@ -808,7 +808,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                   <h3 style="font-size:16px; margin:0; color:var(--text-color);">Danh Sách Tờ Khai</h3>
                   <div style="display:flex;gap:6px;">
                     <a href="https://customs.gov.vn/tra-cuu" target="_blank" class="sd-btn-sm" style="background:#0f172a;color:#fff;border:none;">🔗 Cổng Hải Quan</a>
-                    <button class="sd-btn-sm" id="sd-btn-add-customs">+ Thêm tờ khai HQ</button>
+                    <button class="sd-btn-sm" id="sd-btn-add-customs" ${isCompleted ? 'style="display:none;"' : ''}>+ Thêm tờ khai HQ</button>
                   </div>
                 </div>
                 ${customsHtml}
@@ -1116,12 +1116,35 @@ export async function renderShipmentDetail(container, shipmentId) {
     const tlInput = document.getElementById(`tl-input-${shipmentId}`);
     const tlSendBtn = document.getElementById(`tl-send-${shipmentId}`);
 
-    const submitTimeline = () => {
+    const submitTimeline = async () => {
       const text = tlInput?.value?.trim();
       if (!text) return;
+
+      const lowerText = text.toLowerCase();
+      
+      // Kiểm tra đổi trạng thái qua keyword
+      try {
+        if (lowerText.includes('hoàn thành') || lowerText.includes('hoan thanh')) {
+          await api.patch(`/api/shipments/${shipmentId}/status`, { status: 'Completed' });
+          shipment.status = 'Completed';
+        } else if (lowerText.includes('mở khóa') || lowerText.includes('mở khoa') || lowerText.includes('mo khoa')) {
+          await api.patch(`/api/shipments/${shipmentId}/status`, { status: 'PendingImport' });
+          shipment.status = 'PendingImport';
+        }
+      } catch(err) {
+        toast('Lỗi khi đổi trạng thái: ' + err.message, 'error');
+      }
+
       tlAdd(shipmentId, text, currentUser);
       tlInput.value = '';
       refreshTlList();
+      
+      // Reload the current UI to reflect new lock state if it changed
+      if (lowerText.includes('hoàn thành') || lowerText.includes('hoan thanh') || 
+          lowerText.includes('mở khóa') || lowerText.includes('mở khoa') || lowerText.includes('mo khoa')) {
+        setTimeout(() => renderShipmentDetail(container, shipmentId), 200);
+      }
+
       // Scroll xuống cuối list
       const listEl = document.getElementById(`tl-list-${shipmentId}`);
       if (listEl) listEl.scrollTop = listEl.scrollHeight;

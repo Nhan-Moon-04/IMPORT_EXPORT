@@ -911,9 +911,17 @@ async function openStatusModal(id) {
   document.getElementById("newStatusSelect").value = s.status;
 
   document.getElementById("btnUpdateStatusConfirm").onclick = async () => {
-    const newStatus = document.getElementById("newStatusSelect").value;
+    const select = document.getElementById("newStatusSelect");
+    const newStatus = select.value;
     try {
       await api.patch(`/api/shipments/${id}/status`, { status: newStatus });
+      
+      const statusText = select.options[select.selectedIndex].text;
+      const currentUser = (() => { try { return JSON.parse(localStorage.getItem('xnk_user') || '{}').username || 'admin'; } catch { return 'admin'; } })();
+      const entries = (() => { try { return JSON.parse(localStorage.getItem('xnk_timeline_' + id) || '[]'); } catch { return []; } })();
+      entries.push({ id: Date.now().toString(), text: statusText, ts: new Date().toLocaleString('vi-VN'), by: currentUser });
+      localStorage.setItem('xnk_timeline_' + id, JSON.stringify(entries));
+
       showToast("Cập nhật trạng thái lô hàng thành công!");
       window.closeModal();
       await loadShipmentsData();
