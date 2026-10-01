@@ -213,20 +213,26 @@ export async function renderShipmentDetail(container, shipmentId) {
     const totalPackages    = shipment.totalPackages || 0;
     const totalVal         = shipment.totalValue || items.reduce((s, i) => s + (i.totalPrice || (i.quantity * i.unitPrice) || 0), 0) || 0;
 
-    let partnerContactPerson = '---';
-    let partnerContactPhone = '---';
-    let partnerContactEmail = '---';
+    let partnerContactPerson = shipment.contactPerson || '';
+    let partnerContactPhone  = shipment.contactPhone || '';
+    let partnerContactEmail  = shipment.contactEmail || '';
+    let partnerCode          = shipment.supplierCode || shipment.customerCode || '';
+
     try {
       if (shipment.type === 'Export' && shipment.customerId) {
         const cRes = await api.get(`/api/customers/${shipment.customerId}`);
-        partnerContactPerson = cRes.data?.contactPerson || cRes.data?.contactName || '---';
-        partnerContactPhone = cRes.data?.phone || '---';
-        partnerContactEmail = cRes.data?.email || '---';
+        const c = cRes.data || {};
+        if (!partnerContactPerson) partnerContactPerson = c.contactPerson || c.contactName || '';
+        if (!partnerContactPhone)  partnerContactPhone  = c.phone || '';
+        if (!partnerContactEmail)  partnerContactEmail  = c.email || '';
+        if (!partnerCode)          partnerCode          = c.code || c.tradeName || c.taxCode || (c.id ? 'KH-' + c.id.substring(0, 6).toUpperCase() : '');
       } else if (shipment.supplierId) {
         const sRes = await api.get(`/api/suppliers/${shipment.supplierId}`);
-        partnerContactPerson = sRes.data?.contactPerson || sRes.data?.contactName || '---';
-        partnerContactPhone = sRes.data?.phone || '---';
-        partnerContactEmail = sRes.data?.email || '---';
+        const s = sRes.data || {};
+        if (!partnerContactPerson) partnerContactPerson = s.contactPerson || s.contactName || '';
+        if (!partnerContactPhone)  partnerContactPhone  = s.phone || '';
+        if (!partnerContactEmail)  partnerContactEmail  = s.email || '';
+        if (!partnerCode)          partnerCode          = s.code || s.tradeName || s.taxCode || '';
       }
     } catch(e) {}
 
@@ -269,10 +275,27 @@ export async function renderShipmentDetail(container, shipmentId) {
 
     const shpCode        = shipment.shipmentCode || shipment.code || '---';
     const supplierTitle  = shipment.supplierName || shipment.customerName || '---';
-    const partnerCode    = (shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
+    const partnerCodeDisplay = (partnerCode || shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
     
-    const contactPerson = partnerContactPerson;
-    const contactPhone  = partnerContactPhone;
+    // Contact person display logic
+    let contactPersonDisplay = '---';
+    let contactSubDisplay = '';
+    if (partnerContactPerson && partnerContactPerson.trim()) {
+      contactPersonDisplay = partnerContactPerson.trim();
+      contactSubDisplay = [partnerContactPhone, partnerContactEmail].filter(Boolean).join(' • ') || '---';
+    } else if (partnerContactPhone && partnerContactPhone.trim()) {
+      contactPersonDisplay = partnerContactPhone.trim();
+      contactSubDisplay = partnerContactEmail || 'Chưa cập nhật tên';
+    } else if (partnerContactEmail && partnerContactEmail.trim()) {
+      contactPersonDisplay = partnerContactEmail.trim();
+      contactSubDisplay = 'Chưa cập nhật tên';
+    } else {
+      contactPersonDisplay = '---';
+      contactSubDisplay = '---';
+    }
+    
+    const contactPerson = contactPersonDisplay;
+    const contactPhone  = contactSubDisplay;
     const contactEmail  = partnerContactEmail;
     
     const polDisplay     = shipment.portOfLoading   || '---';
@@ -283,7 +306,7 @@ export async function renderShipmentDetail(container, shipmentId) {
     const etdDisplay     = shipment.etd ? new Date(shipment.etd).toLocaleDateString('vi-VN') : '---';
     const createdDisplay = shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString('vi-VN') : '24/09/2026';
     const transitDays    = 12;
-    const supplierCodeLine = `Mã: ${partnerCode}`;
+    const supplierCodeLine = `Mã: ${partnerCodeDisplay}`;
 
     const docCounts = {
       contracts:    salesContracts.length,
@@ -491,8 +514,8 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
           <div class="sd-field">
             <div class="sd-field-label">${ICON.user} Người liên hệ</div>
-            <div class="sd-field-value">${contactPerson}</div>
-            <div class="sd-field-sub">${contactPhone}</div>
+            <div class="sd-field-value">${contactPersonDisplay}</div>
+            <div class="sd-field-sub">${contactSubDisplay}</div>
           </div>
           <div class="sd-field">
             <div class="sd-field-label">${ICON.barcode} Số vận đơn (B/L)</div>
@@ -500,7 +523,7 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
           <div class="sd-field">
             <div class="sd-field-label">${ICON.file} Mã đối tác</div>
-            <div class="sd-field-value">${partnerCode}</div>
+            <div class="sd-field-value" style="font-weight:700; color:var(--amis-blue);">${partnerCodeDisplay}</div>
           </div>
         </div>
 

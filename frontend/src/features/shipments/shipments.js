@@ -512,7 +512,8 @@ export async function renderShipmentForm(container, id) {
           <select id="sSupplierId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
             <option value="">-- Chọn Nhà Cung Cấp --</option>
             ${suppliers.map(sup => {
-              const contact = (sup.contactPerson || sup.contactName || '') + (sup.phone ? ' - ' + sup.phone : '');
+              const contactParts = [sup.contactPerson || sup.contactName, sup.phone].filter(Boolean);
+              const contact = contactParts.join(' - ');
               return `<option value="${sup.id}" data-contact="${escapeHtml(contact)}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country || 'VN'})</option>`;
             }).join('')}
           </select>
@@ -522,7 +523,8 @@ export async function renderShipmentForm(container, id) {
           <select id="sCustomerId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
             <option value="">-- Chọn Khách Hàng --</option>
             ${customers.map(c => {
-              const contact = (c.contactPerson || c.contactName || '') + (c.phone ? ' - ' + c.phone : '');
+              const contactParts = [c.contactPerson || c.contactName, c.phone].filter(Boolean);
+              const contact = contactParts.join(' - ');
               return `<option value="${c.id}" data-contact="${escapeHtml(contact)}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`;
             }).join('')}
           </select>

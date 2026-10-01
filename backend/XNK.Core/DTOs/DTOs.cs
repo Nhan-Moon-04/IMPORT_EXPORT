@@ -241,6 +241,11 @@ public class ShipmentDto
     public string? Notes { get; set; }
     public string? SupplierName { get; set; }
     public string? CustomerName { get; set; }
+    public string? SupplierCode { get; set; }
+    public string? CustomerCode { get; set; }
+    public string? ContactPerson { get; set; }
+    public string? ContactPhone { get; set; }
+    public string? ContactEmail { get; set; }
     public Guid? SupplierId { get; set; }
     public Guid? CustomerId { get; set; }
     public int ItemCount { get; set; }
