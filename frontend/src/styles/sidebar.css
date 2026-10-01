@@ -1,207 +1,255 @@
 /* =========================================================
-   SIDEBAR (IMEX N - LIGHT THEME)
+   SIDEBAR (IMEX N - MODERN CLEAN ACCORDION STYLE)
    ========================================================= */
 
 .amis-sidebar {
-  width: var(--sidebar-width);
-  background-color: var(--amis-sidebar-bg);
-  color: var(--amis-sidebar-text);
+  width: var(--sidebar-width, 240px);
+  background-color: #ffffff;
+  color: #334155;
   display: flex;
   flex-direction: column;
-  transition: var(--transition-slow);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
-  border-right: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
+  border-right: 1px solid #f1f5f9;
   z-index: 100;
+  user-select: none;
 }
 
+/* Subtle, polished scrollbar */
 .amis-sidebar::-webkit-scrollbar {
   width: 4px;
 }
 
-.amis-sidebar::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+.amis-sidebar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
+.amis-sidebar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.amis-sidebar:hover::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+}
+
+/* Brand Header */
 .sidebar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 16px 18px;
+  border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
-  min-height: var(--header-height);
+  min-height: 64px;
+  background: #ffffff;
+  transition: background-color 0.15s;
+}
+
+.sidebar-brand:hover {
+  background-color: #f8fafc;
 }
 
 .brand-icon-box {
-  background: var(--amis-blue);
-  color: #fff;
+  width: 38px;
+  height: 38px;
+  background: #2563eb;
+  color: #ffffff;
   font-weight: 800;
-  font-size: 11px;
-  padding: 6px;
-  border-radius: 6px;
+  font-size: 15px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .brand-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--amis-text);
-  line-height: 1.2;
+  color: #1e293b;
+  line-height: 1.25;
 }
 
 .brand-sub {
-  font-size: 11px;
-  color: var(--amis-text-muted);
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 400;
+  margin-top: 2px;
 }
 
+/* Sidebar Accordion Container */
 .sidebar-accordion {
-  padding: 12px 10px;
+  padding: 8px 0 24px 0;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Nav Group */
 .nav-group {
-  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Group Header */
 .nav-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 14px 18px 5px 18px;
   cursor: pointer;
-  transition: var(--transition);
   user-select: none;
-  border-radius: var(--radius-md);
+  transition: color 0.15s ease;
 }
 
 .nav-group-header:hover {
-  background-color: var(--amis-sidebar-hover);
-  color: var(--amis-sidebar-text-hover);
-}
-
-.group-title-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.group-icon {
-  font-size: 15px;
-  width: 20px;
-  text-align: center;
-  opacity: 0.8;
+  color: #1e293b;
 }
 
 .group-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.nav-group-header:hover .group-title {
+  color: #1e293b;
 }
 
 .group-chevron {
-  font-size: 10px;
-  transition: transform 0.3s ease;
-  opacity: 0.6;
-  display: inline-block; /* allows transform */
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-90deg); /* Collapsed: points right > */
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .nav-group.open .group-chevron {
-  transform: rotate(180deg);
+  transform: rotate(0deg); /* Expanded: points down v */
+  color: #64748b;
 }
 
-.nav-group.open .group-title-left {
-  color: var(--amis-sidebar-text-hover);
+.nav-group-header:hover .group-chevron {
+  color: #1e293b;
 }
 
-.nav-group.open .group-icon {
-  opacity: 1;
-  color: var(--amis-blue);
-}
-
-/* Group Body (Collapsible) */
+/* Collapsible Body with Butter-Smooth CSS Grid Animation */
 .nav-group-body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  padding-left: 14px;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.26s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-group.open .nav-group-body {
-  max-height: 600px;
-  margin-top: 2px;
-  margin-bottom: 8px;
+  grid-template-rows: 1fr;
 }
 
+.nav-group-inner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 6px 0;
+}
+
+/* Nav Items */
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  margin-bottom: 2px;
-  color: var(--amis-sidebar-text);
+  gap: 12px;
+  padding: 8.5px 12px;
+  margin: 1px 8px;
+  border-radius: 8px;
+  color: #334155;
   text-decoration: none;
   font-size: 13.5px;
   font-weight: 500;
-  transition: var(--transition);
-  border-radius: var(--radius-md);
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
 }
 
 .nav-item:hover {
-  color: var(--amis-sidebar-text-hover);
-  background-color: var(--amis-sidebar-hover);
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
+.nav-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #64748b;
+  stroke-width: 1.8;
+  transition: color 0.15s ease, stroke 0.15s ease;
+}
+
+.nav-item:hover svg {
+  color: #0f172a;
+}
+
+.nav-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+/* Active Nav Item */
 .nav-item.active {
-  color: var(--amis-sidebar-active-text);
-  background-color: var(--amis-sidebar-active-bg);
+  background-color: #eef4ff;
+  color: #2563eb;
   font-weight: 600;
 }
 
-.nav-bullet {
-  font-size: 10px;
-  opacity: 0.3;
+.nav-item.active svg {
+  color: #2563eb;
+  stroke: #2563eb;
 }
 
-.nav-item:hover .nav-bullet,
-.nav-item.active .nav-bullet {
-  opacity: 1;
-}
-
-/* Text clipping for smooth animation */
-.brand-text, .group-title, .nav-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: clip;
-  transition: opacity 0.2s;
+/* Left Indicator Pill on Active Item */
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3.5px;
+  height: 20px;
+  background-color: #2563eb;
+  border-radius: 0 3px 3px 0;
 }
 
 /* =========================================================
-   COLLAPSED STATE
+   COLLAPSED SIDEBAR STATE (Optional compact mode)
    ========================================================= */
 .amis-sidebar.collapsed {
-  width: var(--sidebar-collapsed-width);
+  width: 68px;
 }
 
-/* We will hide them with width and opacity to keep transition smooth */
 .amis-sidebar.collapsed .brand-text,
 .amis-sidebar.collapsed .group-title,
-.amis-sidebar.collapsed .nav-text,
 .amis-sidebar.collapsed .group-chevron,
-.amis-sidebar.collapsed .nav-bullet {
-  opacity: 0;
-  width: 0;
-  margin: 0;
-  padding: 0;
+.amis-sidebar.collapsed .nav-text {
+  display: none !important;
 }
 
 .amis-sidebar.collapsed .sidebar-brand {
@@ -211,24 +259,15 @@
 
 .amis-sidebar.collapsed .nav-group-header {
   justify-content: center;
-  padding: 12px 0;
-}
-
-.amis-sidebar.collapsed .group-title-left {
-  justify-content: center;
-  gap: 0;
-}
-
-.amis-sidebar.collapsed .group-icon {
-  margin: 0;
-  font-size: 18px; /* Slightly larger icon when collapsed */
+  padding: 10px 0;
 }
 
 .amis-sidebar.collapsed .nav-item {
   justify-content: center;
-  padding: 12px 0;
+  padding: 10px 0;
+  margin: 2px 8px;
 }
 
-.amis-sidebar.collapsed .nav-group-body {
-  padding-left: 0;
+.amis-sidebar.collapsed .nav-item.active::before {
+  left: -8px;
 }
