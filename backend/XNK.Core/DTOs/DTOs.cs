@@ -605,6 +605,9 @@ public class ProductHistoryDto
     public int TotalExports { get; set; }
     public decimal TotalImportQuantity { get; set; }
     public decimal TotalExportQuantity { get; set; }
+    public decimal TotalImportValue { get; set; }
+    public decimal TotalExportValue { get; set; }
+    public decimal RemainingQuantity { get; set; }
     public decimal? LatestImportPrice { get; set; }
     public decimal? AverageImportPrice { get; set; }
     public List<ProductHistoryItemDto> History { get; set; } = new();
@@ -620,12 +623,29 @@ public class ProductHistoryItemDto
     public string? PartnerCountry { get; set; }
     public string? InvoiceNumber { get; set; }
     public DateTime? InvoiceDate { get; set; }
+    public string? DeclarationNumber { get; set; }
     public decimal Quantity { get; set; }
     public string? Unit { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalAmount { get; set; }
     public string Currency { get; set; } = "USD";
     public string? Status { get; set; }
+    public Guid? ProductId { get; set; }
+    public string? SKU { get; set; }
+    public string? ProductName { get; set; }
+    public decimal BalanceQuantity { get; set; }
+}
+
+public class GlobalProductHistoryDto
+{
+    public decimal TotalImportQuantity { get; set; }
+    public decimal TotalExportQuantity { get; set; }
+    public decimal TotalRemainingQuantity { get; set; }
+    public decimal TotalImportValue { get; set; }
+    public decimal TotalExportValue { get; set; }
+    public int TotalTransactions { get; set; }
+    public int ProductCount { get; set; }
+    public List<ProductHistoryItemDto> Items { get; set; } = new();
 }
 
 // ==================== ORDERS ====================

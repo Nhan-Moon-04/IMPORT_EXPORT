@@ -18,10 +18,8 @@ export async function renderDocuments(container) {
           <ul class="nav-menu" id="docCategoryList" style="list-style: none; padding: 0; margin: 0;">
             <li class="nav-item active" data-cat="" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px; font-weight: 600;">📁 Tất cả chứng từ</li>
             <li class="nav-item" data-cat="BillOfLading" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">🚢 Vận đơn (B/L)</li>
-            <li class="nav-item" data-cat="CommercialInvoice" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">📄 Hóa đơn (Invoice)</li>
             <li class="nav-item" data-cat="PackingList" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">📦 Phiếu đóng gói (PL)</li>
             <li class="nav-item" data-cat="CertificateOfOrigin" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">📜 Chứng nhận xuất xứ (C/O)</li>
-            <li class="nav-item" data-cat="CustomsDeclaration" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">🛂 Tờ khai hải quan</li>
             <li class="nav-item" data-cat="Insurance" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">🛡️ Chứng từ bảo hiểm</li>
             <li class="nav-item" data-cat="InspectionCertificate" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; font-size: 13px;">🔎 Giấy chứng nhận/Kiểm định</li>
             <li class="nav-item" data-cat="Other" style="padding: 10px 12px; cursor: pointer; border-radius: 6px; font-size: 13px;">📎 Khác</li>
@@ -283,10 +281,8 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
             <label class="form-label required">Phân Loại Chứng Từ</label>
             <select id="modalDocCategory" class="form-select">
               <option value="BillOfLading">Vận đơn đường biển (Bill of Lading - B/L)</option>
-              <option value="CommercialInvoice">Hóa đơn thương mại (Commercial Invoice)</option>
               <option value="PackingList">Phiếu đóng gói (Packing List)</option>
               <option value="CertificateOfOrigin">Chứng nhận xuất xứ (C/O)</option>
-              <option value="CustomsDeclaration">Tờ khai hải quan (Customs Declaration)</option>
               <option value="Insurance">Chứng từ bảo hiểm hàng hải</option>
               <option value="InspectionCertificate">Chứng thư kiểm định / Giám định</option>
               <option value="Other">Chứng từ khác</option>
@@ -365,11 +361,9 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
     // Auto-select category based on file name or ext
     const nameLow = file.name.toLowerCase();
     const selectCat = document.getElementById("modalDocCategory");
-    if (nameLow.includes("invoice") || nameLow.includes("inv")) selectCat.value = "CommercialInvoice";
-    else if (nameLow.includes("packing") || nameLow.includes("pk") || nameLow.includes("pl")) selectCat.value = "PackingList";
+    if (nameLow.includes("packing") || nameLow.includes("pk") || nameLow.includes("pl")) selectCat.value = "PackingList";
     else if (nameLow.includes("bl") || nameLow.includes("bill of lading") || nameLow.includes("surrender")) selectCat.value = "BillOfLading";
     else if (nameLow.includes("co") || nameLow.includes("certificate of origin")) selectCat.value = "CertificateOfOrigin";
-    else if (nameLow.includes("khai hải quan") || nameLow.includes("customs") || nameLow.includes("hq")) selectCat.value = "CustomsDeclaration";
   }
 
   document.getElementById("btnCancelFile").addEventListener("click", () => {

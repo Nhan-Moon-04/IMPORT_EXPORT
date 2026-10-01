@@ -346,7 +346,7 @@ export function navigateTo(tab, updateHistory = true, param = null) {
       break;
 
     case 'product-history':
-      renderProductHistory(mainContent);
+      renderProductHistory(mainContent, param);
       break;
 
     case 'shipments':

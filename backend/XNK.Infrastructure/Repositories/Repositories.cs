@@ -53,37 +53,9 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
         var product = await _dbSet.FirstOrDefaultAsync(p => p.Id == id);
         if (product == null) return null;
 
-        var invoiceItems = await _context.InvoiceItems
-            .Include(ii => ii.Invoice)
-                .ThenInclude(i => i.Shipment)
-                    .ThenInclude(s => s.Supplier)
-            .Include(ii => ii.Invoice)
-                .ThenInclude(i => i.Shipment)
-                    .ThenInclude(s => s.Customer)
-            .Where(ii => ii.ProductId == id)
-            .OrderByDescending(ii => ii.Invoice.InvoiceDate)
-            .ToListAsync();
-
-        var historyItems = invoiceItems.Select(ii => new ProductHistoryItemDto
-        {
-            ShipmentId = ii.Invoice.ShipmentId,
-            ShipmentCode = ii.Invoice.Shipment?.ShipmentCode ?? "",
-            ShipmentType = ii.Invoice.Shipment?.Type.ToString() ?? "Import",
-            Date = ii.Invoice.InvoiceDate,
-            PartnerName = ii.Invoice.Shipment?.Supplier?.CompanyName ?? ii.Invoice.Shipment?.Customer?.CompanyName,
-            PartnerCountry = ii.Invoice.Shipment?.Supplier?.Country ?? ii.Invoice.Shipment?.Customer?.Country,
-            InvoiceNumber = ii.Invoice.InvoiceNumber,
-            InvoiceDate = ii.Invoice.InvoiceDate,
-            Quantity = ii.Quantity ?? 0,
-            Unit = ii.Unit ?? product.Unit,
-            UnitPrice = ii.UnitPrice ?? 0,
-            TotalAmount = ii.Amount ?? 0,
-            Currency = ii.Invoice.Currency ?? "USD",
-            Status = ii.Invoice.Shipment?.Status.ToString()
-        }).ToList();
-
-        var importItems = historyItems.Where(h => h.ShipmentType == "Import").ToList();
-        var exportItems = historyItems.Where(h => h.ShipmentType == "Export").ToList();
+        var globalHistory = await GetAllHistoryAsync(id, null, null, null, null);
+        var importItems = globalHistory.Items.Where(h => h.ShipmentType == "Import").ToList();
+        var exportItems = globalHistory.Items.Where(h => h.ShipmentType == "Export").ToList();
 
         return new ProductHistoryDto
         {
@@ -93,11 +65,180 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             Unit = product.Unit,
             TotalImports = importItems.Count,
             TotalExports = exportItems.Count,
-            TotalImportQuantity = importItems.Sum(h => h.Quantity),
-            TotalExportQuantity = exportItems.Sum(h => h.Quantity),
+            TotalImportQuantity = globalHistory.TotalImportQuantity,
+            TotalExportQuantity = globalHistory.TotalExportQuantity,
+            TotalImportValue = globalHistory.TotalImportValue,
+            TotalExportValue = globalHistory.TotalExportValue,
+            RemainingQuantity = globalHistory.TotalRemainingQuantity,
             LatestImportPrice = importItems.FirstOrDefault()?.UnitPrice,
             AverageImportPrice = importItems.Any() ? importItems.Average(h => h.UnitPrice) : null,
-            History = historyItems
+            History = globalHistory.Items
+        };
+    }
+
+    public async Task<GlobalProductHistoryDto> GetAllHistoryAsync(Guid? productId, string? search, string? type, DateTime? fromDate, DateTime? toDate)
+    {
+        // 1. Fetch ShipmentItems with all related entities
+        var shipmentQuery = _context.ShipmentItems
+            .Include(si => si.Product)
+            .Include(si => si.Shipment).ThenInclude(s => s.Supplier)
+            .Include(si => si.Shipment).ThenInclude(s => s.Customer)
+            .Include(si => si.Shipment).ThenInclude(s => s.Invoices)
+            .Include(si => si.Shipment).ThenInclude(s => s.CustomsDeclarations)
+            .AsQueryable();
+
+        if (productId.HasValue)
+            shipmentQuery = shipmentQuery.Where(si => si.ProductId == productId.Value);
+
+        var shipmentItems = await shipmentQuery.ToListAsync();
+        var historyList = new List<ProductHistoryItemDto>();
+
+        foreach (var si in shipmentItems)
+        {
+            var s = si.Shipment;
+            if (s == null) continue;
+
+            var invoices = s.Invoices?
+                .Where(inv => inv.Type != Core.Enums.InvoiceType.PackingList && inv.Type != Core.Enums.InvoiceType.SalesContract && !string.IsNullOrWhiteSpace(inv.InvoiceNumber))
+                .ToList() ?? new();
+
+            var invNum = invoices.Any() ? string.Join(", ", invoices.Select(i => i.InvoiceNumber.Trim()).Distinct()) : null;
+            var invDate = invoices.FirstOrDefault()?.InvoiceDate;
+            var declNum = s.CustomsDeclarations?.FirstOrDefault()?.DeclarationNumber;
+
+            historyList.Add(new ProductHistoryItemDto
+            {
+                ShipmentId = s.Id,
+                ShipmentCode = s.ShipmentCode,
+                ShipmentType = s.Type.ToString(),
+                Date = s.ExpectedDate ?? s.CreatedAt,
+                PartnerName = s.Type == Core.Enums.ShipmentType.Import ? s.Supplier?.CompanyName : s.Customer?.CompanyName,
+                PartnerCountry = s.Type == Core.Enums.ShipmentType.Import ? s.Supplier?.Country : s.Customer?.Country,
+                InvoiceNumber = invNum,
+                InvoiceDate = invDate,
+                DeclarationNumber = declNum,
+                Quantity = si.Quantity ?? 0,
+                Unit = si.Product?.Unit ?? "kg",
+                UnitPrice = si.UnitPrice ?? 0,
+                TotalAmount = si.TotalValue ?? ((si.Quantity ?? 0) * (si.UnitPrice ?? 0)),
+                Currency = s.Currency ?? "USD",
+                Status = s.Status.ToString(),
+                ProductId = si.ProductId,
+                SKU = si.Product?.SKU ?? "",
+                ProductName = si.Product?.Name ?? ""
+            });
+        }
+
+        // 2. Also check if any InvoiceItems exist for shipments/products not covered
+        var existingKeys = new HashSet<(Guid ShipmentId, Guid ProductId)>(
+            historyList.Where(h => h.ProductId.HasValue).Select(h => (h.ShipmentId, h.ProductId!.Value))
+        );
+
+        var invQuery = _context.InvoiceItems
+            .Include(ii => ii.Product)
+            .Include(ii => ii.Invoice).ThenInclude(i => i.Shipment).ThenInclude(s => s.Supplier)
+            .Include(ii => ii.Invoice).ThenInclude(i => i.Shipment).ThenInclude(s => s.Customer)
+            .Include(ii => ii.Invoice).ThenInclude(i => i.Shipment).ThenInclude(s => s.CustomsDeclarations)
+            .Where(ii => ii.ProductId.HasValue && ii.Invoice.Type != Core.Enums.InvoiceType.PackingList && ii.Invoice.Type != Core.Enums.InvoiceType.SalesContract);
+
+        if (productId.HasValue)
+            invQuery = invQuery.Where(ii => ii.ProductId == productId.Value);
+
+        var standaloneInvoiceItems = await invQuery.ToListAsync();
+
+        foreach (var ii in standaloneInvoiceItems)
+        {
+            var pId = ii.ProductId!.Value;
+            var sId = ii.Invoice?.ShipmentId ?? Guid.Empty;
+            if (sId != Guid.Empty && existingKeys.Contains((sId, pId)))
+                continue;
+
+            var s = ii.Invoice?.Shipment;
+            historyList.Add(new ProductHistoryItemDto
+            {
+                ShipmentId = sId,
+                ShipmentCode = s?.ShipmentCode ?? "",
+                ShipmentType = s?.Type.ToString() ?? "Import",
+                Date = ii.Invoice?.InvoiceDate ?? s?.CreatedAt,
+                PartnerName = s?.Type == Core.Enums.ShipmentType.Export ? s?.Customer?.CompanyName : s?.Supplier?.CompanyName,
+                PartnerCountry = s?.Type == Core.Enums.ShipmentType.Export ? s?.Customer?.Country : s?.Supplier?.Country,
+                InvoiceNumber = ii.Invoice?.InvoiceNumber,
+                InvoiceDate = ii.Invoice?.InvoiceDate,
+                DeclarationNumber = s?.CustomsDeclarations?.FirstOrDefault()?.DeclarationNumber,
+                Quantity = ii.Quantity ?? 0,
+                Unit = ii.Unit ?? ii.Product?.Unit ?? "kg",
+                UnitPrice = ii.UnitPrice ?? 0,
+                TotalAmount = ii.Amount ?? ((ii.Quantity ?? 0) * (ii.UnitPrice ?? 0)),
+                Currency = ii.Invoice?.Currency ?? "USD",
+                Status = s?.Status.ToString() ?? "Completed",
+                ProductId = pId,
+                SKU = ii.Product?.SKU ?? "",
+                ProductName = ii.Product?.Name ?? ""
+            });
+        }
+
+        // 3. Compute running balance (Lũy kế tồn / sử dụng) per product in chronological order
+        var groupedByProduct = historyList.GroupBy(h => h.ProductId ?? Guid.Empty);
+        foreach (var group in groupedByProduct)
+        {
+            decimal balance = 0;
+            foreach (var item in group.OrderBy(h => h.Date ?? DateTime.MinValue))
+            {
+                if (item.ShipmentType == "Import")
+                    balance += item.Quantity;
+                else
+                    balance -= item.Quantity;
+
+                item.BalanceQuantity = balance;
+            }
+        }
+
+        // 4. Apply Filters (search, type, date range)
+        var filtered = historyList.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(type))
+            filtered = filtered.Where(h => string.Equals(h.ShipmentType, type, StringComparison.OrdinalIgnoreCase));
+
+        if (fromDate.HasValue)
+            filtered = filtered.Where(h => h.Date >= fromDate.Value.Date);
+
+        if (toDate.HasValue)
+            filtered = filtered.Where(h => h.Date <= toDate.Value.Date.AddDays(1).AddTicks(-1));
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.Trim().ToLower();
+            filtered = filtered.Where(h =>
+                (!string.IsNullOrEmpty(h.SKU) && h.SKU.ToLower().Contains(q)) ||
+                (!string.IsNullOrEmpty(h.ProductName) && h.ProductName.ToLower().Contains(q)) ||
+                (!string.IsNullOrEmpty(h.ShipmentCode) && h.ShipmentCode.ToLower().Contains(q)) ||
+                (!string.IsNullOrEmpty(h.InvoiceNumber) && h.InvoiceNumber.ToLower().Contains(q)) ||
+                (!string.IsNullOrEmpty(h.DeclarationNumber) && h.DeclarationNumber.ToLower().Contains(q)) ||
+                (!string.IsNullOrEmpty(h.PartnerName) && h.PartnerName.ToLower().Contains(q))
+            );
+        }
+
+        var sortedItems = filtered.OrderByDescending(h => h.Date ?? DateTime.MinValue).ToList();
+
+        // 5. Build Global Summary
+        var importList = sortedItems.Where(h => h.ShipmentType == "Import").ToList();
+        var exportList = sortedItems.Where(h => h.ShipmentType == "Export").ToList();
+
+        var totalImportQty = importList.Sum(h => h.Quantity);
+        var totalExportQty = exportList.Sum(h => h.Quantity);
+        var totalImportVal = importList.Sum(h => h.TotalAmount);
+        var totalExportVal = exportList.Sum(h => h.TotalAmount);
+
+        return new GlobalProductHistoryDto
+        {
+            TotalImportQuantity = totalImportQty,
+            TotalExportQuantity = totalExportQty,
+            TotalRemainingQuantity = totalImportQty - totalExportQty,
+            TotalImportValue = totalImportVal,
+            TotalExportValue = totalExportVal,
+            TotalTransactions = sortedItems.Count,
+            ProductCount = sortedItems.Select(h => h.ProductId).Distinct().Count(),
+            Items = sortedItems
         };
     }
 }
@@ -136,7 +277,7 @@ public class SupplierRepository : GenericRepository<Supplier>, ISupplierReposito
             ShipmentId = s.Id,
             ShipmentCode = s.ShipmentCode,
             Date = s.ExpectedDate ?? s.CreatedAt,
-            InvoiceNumber = s.Invoices.FirstOrDefault()?.InvoiceNumber,
+            InvoiceNumber = s.Invoices.FirstOrDefault(inv => inv.Type != Core.Enums.InvoiceType.PackingList && inv.Type != Core.Enums.InvoiceType.SalesContract)?.InvoiceNumber,
             Quantity = s.TotalQuantity ?? 0,
             TotalValue = s.TotalValue ?? 0,
             Status = s.Status.ToString()

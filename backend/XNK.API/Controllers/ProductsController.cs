@@ -31,6 +31,14 @@ public class ProductsController : ControllerBase
         return Ok(ApiResponse<PagedResultDto<ProductDto>>.Ok(dto));
     }
 
+    [HttpGet("history")]
+    public async Task<IActionResult> GetAllHistory([FromQuery] Guid? productId, [FromQuery] string? search,
+        [FromQuery] string? type, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+    {
+        var result = await _uow.Products.GetAllHistoryAsync(productId, search, type, fromDate, toDate);
+        return Ok(ApiResponse<GlobalProductHistoryDto>.Ok(result));
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {

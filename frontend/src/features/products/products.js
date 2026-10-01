@@ -469,7 +469,9 @@ async function viewHistory(id) {
     `;
 
     footer.innerHTML = `
-      <div></div>
+      <button type="button" class="btn btn-primary" onclick="window.closeModal(); window.appNavigateTo('product-history', '${id}')">
+        Xem Báo Cáo Xuất Nhập & Sử Dụng Đầy Đủ →
+      </button>
       <button type="button" class="btn btn-default" onclick="window.closeModal()">Đóng</button>
     `;
   } catch (err) {

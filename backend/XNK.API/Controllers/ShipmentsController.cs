@@ -167,7 +167,8 @@ public class ShipmentsController : ControllerBase
         TotalValue = s.TotalValue, Currency = s.Currency, Status = s.Status.ToString(),
         Notes = s.Notes, SupplierName = s.Supplier?.CompanyName, CustomerName = s.Customer?.CompanyName,
         SupplierId = s.SupplierId, CustomerId = s.CustomerId,
-        ItemCount = s.Items?.Count ?? 0, InvoiceCount = s.Invoices?.Count ?? 0,
+        ItemCount = s.Items?.Count ?? 0,
+        InvoiceCount = s.Invoices?.Count(inv => inv.Type != InvoiceType.PackingList && inv.Type != InvoiceType.SalesContract) ?? 0,
         DocumentCount = s.Documents?.Count ?? 0, CreatedAt = s.CreatedAt,
         Items = s.Items?.Select(MapItemToDto).ToList() ?? new(),
         Bookings = s.Bookings?.Select(b => new BookingDto
@@ -187,7 +188,11 @@ public class ShipmentsController : ControllerBase
             DeclarationType = c.DeclarationType, CustomsBranch = c.CustomsBranch,
             Status = c.Status, Notes = c.Notes
         }).ToList() ?? new(),
-        InvoiceNumbers = s.Invoices?.Select(inv => inv.InvoiceNumber).Distinct().ToList() ?? new(),
+        InvoiceNumbers = s.Invoices?
+            .Where(inv => inv.Type != InvoiceType.PackingList && inv.Type != InvoiceType.SalesContract && !string.IsNullOrWhiteSpace(inv.InvoiceNumber))
+            .Select(inv => inv.InvoiceNumber.Trim())
+            .Distinct()
+            .ToList() ?? new(),
         ProductNames = s.Items?.Select(it => it.Product?.Name ?? it.Notes ?? "Sợi Polyester").Distinct().ToList() ?? new(),
         ContainerNumbers = s.Containers?.Select(c => c.ContainerNumber).Distinct().ToList() ?? new(),
         DeclarationNumbers = s.CustomsDeclarations?.Select(d => d.DeclarationNumber).Distinct().ToList() ?? new()

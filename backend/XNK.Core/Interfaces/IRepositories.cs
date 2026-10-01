@@ -20,6 +20,7 @@ public interface IProductRepository : IGenericRepository<Product>
     Task<Product?> GetWithSpecificationAsync(Guid id);
     Task<bool> SkuExistsAsync(string sku, Guid? excludeId = null);
     Task<ProductHistoryDto?> GetHistoryAsync(Guid id);
+    Task<GlobalProductHistoryDto> GetAllHistoryAsync(Guid? productId, string? search, string? type, DateTime? fromDate, DateTime? toDate);
 }
 
 public interface ISupplierRepository : IGenericRepository<Supplier>
