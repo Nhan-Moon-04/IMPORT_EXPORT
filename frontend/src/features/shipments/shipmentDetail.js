@@ -6,7 +6,7 @@ import { openCreateInvoiceModal } from '../invoices/invoices.js';
 import { openCreateCustomsModal } from '../customs/customs.js';
 
 // ─── Download Invoice Document Helper ────────────────────────────────────────
-window.downloadInvoiceFile = async function(invoiceId, docId, fileName) {
+window.downloadInvoiceFile = async function (invoiceId, docId, fileName) {
   try {
     let targetDocId = docId;
     let targetFileName = fileName;
@@ -94,43 +94,43 @@ export function tlLatestStatus(shipmentId) {
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 const ICON = {
-  ship:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1 2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1"/><path d="M4 18V14l8-4 4 2v6"/><path d="M12 2v6"/><path d="M8 6h8"/></svg>`,
-  back:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`,
-  copy:     `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
-  edit:     `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
-  print:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`,
-  dots:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+  ship: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1 2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1"/><path d="M4 18V14l8-4 4 2v6"/><path d="M12 2v6"/><path d="M8 6h8"/></svg>`,
+  back: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`,
+  copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+  edit: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+  print: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`,
+  dots: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
   calendar: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-  anchor:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="20"/><path d="M5 14l7 6 7-6"/></svg>`,
+  anchor: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="20"/><path d="M5 14l7 6 7-6"/></svg>`,
   building: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/></svg>`,
   incoterm: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
-  barcode:  `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>`,
-  user:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-  file:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
-  excel:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
-  check:    `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`,
-  chevron:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`,
-  refresh:  `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  barcode: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>`,
+  user: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  file: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  excel: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+  check: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`,
+  chevron: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`,
+  refresh: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
 };
 
 // ─── Status mapping ───────────────────────────────────────────────────────────
 const STATUS_CLASS = {
-  Draft:          'chip chip-slate',
+  Draft: 'chip chip-slate',
   PendingPayment: 'chip chip-amber',
-  Paid30:         'chip chip-amber',
-  Paid70:         'chip chip-amber',
-  PendingImport:  'chip chip-blue',
-  Completed:      'chip chip-green',
-  Cancelled:      'chip chip-red',
+  Paid30: 'chip chip-amber',
+  Paid70: 'chip chip-amber',
+  PendingImport: 'chip chip-blue',
+  Completed: 'chip chip-green',
+  Cancelled: 'chip chip-red',
 };
 const STATUS_LABEL = {
-  Draft:          'Bản nháp',
+  Draft: 'Bản nháp',
   PendingPayment: 'Chờ thanh toán',
-  Paid30:         'Đã thanh toán 30%',
-  Paid70:         'Đã thanh toán 70%',
-  PendingImport:  'Chờ nhập hàng',
-  Completed:      'Đã thông quan',
-  Cancelled:      'Đã hủy',
+  Paid30: 'Đã thanh toán 30%',
+  Paid70: 'Đã thanh toán 70%',
+  PendingImport: 'Chờ nhập hàng',
+  Completed: 'Đã thông quan',
+  Cancelled: 'Đã hủy',
 };
 
 export async function renderShipmentDetail(container, shipmentId) {
@@ -155,9 +155,9 @@ export async function renderShipmentDetail(container, shipmentId) {
       api.get(`/api/documents?entityType=Invoice&pageSize=500`).catch(() => ({ data: [] })),
     ]);
 
-    shipment  = shpRes?.data;
-    invoices  = (invRes?.data?.items  || invRes?.data  || []).filter(i => i.shipmentId === shipmentId);
-    documents = (docRes?.data?.items  || docRes?.data  || []).filter(d => d.shipmentId === shipmentId);
+    shipment = shpRes?.data;
+    invoices = (invRes?.data?.items || invRes?.data || []).filter(i => i.shipmentId === shipmentId);
+    documents = (docRes?.data?.items || docRes?.data || []).filter(d => d.shipmentId === shipmentId);
     const invoiceDocs = invDocsRes?.data?.items || invDocsRes?.data || [];
     const combinedDocs = [...documents];
     invoiceDocs.forEach(d => {
@@ -190,8 +190,8 @@ export async function renderShipmentDetail(container, shipmentId) {
     }
 
     // ── Normalize & calculate ───────────────────────────────────────────
-    const rawItems         = shipment.items || [];
-    const items            = rawItems.map(it => {
+    const rawItems = shipment.items || [];
+    const items = rawItems.map(it => {
       const p = (it.productId && productMap.get(String(it.productId).toLowerCase()))
         || (it.productCode && productMap.get(String(it.productCode).trim().toLowerCase()))
         || (it.sku && productMap.get(String(it.sku).trim().toLowerCase()))
@@ -207,37 +207,37 @@ export async function renderShipmentDetail(container, shipmentId) {
         unit: it.unit || p?.unit || 'kg',
       };
     });
-    const totalQty         = shipment.totalQuantity || items.reduce((s, i) => s + (i.quantity || 0), 0) || 0;
-    const totalNetWeight   = items.reduce((s, i) => s + (i.netWeight   || 0), 0) || 0;
+    const totalQty = shipment.totalQuantity || items.reduce((s, i) => s + (i.quantity || 0), 0) || 0;
+    const totalNetWeight = items.reduce((s, i) => s + (i.netWeight || 0), 0) || 0;
     const totalGrossWeight = shipment.totalGrossWeight || items.reduce((s, i) => s + (i.grossWeight || 0), 0) || 0;
-    const totalPackages    = shipment.totalPackages || 0;
-    const totalVal         = shipment.totalValue || items.reduce((s, i) => s + (i.totalPrice || (i.quantity * i.unitPrice) || 0), 0) || 0;
+    const totalPackages = shipment.totalPackages || 0;
+    const totalVal = shipment.totalValue || items.reduce((s, i) => s + (i.totalPrice || (i.quantity * i.unitPrice) || 0), 0) || 0;
 
     let partnerContactPerson = shipment.contactPerson || '';
-    let partnerContactPhone  = shipment.contactPhone || '';
-    let partnerContactEmail  = shipment.contactEmail || '';
-    let partnerCode          = shipment.supplierCode || shipment.customerCode || '';
+    let partnerContactPhone = shipment.contactPhone || '';
+    let partnerContactEmail = shipment.contactEmail || '';
+    let partnerCode = shipment.supplierCode || shipment.customerCode || '';
 
     try {
       if (shipment.type === 'Export' && shipment.customerId) {
         const cRes = await api.get(`/api/customers/${shipment.customerId}`);
         const c = cRes.data || {};
         if (!partnerContactPerson) partnerContactPerson = c.contactPerson || c.contactName || '';
-        if (!partnerContactPhone)  partnerContactPhone  = c.phone || '';
-        if (!partnerContactEmail)  partnerContactEmail  = c.email || '';
-        if (!partnerCode)          partnerCode          = c.code || c.tradeName || c.taxCode || (c.id ? 'KH-' + c.id.substring(0, 6).toUpperCase() : '');
+        if (!partnerContactPhone) partnerContactPhone = c.phone || '';
+        if (!partnerContactEmail) partnerContactEmail = c.email || '';
+        if (!partnerCode) partnerCode = c.code || c.tradeName || c.taxCode || (c.id ? 'KH-' + c.id.substring(0, 6).toUpperCase() : '');
       } else if (shipment.supplierId) {
         const sRes = await api.get(`/api/suppliers/${shipment.supplierId}`);
         const s = sRes.data || {};
         if (!partnerContactPerson) partnerContactPerson = s.contactPerson || s.contactName || '';
-        if (!partnerContactPhone)  partnerContactPhone  = s.phone || '';
-        if (!partnerContactEmail)  partnerContactEmail  = s.email || '';
-        if (!partnerCode)          partnerCode          = s.code || s.tradeName || s.taxCode || '';
+        if (!partnerContactPhone) partnerContactPhone = s.phone || '';
+        if (!partnerContactEmail) partnerContactEmail = s.email || '';
+        if (!partnerCode) partnerCode = s.code || s.tradeName || s.taxCode || '';
       }
-    } catch(e) {}
+    } catch (e) { }
 
-    const trueInvoices  = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract');
-    const salesContracts= invoices.filter(i => i.type === 'SalesContract');
+    const trueInvoices = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract');
+    const salesContracts = invoices.filter(i => i.type === 'SalesContract');
     const packingListsFromInv = invoices.filter(i => i.type === 'PackingList');
     const packingListsFromShp = shipment.packingLists || [];
     const packingLists = [...packingListsFromInv];
@@ -255,28 +255,28 @@ export async function renderShipmentDetail(container, shipmentId) {
       }
     });
 
-    const primaryInvoiceNumber     = trueInvoices[0]?.invoiceNumber   || '---';
-    const primaryContractNumber    = salesContracts[0]?.invoiceNumber  || '---';
+    const primaryInvoiceNumber = trueInvoices[0]?.invoiceNumber || '---';
+    const primaryContractNumber = salesContracts[0]?.invoiceNumber || '---';
     const primaryDeclarationNumber = shipment.customsDeclarations?.[0]?.declarationNumber || '---';
 
-    const bookings   = shipment.bookings  || [];
+    const bookings = shipment.bookings || [];
     const containers = shipment.containers || [];
-    const customs    = shipment.customsDeclarations || [];
+    const customs = shipment.customsDeclarations || [];
 
-    const isCompleted  = shipment.status === 'Completed';
-    const statusClass  = STATUS_CLASS[shipment.status] || 'chip chip-slate';
-    const statusLabel  = STATUS_LABEL[shipment.status] || shipment.status || 'Đã thông quan';
-    const typeLabel    = shipment.type === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu';
-    const typeClass    = shipment.type === 'Export' ? 'chip chip-purple' : 'chip chip-blue';
+    const isCompleted = shipment.status === 'Completed';
+    const statusClass = STATUS_CLASS[shipment.status] || 'chip chip-slate';
+    const statusLabel = STATUS_LABEL[shipment.status] || shipment.status || 'Đã thông quan';
+    const typeLabel = shipment.type === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu';
+    const typeClass = shipment.type === 'Export' ? 'chip chip-purple' : 'chip chip-blue';
 
     const exchangeRate = 25450;
-    const currency     = shipment.currency || 'USD';
-    const totalVnd     = totalVal * exchangeRate;
+    const currency = shipment.currency || 'USD';
+    const totalVnd = totalVal * exchangeRate;
 
-    const shpCode        = shipment.shipmentCode || shipment.code || '---';
-    const supplierTitle  = shipment.supplierName || shipment.customerName || '---';
+    const shpCode = shipment.shipmentCode || shipment.code || '---';
+    const supplierTitle = shipment.supplierName || shipment.customerName || '---';
     const partnerCodeDisplay = (partnerCode || shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
-    
+
     // Contact person display logic
     let contactPersonDisplay = '---';
     let contactSubDisplay = '';
@@ -293,29 +293,28 @@ export async function renderShipmentDetail(container, shipmentId) {
       contactPersonDisplay = '---';
       contactSubDisplay = '---';
     }
-    
+
     const contactPerson = contactPersonDisplay;
-    const contactPhone  = contactSubDisplay;
-    const contactEmail  = partnerContactEmail;
-    
-    const polDisplay     = shipment.portOfLoading   || '---';
-    const podDisplay     = shipment.portOfDischarge || '---';
-    const incotermDisplay= shipment.deliveryTerm    || shipment.incoterms || '---';
-    const blNumberDisplay= shipment.blNumber        || '---';
-    const etaDisplay     = shipment.expectedDate ? new Date(shipment.expectedDate).toLocaleDateString('vi-VN') : '---';
-    const etdDisplay     = shipment.etd ? new Date(shipment.etd).toLocaleDateString('vi-VN') : '---';
+    const contactPhone = contactSubDisplay;
+    const contactEmail = partnerContactEmail;
+
+    const polDisplay = shipment.portOfLoading || '---';
+    const podDisplay = shipment.portOfDischarge || '---';
+    const incotermDisplay = shipment.deliveryTerm || shipment.incoterms || '---';
+    const blNumberDisplay = shipment.blNumber || '---';
+    const etaDisplay = shipment.expectedDate ? new Date(shipment.expectedDate).toLocaleDateString('vi-VN') : '---';
+    const etdDisplay = shipment.etd ? new Date(shipment.etd).toLocaleDateString('vi-VN') : '---';
     const createdDisplay = shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString('vi-VN') : '24/09/2026';
-    const transitDays    = 12;
     const supplierCodeLine = `Mã: ${partnerCodeDisplay}`;
 
     const docCounts = {
-      contracts:    salesContracts.length,
-      invoices:     trueInvoices.length,
+      contracts: salesContracts.length,
+      invoices: trueInvoices.length,
       packingLists: packingLists.length,
-      customs:      customs.length,
-      booking:      bookings.length,
-      containers:   containers.length,
-      total:        documents.length,
+      customs: customs.length,
+      booking: bookings.length,
+      containers: containers.length,
+      total: documents.length,
     };
 
     // ── Timeline (chat-style, from localStorage) ────────────────────────
@@ -409,10 +408,10 @@ export async function renderShipmentDetail(container, shipmentId) {
     const customsHtml = customs.length === 0 ? `<div class="sd-card"><div class="sd-card-body" style="text-align:center;color:#64748b;padding:24px;">Chưa có tờ khai hải quan nào.</div></div>` : customs.map(cd => {
       const d = cd.declarationDate ? new Date(cd.declarationDate).toLocaleDateString('vi-VN') : '---';
       const st = cd.status === 1 ? '<span class="chip chip-green">LUỒNG XANH</span>'
-               : cd.status === 2 ? '<span class="chip chip-orange">LUỒNG VÀNG</span>'
-               : cd.status === 3 ? '<span class="chip chip-red">LUỒNG ĐỎ</span>'
-               : '<span class="chip chip-slate">CHƯA PHÂN LUỒNG</span>';
-      
+        : cd.status === 2 ? '<span class="chip chip-orange">LUỒNG VÀNG</span>'
+          : cd.status === 3 ? '<span class="chip chip-red">LUỒNG ĐỎ</span>'
+            : '<span class="chip chip-slate">CHƯA PHÂN LUỒNG</span>';
+
       return `
         <div class="sd-card" style="margin-bottom:12px;">
           <div class="sd-card-header">
@@ -489,7 +488,7 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
           <div class="sd-field">
             <div class="sd-field-label">${ICON.user} Đối tác (NCC)</div>
-            <div class="sd-field-value">${supplierTitle.length > 28 ? supplierTitle.slice(0,28)+'…' : supplierTitle}</div>
+            <div class="sd-field-value">${supplierTitle.length > 28 ? supplierTitle.slice(0, 28) + '…' : supplierTitle}</div>
             <div class="sd-field-sub">${supplierCodeLine}</div>
           </div>
           <div class="sd-field">
@@ -615,10 +614,6 @@ export async function renderShipmentDetail(container, shipmentId) {
                       <div class="sd-info-row">
                         <span class="sd-info-key">Trọng lượng NW</span>
                         <span class="sd-info-val">${totalNetWeight} kg</span>
-                      </div>
-                      <div class="sd-info-row">
-                        <span class="sd-info-key">Thời gian vận chuyển</span>
-                        <span class="sd-info-val">${transitDays} ngày</span>
                       </div>
                       <div class="sd-info-row">
                         <span class="sd-info-key">Tuyến đường</span>
@@ -794,18 +789,18 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </tr></thead>
                     <tbody>
                       ${salesContracts.length ? salesContracts.map((c, i) => {
-                        const cDate = c.invoiceDate || c.issueDate || c.createdAt;
-                        const cDateStr = cDate ? new Date(cDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
-                        const cVal = Number(c.totalValue ?? c.totalAmount ?? 0);
+      const cDate = c.invoiceDate || c.issueDate || c.createdAt;
+      const cDateStr = cDate ? new Date(cDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+      const cVal = Number(c.totalValue ?? c.totalAmount ?? 0);
 
-                        const cDoc = combinedDocs.find(d => 
-                          (d.entityId && String(d.entityId).toLowerCase() === String(c.id).toLowerCase())
-                          || (d.fileName && c.invoiceNumber && d.fileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
-                          || (d.originalFileName && c.invoiceNumber && d.originalFileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
-                        );
-                        const hasFile = !!cDoc;
+      const cDoc = combinedDocs.find(d =>
+        (d.entityId && String(d.entityId).toLowerCase() === String(c.id).toLowerCase())
+        || (d.fileName && c.invoiceNumber && d.fileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
+        || (d.originalFileName && c.invoiceNumber && d.originalFileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
+      );
+      const hasFile = !!cDoc;
 
-                        return `
+      return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:#15803d;">${c.invoiceNumber || '---'}</td>
@@ -832,7 +827,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           </td>
                         </tr>
                         `;
-                      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -855,20 +850,20 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </tr></thead>
                     <tbody>
                       ${trueInvoices.length ? trueInvoices.map((inv, i) => {
-                        const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : (inv.type || 'Commercial');
-                        const typeClass = inv.type === 'ProformaInvoice' ? 'chip chip-purple' : inv.type === 'CommercialInvoice' ? 'chip chip-blue' : inv.type === 'TaxInvoice' ? 'chip chip-green' : 'chip chip-slate';
-                        const invDate = inv.invoiceDate || inv.issueDate || inv.createdAt;
-                        const invDateStr = invDate ? new Date(invDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
-                        const totalVal = Number(inv.totalValue ?? inv.totalAmount ?? 0);
+      const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : (inv.type || 'Commercial');
+      const typeClass = inv.type === 'ProformaInvoice' ? 'chip chip-purple' : inv.type === 'CommercialInvoice' ? 'chip chip-blue' : inv.type === 'TaxInvoice' ? 'chip chip-green' : 'chip chip-slate';
+      const invDate = inv.invoiceDate || inv.issueDate || inv.createdAt;
+      const invDateStr = invDate ? new Date(invDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+      const totalVal = Number(inv.totalValue ?? inv.totalAmount ?? 0);
 
-                        const invDoc = combinedDocs.find(d => 
-                          (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase())
-                          || (d.fileName && inv.invoiceNumber && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
-                          || (d.originalFileName && inv.invoiceNumber && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
-                        );
-                        const hasFile = !!invDoc;
+      const invDoc = combinedDocs.find(d =>
+        (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase())
+        || (d.fileName && inv.invoiceNumber && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+        || (d.originalFileName && inv.invoiceNumber && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+      );
+      const hasFile = !!invDoc;
 
-                        return `
+      return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:var(--amis-blue);">${inv.invoiceNumber || '---'}</td>
@@ -895,7 +890,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           </td>
                         </tr>
                         `;
-                      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -919,17 +914,17 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </tr></thead>
                     <tbody>
                       ${packingLists.length ? packingLists.map((p, i) => {
-                        const pDate = p.invoiceDate || p.packingListDate || p.issueDate || p.createdAt;
-                        const pDateStr = pDate ? new Date(pDate).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}) : '---';
+      const pDate = p.invoiceDate || p.packingListDate || p.issueDate || p.createdAt;
+      const pDateStr = pDate ? new Date(pDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
 
-                        const pDoc = combinedDocs.find(d => 
-                          (d.entityId && String(d.entityId).toLowerCase() === String(p.id).toLowerCase())
-                          || (d.fileName && p.invoiceNumber && d.fileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
-                          || (d.originalFileName && p.invoiceNumber && d.originalFileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
-                        );
-                        const hasFile = !!pDoc;
+      const pDoc = combinedDocs.find(d =>
+        (d.entityId && String(d.entityId).toLowerCase() === String(p.id).toLowerCase())
+        || (d.fileName && p.invoiceNumber && d.fileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
+        || (d.originalFileName && p.invoiceNumber && d.originalFileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
+      );
+      const hasFile = !!pDoc;
 
-                        return `
+      return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:var(--amis-blue);">${p.invoiceNumber || '---'}</td>
@@ -956,7 +951,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           </td>
                         </tr>
                         `;
-                      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -1028,28 +1023,28 @@ export async function renderShipmentDetail(container, shipmentId) {
                     <tbody>
                       <tr><td><strong>Tiền hàng</strong></td><td>${supplierTitle}</td>
                         <td style="text-align:right;font-weight:700;">$${Number(totalVal).toFixed(2)}</td>
-                        <td style="text-align:right;">${Number(totalVal*25450).toLocaleString('vi-VN')}₫</td>
+                        <td style="text-align:right;">${Number(totalVal * 25450).toLocaleString('vi-VN')}₫</td>
                         <td>Trực tiếp theo SP</td></tr>
                       <tr><td><strong>Cước biển (Ocean Freight)</strong></td><td>COSCO SHIPPING</td>
                         <td style="text-align:right;">$250.00</td>
-                        <td style="text-align:right;">${(250*25450).toLocaleString('vi-VN')}₫</td>
+                        <td style="text-align:right;">${(250 * 25450).toLocaleString('vi-VN')}₫</td>
                         <td>Theo GW</td></tr>
                       <tr><td><strong>Phí THC</strong></td><td>Tân Cảng Sài Gòn</td>
                         <td style="text-align:right;">$120.00</td>
-                        <td style="text-align:right;">${(120*25450).toLocaleString('vi-VN')}₫</td>
+                        <td style="text-align:right;">${(120 * 25450).toLocaleString('vi-VN')}₫</td>
                         <td>Theo container</td></tr>
                       <tr><td><strong>Bảo hiểm</strong></td><td>Bảo Minh Insurance</td>
                         <td style="text-align:right;">$25.00</td>
-                        <td style="text-align:right;">${(25*25450).toLocaleString('vi-VN')}₫</td>
+                        <td style="text-align:right;">${(25 * 25450).toLocaleString('vi-VN')}₫</td>
                         <td>Theo giá trị hàng</td></tr>
                       <tr><td><strong>Phí lưu bãi</strong></td><td>Cảng Cát Lái</td>
                         <td style="text-align:right;">$35.00</td>
-                        <td style="text-align:right;">${(35*25450).toLocaleString('vi-VN')}₫</td>
+                        <td style="text-align:right;">${(35 * 25450).toLocaleString('vi-VN')}₫</td>
                         <td>Theo ngày</td></tr>
                       <tr class="sd-total-row">
                         <td colspan="2" style="text-align:right;">Tổng Landed Cost:</td>
-                        <td style="text-align:right;color:var(--amis-green);">$${(totalVal+430).toFixed(2)}</td>
-                        <td style="text-align:right;color:var(--amis-green);">${((totalVal+430)*25450).toLocaleString('vi-VN')}₫</td>
+                        <td style="text-align:right;color:var(--amis-green);">$${(totalVal + 430).toFixed(2)}</td>
+                        <td style="text-align:right;color:var(--amis-green);">${((totalVal + 430) * 25450).toLocaleString('vi-VN')}₫</td>
                         <td></td>
                       </tr>
                     </tbody>
@@ -1113,12 +1108,12 @@ export async function renderShipmentDetail(container, shipmentId) {
                   <div class="sd-card-body">
                     <div class="sd-timeline">
                       ${[
-                        { date: '24/09 09:15', desc: `<strong>admin</strong> tạo lô hàng <strong>${shpCode}</strong>` },
-                        { date: '24/09 09:35', desc: `<strong>admin</strong> upload Invoice <strong>${primaryInvoiceNumber}</strong> trị giá <strong>$${Number(totalVal).toFixed(2)}</strong>` },
-                        { date: '24/09 10:12', desc: `<strong>admin</strong> thêm số tờ khai HQ <strong>${primaryDeclarationNumber}</strong>` },
-                        { date: '25/09 14:20', desc: `<strong>admin</strong> cập nhật ETA từ 25/09 sang <strong>26/09/2026</strong>` },
-                        { date: '27/09 10:20', desc: `<strong>admin</strong> cập nhật trạng thái → <strong>Đã thông quan</strong>` },
-                      ].map(e => `
+        { date: '24/09 09:15', desc: `<strong>admin</strong> tạo lô hàng <strong>${shpCode}</strong>` },
+        { date: '24/09 09:35', desc: `<strong>admin</strong> upload Invoice <strong>${primaryInvoiceNumber}</strong> trị giá <strong>$${Number(totalVal).toFixed(2)}</strong>` },
+        { date: '24/09 10:12', desc: `<strong>admin</strong> thêm số tờ khai HQ <strong>${primaryDeclarationNumber}</strong>` },
+        { date: '25/09 14:20', desc: `<strong>admin</strong> cập nhật ETA từ 25/09 sang <strong>26/09/2026</strong>` },
+        { date: '27/09 10:20', desc: `<strong>admin</strong> cập nhật trạng thái → <strong>Đã thông quan</strong>` },
+      ].map(e => `
                         <div style="display:flex;align-items:flex-start;gap:12px;padding:6px 0;border-bottom:1px dashed #f1f5f9;font-size:12px;">
                           <span style="color:#94a3b8;font-family:monospace;min-width:90px;">${e.date}</span>
                           <span>${e.desc}</span>
@@ -1322,7 +1317,7 @@ export async function renderShipmentDetail(container, shipmentId) {
       if (!text) return;
 
       const lowerText = text.toLowerCase();
-      
+
       // Kiểm tra đổi trạng thái qua keyword
       try {
         if (lowerText.includes('hoàn thành') || lowerText.includes('hoan thanh')) {
@@ -1332,17 +1327,17 @@ export async function renderShipmentDetail(container, shipmentId) {
           await api.patch(`/api/shipments/${shipmentId}/status`, { status: 'PendingImport' });
           shipment.status = 'PendingImport';
         }
-      } catch(err) {
+      } catch (err) {
         toast('Lỗi khi đổi trạng thái: ' + err.message, 'error');
       }
 
       tlAdd(shipmentId, text, currentUser);
       tlInput.value = '';
       refreshTlList();
-      
+
       // Reload the current UI to reflect new lock state if it changed
-      if (lowerText.includes('hoàn thành') || lowerText.includes('hoan thanh') || 
-          lowerText.includes('mở khóa') || lowerText.includes('mở khoa') || lowerText.includes('mo khoa')) {
+      if (lowerText.includes('hoàn thành') || lowerText.includes('hoan thanh') ||
+        lowerText.includes('mở khóa') || lowerText.includes('mở khoa') || lowerText.includes('mo khoa')) {
         setTimeout(() => renderShipmentDetail(container, shipmentId), 200);
       }
 
