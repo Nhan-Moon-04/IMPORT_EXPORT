@@ -1,0 +1,597 @@
+/* =========================================================
+   PRODUCTS PAGE — MISA AMIS DATA TABLE STYLE
+   ========================================================= */
+
+/* ── Page wrapper ─────────────────────────────────────── */
+.amis-list-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* ── Toolbar ──────────────────────────────────────────── */
+.amis-toolbar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.amis-toolbar-left,
+.amis-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.amis-btn-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 2px;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.amis-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
+}
+
+.amis-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Primary – green fill (like AMIS "Thêm mới") */
+.amis-btn-primary {
+  background: var(--amis-green);
+  color: #ffffff;
+}
+.amis-btn-primary:hover {
+  background: var(--amis-green-hover);
+}
+.amis-btn-primary svg {
+  stroke: #ffffff;
+}
+
+/* Ghost – border only */
+.amis-btn-ghost {
+  background: var(--bg-surface);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+.amis-btn-ghost:hover:not(:disabled) {
+  background: var(--amis-row-hover);
+  border-color: #cbd5e1;
+  color: var(--amis-blue);
+}
+.amis-btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Danger text variant */
+.amis-btn-danger-text {
+  color: var(--amis-red) !important;
+}
+.amis-btn-danger-text:hover:not(:disabled) {
+  border-color: var(--amis-red) !important;
+  color: var(--amis-red) !important;
+}
+
+/* Icon only square */
+.amis-btn-icon-only {
+  padding: 6px 8px;
+}
+
+/* Extra small */
+.amis-btn-xs {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ── Search box ───────────────────────────────────────── */
+.amis-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0 10px;
+  height: 32px;
+  background: var(--bg-surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.amis-search-box:focus-within {
+  border-color: var(--amis-blue);
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.12);
+}
+
+.amis-search-box svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.amis-search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-main);
+  width: 230px;
+  font-family: inherit;
+}
+
+.amis-search-box input::placeholder {
+  color: #94a3b8;
+}
+
+/* ── Column picker ────────────────────────────────────── */
+.amis-col-picker-wrap {
+  position: relative;
+}
+
+.amis-col-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-dropdown);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.col-dropdown-header {
+  padding: 10px 14px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.col-dropdown-list {
+  padding: 6px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.col-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-main);
+  transition: background 0.1s;
+}
+.col-check-row:hover {
+  background: var(--amis-row-hover);
+}
+.col-check-row input[type=checkbox] {
+  accent-color: var(--amis-blue);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.col-dropdown-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-app);
+}
+
+/* ── Table container ──────────────────────────────────── */
+.amis-table-container {
+  flex: 1;
+  overflow: auto;
+}
+
+/* ── Data table ───────────────────────────────────────── */
+.amis-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: auto;
+}
+
+/* Header */
+.amis-data-table thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.amis-data-table th {
+  background: #f8fafc;
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+[data-theme="dark"] .amis-data-table th {
+  background: #0f172a;
+}
+
+.amis-th-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 12px;
+}
+
+.amis-th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.amis-th.sortable:hover .amis-th-inner {
+  color: var(--amis-blue);
+}
+.amis-th.sortable:hover {
+  background: #f1f5f9;
+}
+
+.sort-icon {
+  display: inline-flex;
+  opacity: 0.35;
+  color: var(--text-muted);
+  transition: opacity 0.15s;
+}
+.amis-th.sortable:hover .sort-icon {
+  opacity: 0.65;
+}
+.sort-icon.asc,
+.sort-icon.desc {
+  opacity: 1;
+  color: var(--amis-blue);
+}
+
+.amis-th-check {
+  width: 36px;
+  min-width: 36px;
+  text-align: center;
+  padding: 9px 0;
+}
+.amis-th-check input[type=checkbox] {
+  accent-color: var(--amis-blue);
+  cursor: pointer;
+}
+
+.amis-th-actions {
+  width: 110px;
+  min-width: 110px;
+  text-align: center;
+  padding: 9px 12px;
+}
+
+/* Body */
+.amis-data-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.amis-data-table tbody tr:hover td {
+  background: var(--amis-row-hover);
+}
+
+.amis-data-table tbody tr.amis-row-selected td {
+  background: #eff6ff;
+}
+
+[data-theme="dark"] .amis-data-table tbody tr.amis-row-selected td {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.amis-td-check {
+  width: 36px;
+  min-width: 36px;
+  text-align: center;
+}
+.amis-td-check input[type=checkbox] {
+  accent-color: var(--amis-blue);
+  cursor: pointer;
+}
+
+.amis-td-name {
+  max-width: 240px;
+}
+
+.amis-td-notes {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.amis-td-muted {
+  color: var(--text-muted);
+}
+
+.amis-table-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+/* ── Cell decorations ─────────────────────────────────── */
+.amis-sku-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--amis-blue);
+  background: var(--amis-blue-light);
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.amis-spec-text {
+  font-weight: 600;
+  color: var(--amis-blue);
+  font-size: 12.5px;
+}
+
+.amis-group-tag {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .amis-group-tag {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.amis-code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: #475569;
+}
+
+[data-theme="dark"] .amis-code {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+/* ── Row action icon buttons (NO background) ──────────── */
+.amis-td-actions {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.amis-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.amis-data-table tbody tr:hover .amis-row-actions,
+.amis-data-table tbody tr.amis-row-selected .amis-row-actions {
+  opacity: 1;
+}
+
+.amis-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.amis-icon-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+}
+
+.amis-icon-btn:hover {
+  background: var(--amis-blue-light);
+  color: var(--amis-blue);
+}
+
+.amis-icon-btn-danger:hover {
+  background: var(--amis-red-light);
+  color: var(--amis-red);
+}
+
+/* ── Footer / Pagination ──────────────────────────────── */
+.amis-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-app);
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.amis-table-info {
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.amis-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.amis-pg-btn {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.amis-pg-btn:hover:not(:disabled) {
+  border-color: var(--amis-blue);
+  color: var(--amis-blue);
+}
+
+.amis-pg-btn.active {
+  background: var(--amis-blue);
+  border-color: var(--amis-blue);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.amis-pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.amis-pg-ellipsis {
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.amis-page-size-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.amis-page-size-select select {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12.5px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── History summary stats ────────────────────────────── */
+.amis-history-summary {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bg-app);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.amis-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 130px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.amis-stat-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.amis-stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.amis-stat-green { color: var(--amis-green) !important; }
+.amis-stat-blue  { color: var(--amis-blue) !important; }
+
+.amis-stat-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* ── Chips (reused in history) ────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip-info    { background: #e0f2fe; color: #0369a1; }
+.chip-success { background: #dcfce7; color: #15803d; }
+.chip-warning { background: #fef3c7; color: #b45309; }
+.chip-danger  { background: #fee2e2; color: #b91c1c; }
