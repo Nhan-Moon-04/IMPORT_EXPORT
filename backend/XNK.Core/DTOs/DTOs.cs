@@ -246,6 +246,7 @@ public class ShipmentDto
     public string? ContactPerson { get; set; }
     public string? ContactPhone { get; set; }
     public string? ContactEmail { get; set; }
+    public string? BLNumber { get; set; }
     public Guid? SupplierId { get; set; }
     public Guid? CustomerId { get; set; }
     public int ItemCount { get; set; }

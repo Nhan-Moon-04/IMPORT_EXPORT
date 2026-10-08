@@ -171,9 +171,10 @@ public class ShipmentsController : ControllerBase
         ContactPerson = s.Type == ShipmentType.Export ? s.Customer?.ContactPerson : s.Supplier?.ContactPerson,
         ContactPhone = s.Type == ShipmentType.Export ? s.Customer?.Phone : s.Supplier?.Phone,
         ContactEmail = s.Type == ShipmentType.Export ? s.Customer?.Email : s.Supplier?.Email,
+        BLNumber = s.Invoices?.FirstOrDefault(inv => inv.Type == InvoiceType.BillOfLading)?.InvoiceNumber,
         SupplierId = s.SupplierId, CustomerId = s.CustomerId,
         ItemCount = s.Items?.Count ?? 0,
-        InvoiceCount = s.Invoices?.Count(inv => inv.Type != InvoiceType.PackingList && inv.Type != InvoiceType.SalesContract) ?? 0,
+        InvoiceCount = s.Invoices?.Count(inv => inv.Type != InvoiceType.PackingList && inv.Type != InvoiceType.SalesContract && inv.Type != InvoiceType.BillOfLading) ?? 0,
         DocumentCount = s.Documents?.Count ?? 0, CreatedAt = s.CreatedAt,
         Items = s.Items?.Select(MapItemToDto).ToList() ?? new(),
         Bookings = s.Bookings?.Select(b => new BookingDto
@@ -194,7 +195,7 @@ public class ShipmentsController : ControllerBase
             Status = c.Status, Notes = c.Notes
         }).ToList() ?? new(),
         InvoiceNumbers = s.Invoices?
-            .Where(inv => inv.Type != InvoiceType.PackingList && inv.Type != InvoiceType.SalesContract && !string.IsNullOrWhiteSpace(inv.InvoiceNumber))
+            .Where(inv => inv.Type != InvoiceType.PackingList && inv.Type != InvoiceType.SalesContract && inv.Type != InvoiceType.BillOfLading && !string.IsNullOrWhiteSpace(inv.InvoiceNumber))
             .Select(inv => inv.InvoiceNumber.Trim())
             .Distinct()
             .ToList() ?? new(),

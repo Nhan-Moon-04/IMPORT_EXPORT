@@ -10,6 +10,7 @@ import { renderShipments, renderShipmentForm } from './features/shipments/shipme
 import { renderShipmentDetail } from './features/shipments/shipmentDetail.js';
 import { renderOrders } from './features/orders/orders.js';
 import { renderInvoices } from './features/invoices/invoices.js';
+import { renderBillOfLading } from './features/billOfLading/billOfLading.js';
 import { renderPartners } from './features/partners/partners.js';
 import { renderDocuments } from './features/documents/documents.js';
 import { renderExcelTool } from './features/excel/excel.js';
@@ -38,6 +39,7 @@ const ROUTE_TITLES = {
   'invoices': 'Hóa Đơn Thương Mại (Commercial Invoices)',
   'sales-contracts': 'Hợp Đồng Bán Hàng (Sales Contracts)',
   'packing-lists': 'Phiếu Đóng Gói (Packing Lists)',
+  'bill-of-lading': 'Vận Đơn Đường Biển (Bill of Lading - B/L)',
   'documents': 'Kho Chứng Từ & Upload File',
   'booking': 'Booking Vận Tải Biển',
   'containers': 'Quản Lý Container & Số Chì (Seal)',
@@ -379,6 +381,9 @@ export function navigateTo(tab, updateHistory = true, param = null) {
       break;
     case 'packing-lists':
       renderInvoices(mainContent, 'PackingList');
+      break;
+    case 'bill-of-lading':
+      renderBillOfLading(mainContent);
       break;
 
     case 'documents':

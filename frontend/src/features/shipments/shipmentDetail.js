@@ -4,6 +4,7 @@ import { openShipmentForm } from '../shipments/shipments.js';
 import { openUploadDocumentModal } from '../documents/documents.js';
 import { openCreateInvoiceModal } from '../invoices/invoices.js';
 import { openCreateCustomsModal } from '../customs/customs.js';
+import { openBLModal, deleteBL, viewBLDetail } from '../billOfLading/billOfLading.js';
 
 // ─── Download Invoice Document Helper ────────────────────────────────────────
 window.downloadInvoiceFile = async function (invoiceId, docId, fileName) {
@@ -147,20 +148,22 @@ export async function renderShipmentDetail(container, shipmentId) {
     // ── Fetch data ──────────────────────────────────────────────────────
     let shipment = null, invoices = [], documents = [];
 
-    const [shpRes, invRes, docRes, prodRes, invDocsRes] = await Promise.all([
+    const [shpRes, invRes, docRes, prodRes, invDocsRes, blDocsRes] = await Promise.all([
       api.get(`/api/shipments/${shipmentId}`).catch(() => null),
       api.get(`/api/invoices?shipmentId=${shipmentId}`).catch(() => ({ data: [] })),
       api.get(`/api/documents?shipmentId=${shipmentId}`).catch(() => ({ data: [] })),
       api.get(`/api/products?pageSize=500`).catch(() => ({ data: { items: [] } })),
       api.get(`/api/documents?entityType=Invoice&pageSize=500`).catch(() => ({ data: [] })),
+      api.get(`/api/documents?category=BillOfLading`).catch(() => ({ data: [] })),
     ]);
 
     shipment = shpRes?.data;
     invoices = (invRes?.data?.items || invRes?.data || []).filter(i => i.shipmentId === shipmentId);
     documents = (docRes?.data?.items || docRes?.data || []).filter(d => d.shipmentId === shipmentId);
     const invoiceDocs = invDocsRes?.data?.items || invDocsRes?.data || [];
+    const blDocs = blDocsRes?.data?.items || blDocsRes?.data || [];
     const combinedDocs = [...documents];
-    invoiceDocs.forEach(d => {
+    [...invoiceDocs, ...blDocs].forEach(d => {
       if (!combinedDocs.some(x => x.id === d.id)) combinedDocs.push(d);
     });
 
@@ -236,8 +239,13 @@ export async function renderShipmentDetail(container, shipmentId) {
       }
     } catch (e) { }
 
-    const trueInvoices = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract');
+    const shpCode = shipment.shipmentCode || shipment.code || '---';
+    const supplierTitle = shipment.supplierName || shipment.customerName || '---';
+    const partnerCodeDisplay = (partnerCode || shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
+
+    const trueInvoices = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract' && i.type !== 'BillOfLading');
     const salesContracts = invoices.filter(i => i.type === 'SalesContract');
+    const blInvoices = invoices.filter(i => i.type === 'BillOfLading');
     const packingListsFromInv = invoices.filter(i => i.type === 'PackingList');
     const packingListsFromShp = shipment.packingLists || [];
     const packingLists = [...packingListsFromInv];
@@ -255,6 +263,71 @@ export async function renderShipmentDetail(container, shipmentId) {
       }
     });
 
+    // Parse B/L items
+    const blList = blInvoices.map(inv => {
+      let meta = {};
+      try { if (inv.notes && inv.notes.startsWith('{')) meta = JSON.parse(inv.notes); } catch (e) {}
+
+      const doc = combinedDocs.find(d =>
+        (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase()) ||
+        (d.category === 'BillOfLading' && d.shipmentId && String(d.shipmentId).toLowerCase() === String(shipmentId).toLowerCase()) ||
+        (inv.invoiceNumber && d.fileName && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase())) ||
+        (inv.invoiceNumber && d.originalFileName && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+      );
+
+      return {
+        id: inv.id,
+        blNumber: inv.invoiceNumber,
+        issueDate: inv.invoiceDate || inv.createdAt,
+        shipmentId: inv.shipmentId,
+        shipmentCode: shpCode,
+        partnerName: inv.partnerName || supplierTitle,
+        shippingLine: meta.shippingLine || 'COSCO SHIPPING',
+        vesselVoyage: meta.vesselVoyage || (meta.vessel ? `${meta.vessel} / ${meta.voyage || ''}` : 'COSCO PRIDE / 024E'),
+        pol: meta.pol || shipment.portOfLoading || 'Shanghai Port, China',
+        pod: meta.pod || shipment.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
+        containerNo: meta.containerNo || '---',
+        sealNo: meta.sealNo || '---',
+        totalPackages: meta.packages || totalPackages,
+        grossWeight: meta.grossWeight || totalGrossWeight,
+        blType: meta.blType || 'Master B/L',
+        freightTerm: inv.paymentTerms || meta.freightTerm || (shipment.deliveryTerm === 'CIF' ? 'Freight Prepaid' : 'Freight Collect'),
+        status: meta.status || 'Original',
+        docId: doc?.id,
+        docName: doc?.originalFileName || doc?.fileName || meta.attachedFileName,
+        notes: meta.notes || ''
+      };
+    });
+
+    combinedDocs.forEach(d => {
+      if (d.category === 'BillOfLading' && !blList.some(b => b.docId === d.id || b.id === d.entityId)) {
+        blList.push({
+          id: d.id,
+          isDocVirtual: true,
+          blNumber: shipment.blNumber || `BL-${shpCode}`,
+          issueDate: d.createdAt,
+          shipmentId: shipmentId,
+          shipmentCode: shpCode,
+          partnerName: supplierTitle,
+          shippingLine: 'COSCO SHIPPING',
+          vesselVoyage: 'COSCO PRIDE / 024E',
+          pol: shipment.portOfLoading || 'Shanghai Port, China',
+          pod: shipment.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
+          containerNo: '---',
+          sealNo: '---',
+          totalPackages: totalPackages,
+          grossWeight: totalGrossWeight,
+          blType: 'Master B/L',
+          freightTerm: shipment.deliveryTerm === 'CIF' ? 'Freight Prepaid' : 'Freight Collect',
+          status: 'Original',
+          docId: d.id,
+          docName: d.originalFileName || d.fileName,
+          notes: d.description || ''
+        });
+      }
+    });
+
+    const primaryBL = blList[0];
     const primaryInvoiceNumber = trueInvoices[0]?.invoiceNumber || '---';
     const primaryContractNumber = salesContracts[0]?.invoiceNumber || '---';
     const primaryDeclarationNumber = shipment.customsDeclarations?.[0]?.declarationNumber || '---';
@@ -272,10 +345,6 @@ export async function renderShipmentDetail(container, shipmentId) {
     const exchangeRate = 25450;
     const currency = shipment.currency || 'USD';
     const totalVnd = totalVal * exchangeRate;
-
-    const shpCode = shipment.shipmentCode || shipment.code || '---';
-    const supplierTitle = shipment.supplierName || shipment.customerName || '---';
-    const partnerCodeDisplay = (partnerCode || shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
 
     // Contact person display logic
     let contactPersonDisplay = '---';
@@ -301,7 +370,7 @@ export async function renderShipmentDetail(container, shipmentId) {
     const polDisplay = shipment.portOfLoading || '---';
     const podDisplay = shipment.portOfDischarge || '---';
     const incotermDisplay = shipment.deliveryTerm || shipment.incoterms || '---';
-    const blNumberDisplay = shipment.blNumber || '---';
+    const blNumberDisplay = primaryBL?.blNumber || shipment.blNumber || shipment.bLNumber || '---';
     const etaDisplay = shipment.expectedDate ? new Date(shipment.expectedDate).toLocaleDateString('vi-VN') : '---';
     const etdDisplay = shipment.etd ? new Date(shipment.etd).toLocaleDateString('vi-VN') : '---';
     const createdDisplay = shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString('vi-VN') : '24/09/2026';
@@ -311,6 +380,7 @@ export async function renderShipmentDetail(container, shipmentId) {
       contracts: salesContracts.length,
       invoices: trueInvoices.length,
       packingLists: packingLists.length,
+      bl: blList.length,
       customs: customs.length,
       booking: bookings.length,
       containers: containers.length,
@@ -436,6 +506,91 @@ export async function renderShipmentDetail(container, shipmentId) {
       `;
     }).join('');
 
+    // ── Build Bill of Lading rows ──────────────────────────────────────
+    const blRowsHtml = blList.length ? blList.map((b, i) => {
+      const bDate = b.issueDate ? new Date(b.issueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+
+      let typeBadge = '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1; font-size:11px; padding:2px 6px;">MBL</span>';
+      if (b.blType?.includes('House')) {
+        typeBadge = '<span class="status-chip chip-pending" style="background:#fef3c7; color:#b45309; font-size:11px; padding:2px 6px;">HBL</span>';
+      } else if (b.blType?.includes('Seaway')) {
+        typeBadge = '<span class="status-chip chip-delivered" style="background:#f3e8ff; color:#7e22ce; font-size:11px; padding:2px 6px;">Seaway</span>';
+      } else if (b.blType?.includes('Telex') || b.blType?.includes('Surrender')) {
+        typeBadge = '<span class="status-chip chip-completed" style="background:#dcfce7; color:#15803d; font-size:11px; padding:2px 6px;">Telex</span>';
+      }
+
+      let statusChip = '<span class="status-chip chip-completed" style="font-size:11px; padding:2px 6px;">Bản gốc</span>';
+      if (b.status === 'Surrendered') statusChip = '<span class="status-chip chip-transit" style="background:#dbeafe; color:#1d4ed8; font-size:11px; padding:2px 6px;">Đã Surrender</span>';
+      else if (b.status === 'Draft') statusChip = '<span class="status-chip chip-pending" style="font-size:11px; padding:2px 6px;">Bản nháp</span>';
+      else if (b.status === 'Released') statusChip = '<span class="status-chip chip-delivered" style="background:#f0fdf4; color:#16a34a; font-size:11px; padding:2px 6px;">Đã giao hàng</span>';
+
+      const hasFile = !!b.docId;
+      const polShort = b.pol?.split(',')[0] || '---';
+      const podShort = b.pod?.split(',')[0] || '---';
+
+      return `
+        <tr>
+          <td style="text-align:center; color:#64748b;">${i + 1}</td>
+          <td>
+            <div style="font-weight:700; color:var(--amis-blue); font-family:monospace; font-size:13px; cursor:pointer;" onclick="window.viewBLDetail('${b.id}')" title="Click xem chi tiết vận đơn">
+              ${b.blNumber}
+            </div>
+            <div style="font-size:11px; color:#64748b;">${b.freightTerm || 'Freight Prepaid'}</div>
+          </td>
+          <td>${typeBadge}</td>
+          <td style="font-weight:600; color:#334155;">${b.shippingLine}</td>
+          <td><div style="font-weight:500;">${b.vesselVoyage}</div></td>
+          <td><div style="font-size:12px;">${polShort} ➔ ${podShort}</div></td>
+          <td>${bDate}</td>
+          <td>
+            <div style="font-size:12px; font-weight:600; color:var(--amis-blue); font-family:monospace;">${b.containerNo || '---'}</div>
+            <div style="font-size:11px; color:#64748b;">Seal: ${b.sealNo || '---'} | ${Number(b.grossWeight || 0).toLocaleString()} kg</div>
+          </td>
+          <td>${statusChip}</td>
+          <td style="text-align:center;">
+            ${hasFile ? `
+              <button class="sd-btn-sm" onclick="window.downloadBLDoc('${b.docId}', '${b.docName}')" title="Tải file đính kèm: ${b.docName}" style="color:#15803d; border-color:#86efac; background:#f0fdf4; padding:3px 6px;">
+                📎 ${b.docName.length > 10 ? b.docName.slice(0, 10) + '…' : b.docName}
+              </button>
+            ` : `<span style="color:#94a3b8; font-size:11.5px;">Chưa có</span>`}
+          </td>
+          <td style="text-align:center; white-space:nowrap;">
+            <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+              <!-- Nút Xem chi tiết -->
+              <button class="sd-btn-sm" onclick="window.viewBLDetail('${b.id}')" style="padding:4px 6px;" title="Xem chi tiết vận đơn B/L">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+              <!-- Nút Tải Icon -->
+              <button class="sd-btn-sm" onclick="window.handleDownloadBL('${b.id}')" style="padding:4px 6px;" title="Tải file vận đơn / chứng từ B/L">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amis-green, #16a34a)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </button>
+              <!-- Nút In B/L -->
+              <button class="sd-btn-sm" onclick="window.printBL('${b.id}')" style="padding:4px 6px; color:#475569;" title="In mẫu vận đơn B/L">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              </button>
+              <!-- Nút Sửa -->
+              <button class="sd-btn-sm" onclick="window.editBLFromShipment('${b.id}')" style="padding:4px 6px; color:var(--amis-blue, #0284c7);" title="Chỉnh sửa vận đơn B/L" ${isCompleted ? 'disabled' : ''}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <!-- Nút Xóa (xoá bl đi) -->
+              <button class="sd-btn-sm" onclick="window.deleteBLFromShipment('${b.id}', '${b.blNumber}')" style="padding:4px 6px; color:var(--amis-red, #ef4444);" title="Xóa vận đơn B/L" ${isCompleted ? 'disabled' : ''}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') : `
+      <tr>
+        <td colspan="11" style="text-align:center; padding:32px 16px; color:#64748b;">
+          <div style="font-size:24px; margin-bottom:6px;">🚢</div>
+          <div style="font-weight:600; font-size:13px; margin-bottom:4px;">Chưa có vận đơn (B/L) nào cho lô hàng này</div>
+          <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Nhấn vào nút bên dưới để tạo mới vận đơn hoặc đính kèm file scan B/L.</div>
+          <button class="sd-btn-sm sd-btn-primary" onclick="document.getElementById('sd-btn-add-bl')?.click()">+ Thêm Vận Đơn (B/L)</button>
+        </td>
+      </tr>
+    `;
+
     // ── Render HTML ─────────────────────────────────────────────────────
     container.innerHTML = `
       <div class="sd-page">
@@ -518,7 +673,7 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
           <div class="sd-field">
             <div class="sd-field-label">${ICON.barcode} Số vận đơn (B/L)</div>
-            <div class="sd-field-value" style="font-family:monospace;">${blNumberDisplay}</div>
+            <div class="sd-field-value" style="font-family:monospace; color:var(--amis-blue); cursor:pointer;" onclick="const tab = document.querySelector('.sd-tab[data-pane=\\'logistics\\']'); if (tab) tab.click();" title="Nhấn để xem mục Vận tải B/L">${blNumberDisplay}</div>
           </div>
           <div class="sd-field">
             <div class="sd-field-label">${ICON.file} Mã đối tác</div>
@@ -548,7 +703,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                 Packing List <span class="sd-tab-badge">${docCounts.packingLists}</span>
               </button>
               <button class="sd-tab" data-pane="logistics">
-                Vận tải <span class="sd-tab-badge">${bookings.length + containers.length || 2}</span>
+                Vận tải <span class="sd-tab-badge">${docCounts.bl || 1}</span>
               </button>
               <button class="sd-tab" data-pane="customs">
                 Hải quan <span class="sd-tab-badge">${docCounts.customs}</span>
@@ -963,35 +1118,74 @@ export async function renderShipmentDetail(container, shipmentId) {
               </div>
 
               <!-- ═══ TAB: VẬN TẢI ═══ -->
-              <div class="sd-pane" id="sd-pane-logistics" style="gap:12px;">
+              <div class="sd-pane" id="sd-pane-logistics" style="gap:16px;">
+                <!-- DANH SÁCH VẬN ĐƠN B/L -->
+                <div class="sd-card" style="margin-bottom: 16px;">
+                  <div class="sd-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="sd-card-header-left" style="font-weight:700; color:var(--text-main); font-size:13.5px; display:flex; align-items:center; gap:8px;">
+                      📜 Vận đơn đường biển (Bill of Lading - B/L)
+                      <span class="chip chip-blue" style="font-size:11px;">${blList.length}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                      <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-bl" ${isCompleted ? 'style="display:none;"' : ''}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:text-bottom; margin-right:2px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        + Thêm Vận Đơn (B/L)
+                      </button>
+                    </div>
+                  </div>
+                  <div class="sd-table-wrap">
+                    <table class="sd-table">
+                      <thead>
+                        <tr>
+                          <th style="width:36px; text-align:center;">#</th>
+                          <th>Số Vận Đơn (B/L No.)</th>
+                          <th>Loại B/L</th>
+                          <th>Hãng Tàu</th>
+                          <th>Tàu / Chuyến</th>
+                          <th>Cảng Đi ➔ Đến</th>
+                          <th>Ngày Phát Hành</th>
+                          <th>Cont / Chì / GW</th>
+                          <th>Trạng Thái</th>
+                          <th style="text-align:center;">File Scan</th>
+                          <th style="width:150px; text-align:center;">Thao Tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${blRowsHtml}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- THÔNG TIN VẬN TẢI QUỐC TẾ & CONTAINER -->
                 <div class="sd-overview-grid">
                   <div class="sd-card">
-                    <div class="sd-card-header"><div class="sd-card-header-left">⚓ Thông tin vận tải quốc tế</div>
-                      <button class="sd-btn-sm">+ Thêm Booking</button>
+                    <div class="sd-card-header"><div class="sd-card-header-left">⚓ Thông tin vận tải & Lịch trình</div>
+                      <button class="sd-btn-sm" onclick="document.getElementById('sd-btn-add-bl')?.click()">+ Cập Nhật Vận Đơn</button>
                     </div>
                     <div class="sd-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12px;">
-                      <div class="sd-info-row"><span class="sd-info-key">Booking No.</span><span class="sd-info-val">BK-2026-VN91823</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Hãng tàu</span><span class="sd-info-val">COSCO SHIPPING</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Tàu (Vessel)</span><span class="sd-info-val">COSCO HELLAS</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Voyage</span><span class="sd-info-val">V.092E</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">ETD</span><span class="sd-info-val">20/09/2026</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Số B/L</span><span class="sd-info-val" style="font-family:monospace; font-weight:700; color:var(--amis-blue);">${blNumberDisplay}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Hãng tàu</span><span class="sd-info-val">${primaryBL?.shippingLine || 'COSCO SHIPPING'}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Tàu (Vessel)</span><span class="sd-info-val">${primaryBL?.vesselVoyage?.split('/')[0]?.trim() || 'COSCO PRIDE'}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Voyage</span><span class="sd-info-val">${primaryBL?.vesselVoyage?.split('/')[1]?.trim() || '024E'}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Cảng xếp (POL)</span><span class="sd-info-val">${polDisplay}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Cảng dỡ (POD)</span><span class="sd-info-val">${podDisplay}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">ETD</span><span class="sd-info-val">${etdDisplay}</span></div>
                       <div class="sd-info-row"><span class="sd-info-key">ETA</span><span class="sd-info-val" style="color:var(--amis-green);">${etaDisplay}</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">B/L No.</span><span class="sd-info-val" style="font-family:monospace;">${blNumberDisplay}</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Forwarder</span><span class="sd-info-val">Transworld Logistics VN</span></div>
                     </div>
                   </div>
                   <div class="sd-card">
-                    <div class="sd-card-header"><div class="sd-card-header-left">📦 Container & Số Chì</div>
-                      <button class="sd-btn-sm">+ Gán Container</button>
+                    <div class="sd-card-header"><div class="sd-card-header-left">📦 Container & Niêm Chì (Seal)</div>
+                      <button class="sd-btn-sm" onclick="document.getElementById('sd-btn-add-bl')?.click()">+ Cập Nhật Cont/Seal</button>
                     </div>
                     <div class="sd-card-body" style="font-size:12px;">
-                      <div class="sd-info-row"><span class="sd-info-key">Số Container</span><span class="sd-info-val">COSU8937218</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Loại vỏ cont</span><span class="sd-info-val">40' High Cube (HC)</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Số chì (Seal)</span><span class="sd-info-val">COSU-SL-918274</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Gross Weight</span><span class="sd-info-val">${totalGrossWeight} kg</span></div>
-                      <div class="sd-info-row"><span class="sd-info-key">Tare Weight</span><span class="sd-info-val">3,850 kg</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Số Container</span><span class="sd-info-val" style="font-family:monospace; font-weight:600; color:var(--amis-blue);">${primaryBL?.containerNo || 'TGHU9843210'}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Số chì (Seal)</span><span class="sd-info-val">${primaryBL?.sealNo || 'SL-88992'}</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Tổng Gross Weight</span><span class="sd-info-val">${Number(primaryBL?.grossWeight || totalGrossWeight).toLocaleString()} kg</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Tổng số kiện</span><span class="sd-info-val">${primaryBL?.totalPackages || totalPackages} kiện</span></div>
+                      <div class="sd-info-row"><span class="sd-info-key">Điều kiện cước</span><span class="sd-info-val" style="color:#15803d; font-weight:600;">${primaryBL?.freightTerm || 'Freight Prepaid'}</span></div>
                       <div class="sd-info-row"><span class="sd-info-key">Tình trạng</span>
-                        <span class="sd-info-val"><span class="chip chip-green">Đã hạ bãi Cát Lái</span></span>
+                        <span class="sd-info-val"><span class="chip chip-green">${primaryBL?.status ? `B/L ${primaryBL.status}` : 'Đã hạ bãi cảng'}</span></span>
                       </div>
                     </div>
                   </div>
@@ -1150,12 +1344,19 @@ export async function renderShipmentDetail(container, shipmentId) {
                   </div>
                   <span class="sd-qdoc-count">${docCounts.invoices}</span>
                 </div>
-                <div class="sd-qdoc-item" onclick="">
+                <div class="sd-qdoc-item" onclick="window.appNavigateTo('packing-lists')">
                   <div class="sd-qdoc-left">
                     <span class="sd-qdoc-icon">📦</span>
                     <span class="sd-qdoc-name">Packing List</span>
                   </div>
                   <span class="sd-qdoc-count">${docCounts.packingLists}</span>
+                </div>
+                <div class="sd-qdoc-item" onclick="const tab = document.querySelector('.sd-tab[data-pane=\\'logistics\\']'); if (tab) tab.click();" title="Xem danh sách vận đơn B/L">
+                  <div class="sd-qdoc-left">
+                    <span class="sd-qdoc-icon">🚢</span>
+                    <span class="sd-qdoc-name">Vận đơn (B/L)</span>
+                  </div>
+                  <span class="sd-qdoc-count">${docCounts.bl}</span>
                 </div>
                 <div class="sd-qdoc-item" onclick="window.appNavigateTo('customs-declarations')">
                   <div class="sd-qdoc-left">
@@ -1416,6 +1617,19 @@ export async function renderShipmentDetail(container, shipmentId) {
     document.getElementById('sd-btn-add-packing')?.addEventListener('click', () => {
       openCreateInvoiceModal(shipmentId, 'PackingList');
     });
+    document.getElementById('sd-btn-add-bl')?.addEventListener('click', () => {
+      openBLModal(null, () => renderShipmentDetail(container, shipmentId), shipmentId);
+    });
+
+    // Handlers cho các nút thao tác trên dòng B/L
+    window.editBLFromShipment = (blId) => {
+      const bl = blList.find(b => b.id === blId);
+      openBLModal(bl, () => renderShipmentDetail(container, shipmentId), shipmentId);
+    };
+
+    window.deleteBLFromShipment = (blId, blNumber) => {
+      deleteBL(blId, blNumber, () => renderShipmentDetail(container, shipmentId));
+    };
 
   } catch (err) {
     container.innerHTML = `

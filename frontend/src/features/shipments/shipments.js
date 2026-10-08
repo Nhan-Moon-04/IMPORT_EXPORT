@@ -30,7 +30,7 @@ const COLUMN_CONFIG = [
 function getActiveColumns() {
   const saved = localStorage.getItem('xnk_shipment_columns');
   if (saved) {
-    try { return JSON.parse(saved); } catch (e) {}
+    try { return JSON.parse(saved); } catch (e) { }
   }
   const initial = {};
   COLUMN_CONFIG.forEach(c => initial[c.id] = c.default);
@@ -44,7 +44,7 @@ function saveActiveColumns(cols) {
 export async function renderShipments(container, filterType = 'All') {
   selectedId = null;
   currentShipmentFilter = filterType;
-  
+
   let title = "Tất cả Lô Hàng";
   if (filterType === 'Import') title = "Lô Hàng Nhập Khẩu";
   if (filterType === 'Export') title = "Lô Hàng Xuất Khẩu";
@@ -162,8 +162,8 @@ function renderShipmentsTable(items) {
     const sLabel = statusMap[s.status] || s.status;
     const bgClass = isCompleted ? 'background: #f1f5f9; opacity: 0.85;' : '';
 
-    const productText = (s.productNames && s.productNames.length > 0) 
-      ? s.productNames.join(', ') 
+    const productText = (s.productNames && s.productNames.length > 0)
+      ? s.productNames.join(', ')
       : (s.items?.[0]?.productName || '---');
 
     const invoiceText = (s.invoiceNumbers && s.invoiceNumbers.length > 0)
@@ -252,10 +252,10 @@ function renderShipmentsTable(items) {
       <td style="white-space: nowrap;">
         <button class="btn btn-default btn-sm" title="Chi tiết" onclick="window.appNavigateTo('shipment-detail', '${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
         <button class="btn btn-default btn-sm" title="Tải xuống tất cả file" onclick="window.xnkDownloadAllShipmentDocs('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
-        ${isCompleted 
-          ? `<button class="btn btn-default btn-sm" title="Mở khóa (Đổi trạng thái)" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--amis-red)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>`
-          : `<button class="btn btn-default btn-sm" title="Sửa lô hàng" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>`
-        }
+        ${isCompleted
+        ? `<button class="btn btn-default btn-sm" title="Mở khóa (Đổi trạng thái)" onclick="window.xnkStatusShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--amis-red)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></button>`
+        : `<button class="btn btn-default btn-sm" title="Sửa lô hàng" onclick="window.xnkEditShipment('${s.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>`
+      }
       </td>
     </tr>
     <!-- Hidden Expandable Row -->
@@ -302,7 +302,7 @@ window.addEventListener('xnk:timeline-updated', (e) => {
   const display = latestText.length > MAX ? latestText.slice(0, MAX) + '…' : latestText;
   statusCell.innerHTML = `<span class="status-chip chip-warning"
     style="max-width:160px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;"
-    ${latestText.length > MAX ? `title="${latestText.replace(/"/g,'&quot;')}"` : ''}>${display}</span>`;
+    ${latestText.length > MAX ? `title="${latestText.replace(/"/g, '&quot;')}"` : ''}>${display}</span>`;
 });
 
 function selectShipmentRow(id) {
@@ -337,7 +337,7 @@ function setupShipmentEvents() {
   document.getElementById("btnConfigureColumns")?.addEventListener("click", () => {
     openColumnConfigModal();
   });
-  
+
   // Real-time table search filtering
   document.getElementById("shipmentSearchInput")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase().trim();
@@ -512,10 +512,10 @@ export async function renderShipmentForm(container, id) {
           <select id="sSupplierId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
             <option value="">-- Chọn Nhà Cung Cấp --</option>
             ${suppliers.map(sup => {
-              const contactParts = [sup.contactPerson || sup.contactName, sup.phone].filter(Boolean);
-              const contact = contactParts.join(' - ');
-              return `<option value="${sup.id}" data-contact="${escapeHtml(contact)}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country || 'VN'})</option>`;
-            }).join('')}
+    const contactParts = [sup.contactPerson || sup.contactName, sup.phone].filter(Boolean);
+    const contact = contactParts.join(' - ');
+    return `<option value="${sup.id}" data-contact="${escapeHtml(contact)}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country || 'VN'})</option>`;
+  }).join('')}
           </select>
         </div>
         <div class="sd-field" id="customerGroup" style="${currentType === 'Import' ? 'display:none;' : ''}">
@@ -523,10 +523,10 @@ export async function renderShipmentForm(container, id) {
           <select id="sCustomerId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
             <option value="">-- Chọn Khách Hàng --</option>
             ${customers.map(c => {
-              const contactParts = [c.contactPerson || c.contactName, c.phone].filter(Boolean);
-              const contact = contactParts.join(' - ');
-              return `<option value="${c.id}" data-contact="${escapeHtml(contact)}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`;
-            }).join('')}
+    const contactParts = [c.contactPerson || c.contactName, c.phone].filter(Boolean);
+    const contact = contactParts.join(' - ');
+    return `<option value="${c.id}" data-contact="${escapeHtml(contact)}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`;
+  }).join('')}
           </select>
         </div>
         <div class="sd-field">
@@ -603,7 +603,7 @@ export async function renderShipmentForm(container, id) {
   `;
 
   // Wire up type change to show/hide supplier/customer
-  document.getElementById("sType").addEventListener("change", function() {
+  document.getElementById("sType").addEventListener("change", function () {
     const type = this.value;
     const supplierGroup = document.getElementById("supplierGroup");
     const customerGroup = document.getElementById("customerGroup");
@@ -917,7 +917,7 @@ async function openStatusModal(id) {
     const newStatus = select.value;
     try {
       await api.patch(`/api/shipments/${id}/status`, { status: newStatus });
-      
+
       const statusText = select.options[select.selectedIndex].text;
       const currentUser = (() => { try { return JSON.parse(localStorage.getItem('xnk_user') || '{}').username || 'admin'; } catch { return 'admin'; } })();
       const entries = (() => { try { return JSON.parse(localStorage.getItem('xnk_timeline_' + id) || '[]'); } catch { return []; } })();
@@ -977,7 +977,7 @@ async function toggleExpandRow(id) {
     // Expand
     expandRow.style.display = 'table-row';
     icon.style.transform = 'rotate(90deg)';
-    
+
     // Check if already loaded
     if (!contentDiv.classList.contains('loaded')) {
       contentDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #64748b;">Đang tải chi tiết lô hàng...</div>';
@@ -996,7 +996,7 @@ async function toggleExpandRow(id) {
 function renderExpandContent(container, data) {
   // We want a tabbed or grid layout for Invoice, Declaration, Booking, Container, Products
   const formatter = new Intl.NumberFormat('en-US');
-  
+
   // Products table
   let productsHtml = '<div style="padding: 10px; color: #64748b;">Chưa có sản phẩm nào.</div>';
   if (data.items && data.items.length > 0) {
@@ -1048,9 +1048,9 @@ function renderExpandContent(container, data) {
             <div style="font-weight: 600; color: #475569; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Bookings
             </div>
-            ${data.bookings && data.bookings.length > 0 ? 
-              data.bookings.map(b => `<div style="font-size: 13px;">• <strong style="color:var(--amis-blue)">${b.bookingNumber}</strong> | Hãng tàu: ${b.shippingLine || '-'} | ETD: ${b.etd ? new Date(b.etd).toLocaleDateString('vi-VN') : '-'}</div>`).join('') 
-              : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Booking</div>'}
+            ${data.bookings && data.bookings.length > 0 ?
+      data.bookings.map(b => `<div style="font-size: 13px;">• <strong style="color:var(--amis-blue)">${b.bookingNumber}</strong> | Hãng tàu: ${b.shippingLine || '-'} | ETD: ${b.etd ? new Date(b.etd).toLocaleDateString('vi-VN') : '-'}</div>`).join('')
+      : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Booking</div>'}
           </div>
 
           <!-- Containers -->
@@ -1058,9 +1058,9 @@ function renderExpandContent(container, data) {
             <div style="font-weight: 600; color: #475569; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg> Containers
             </div>
-            ${data.containers && data.containers.length > 0 ? 
-              data.containers.map(c => `<div style="font-size: 13px;">• <strong>${c.containerNumber}</strong> | Seal: ${c.sealNumber || '-'} | Loại: ${c.containerType || '-'}</div>`).join('') 
-              : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Container</div>'}
+            ${data.containers && data.containers.length > 0 ?
+      data.containers.map(c => `<div style="font-size: 13px;">• <strong>${c.containerNumber}</strong> | Seal: ${c.sealNumber || '-'} | Loại: ${c.containerType || '-'}</div>`).join('')
+      : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Container</div>'}
           </div>
 
           <!-- Tờ khai -->
@@ -1068,9 +1068,9 @@ function renderExpandContent(container, data) {
             <div style="font-weight: 600; color: #475569; margin-bottom: 8px; display:flex; align-items:center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Tờ Khai Hải Quan
             </div>
-            ${data.customsDeclarations && data.customsDeclarations.length > 0 ? 
-              data.customsDeclarations.map(c => `<div style="font-size: 13px;">• <strong style="color:var(--amis-blue)">${c.declarationNumber}</strong> | Ngày: ${c.declarationDate ? new Date(c.declarationDate).toLocaleDateString('vi-VN') : '-'} | Loại: ${c.declarationType || '-'}</div>`).join('') 
-              : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Tờ khai</div>'}
+            ${data.customsDeclarations && data.customsDeclarations.length > 0 ?
+      data.customsDeclarations.map(c => `<div style="font-size: 13px;">• <strong style="color:var(--amis-blue)">${c.declarationNumber}</strong> | Ngày: ${c.declarationDate ? new Date(c.declarationDate).toLocaleDateString('vi-VN') : '-'} | Loại: ${c.declarationType || '-'}</div>`).join('')
+      : '<div style="font-size: 13px; color: #94a3b8;">Chưa có Tờ khai</div>'}
           </div>
           
         </div>
@@ -1079,11 +1079,11 @@ function renderExpandContent(container, data) {
   `;
 }
 
-window.xnkDownloadAllShipmentDocs = async function(shipmentId) {
+window.xnkDownloadAllShipmentDocs = async function (shipmentId) {
   try {
     const res = await api.get('/api/documents?shipmentId=' + shipmentId);
     const docs = res.data?.items || res.data || [];
-    
+
     if (docs.length === 0) {
       showToast('Lô hàng này chưa có file nào được tải lên.', 'warning');
       return;
@@ -1098,7 +1098,7 @@ window.xnkDownloadAllShipmentDocs = async function(shipmentId) {
               <input type="checkbox" class="doc-dl-chk" value="${d.id}" data-name="${d.originalFileName || d.fileName}" checked>
               <span>
                 <strong>${d.originalFileName || d.fileName}</strong> 
-                <span style="font-size:11px; color:#94a3b8; margin-left:8px;">(${(d.fileSize/1024).toFixed(1)} KB)</span>
+                <span style="font-size:11px; color:#94a3b8; margin-left:8px;">(${(d.fileSize / 1024).toFixed(1)} KB)</span>
               </span>
             </label>
           `).join('')}
@@ -1124,7 +1124,7 @@ window.xnkDownloadAllShipmentDocs = async function(shipmentId) {
     chkAll.addEventListener('change', (e) => {
       chks.forEach(c => c.checked = e.target.checked);
     });
-    
+
     chks.forEach(c => c.addEventListener('change', () => {
       const allChecked = Array.from(chks).every(x => x.checked);
       chkAll.checked = allChecked;
@@ -1136,10 +1136,10 @@ window.xnkDownloadAllShipmentDocs = async function(shipmentId) {
         showToast('Vui lòng chọn ít nhất 1 file để tải', 'warning');
         return;
       }
-      
+
       const token = localStorage.getItem('xnk_token');
       let count = 0;
-      
+
       for (const sel of selected) {
         try {
           const downloadRes = await fetch('http://localhost:5000/api/documents/' + sel.value + '/download', {
@@ -1157,12 +1157,12 @@ window.xnkDownloadAllShipmentDocs = async function(shipmentId) {
             window.URL.revokeObjectURL(url);
             count++;
           }
-        } catch(e) {}
+        } catch (e) { }
       }
       showToast('Đã tải xuống ' + count + ' file.', 'success');
       window.closeModal();
     });
-  } catch(e) {
+  } catch (e) {
     showToast('Lỗi tải danh sách file', 'error');
   }
 };

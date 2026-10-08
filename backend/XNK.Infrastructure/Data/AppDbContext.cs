@@ -177,7 +177,7 @@ public class AppDbContext : DbContext
         // ========== Invoice ==========
         modelBuilder.Entity<Invoice>(entity =>
         {
-            entity.HasIndex(e => new { e.InvoiceNumber, e.Type }).IsUnique();
+            entity.HasIndex(e => new { e.InvoiceNumber, e.Type }).IsUnique().HasFilter("\"IsDeleted\" = false");
             entity.HasOne(e => e.Shipment)
                   .WithMany(s => s.Invoices)
                   .HasForeignKey(e => e.ShipmentId)

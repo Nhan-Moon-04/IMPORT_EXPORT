@@ -99,7 +99,7 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             if (s == null) continue;
 
             var invoices = s.Invoices?
-                .Where(inv => inv.Type != Core.Enums.InvoiceType.PackingList && inv.Type != Core.Enums.InvoiceType.SalesContract && !string.IsNullOrWhiteSpace(inv.InvoiceNumber))
+                .Where(inv => inv.Type != Core.Enums.InvoiceType.PackingList && inv.Type != Core.Enums.InvoiceType.SalesContract && inv.Type != Core.Enums.InvoiceType.BillOfLading && !string.IsNullOrWhiteSpace(inv.InvoiceNumber))
                 .ToList() ?? new();
 
             var invNum = invoices.Any() ? string.Join(", ", invoices.Select(i => i.InvoiceNumber.Trim()).Distinct()) : null;
@@ -139,7 +139,7 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             .Include(ii => ii.Invoice).ThenInclude(i => i.Shipment).ThenInclude(s => s.Supplier)
             .Include(ii => ii.Invoice).ThenInclude(i => i.Shipment).ThenInclude(s => s.Customer)
             .Include(ii => ii.Invoice).ThenInclude(i => i.Shipment).ThenInclude(s => s.CustomsDeclarations)
-            .Where(ii => ii.ProductId.HasValue && ii.Invoice.Type != Core.Enums.InvoiceType.PackingList && ii.Invoice.Type != Core.Enums.InvoiceType.SalesContract);
+            .Where(ii => ii.ProductId.HasValue && ii.Invoice.Type != Core.Enums.InvoiceType.PackingList && ii.Invoice.Type != Core.Enums.InvoiceType.SalesContract && ii.Invoice.Type != Core.Enums.InvoiceType.BillOfLading);
 
         if (productId.HasValue)
             invQuery = invQuery.Where(ii => ii.ProductId == productId.Value);
@@ -277,7 +277,7 @@ public class SupplierRepository : GenericRepository<Supplier>, ISupplierReposito
             ShipmentId = s.Id,
             ShipmentCode = s.ShipmentCode,
             Date = s.ExpectedDate ?? s.CreatedAt,
-            InvoiceNumber = s.Invoices.FirstOrDefault(inv => inv.Type != Core.Enums.InvoiceType.PackingList && inv.Type != Core.Enums.InvoiceType.SalesContract)?.InvoiceNumber,
+            InvoiceNumber = s.Invoices.FirstOrDefault(inv => inv.Type != Core.Enums.InvoiceType.PackingList && inv.Type != Core.Enums.InvoiceType.SalesContract && inv.Type != Core.Enums.InvoiceType.BillOfLading)?.InvoiceNumber,
             Quantity = s.TotalQuantity ?? 0,
             TotalValue = s.TotalValue ?? 0,
             Status = s.Status.ToString()
@@ -400,7 +400,7 @@ public class InvoiceRepository : GenericRepository<Invoice>, IInvoiceRepository
 
     public async Task<bool> NumberExistsAsync(string number, XNK.Core.Enums.InvoiceType type, Guid? excludeId = null)
     {
-        var query = _dbSet.IgnoreQueryFilters().Where(i => i.InvoiceNumber == number && i.Type == type);
+        var query = _dbSet.Where(i => i.InvoiceNumber == number && i.Type == type);
         if (excludeId.HasValue) query = query.Where(i => i.Id != excludeId.Value);
         return await query.AnyAsync();
     }
