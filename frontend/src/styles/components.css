@@ -26,6 +26,9 @@
 .btn-primary:hover {
   background: var(--amis-green-hover);
 }
+.btn-primary svg {
+  stroke: #ffffff !important;
+}
 
 .btn-blue {
   background: var(--amis-blue);
@@ -33,6 +36,9 @@
 }
 .btn-blue:hover {
   background: var(--amis-blue-hover);
+}
+.btn-blue svg {
+  stroke: #ffffff !important;
 }
 
 .btn-secondary {

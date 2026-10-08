@@ -1,66 +1,88 @@
 // frontend/src/features/billOfLading/billOfLading.js
+/**
+ * Quản Lý Vận Đơn Đường Biển (Bill of Lading - B/L)
+ * Giao diện chuẩn MISA AMIS 2025 đồng bộ với Shipments (Lô Hàng Nhập/Xuất)
+ */
 import { api, toast, openModal, closeModal, showConfirm, API_BASE, getToken } from '../../core/api.js';
 
 let currentBLs = [];
 let currentFilteredBLs = [];
+let selectedId = null;
 let currentPage = 1;
 let itemsPerPage = 10;
 
 /**
  * Render trang Quản lý Vận Đơn (Bill of Lading - B/L)
+ * Chuẩn phong cách MISA AMIS giống /shipments-import
  */
 export async function renderBillOfLading(container) {
+  selectedId = null;
+
   container.innerHTML = `
     <div class="grid-card">
       <!-- MISA Toolbar -->
       <div class="misa-toolbar">
         <div class="toolbar-group">
-          <button class="btn btn-primary" id="btn-add-bl">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Tạo Mới Vận Đơn (B/L)
+          <!-- Nút Thêm Mới với Icon trắng chuẩn MISA AMIS -->
+          <button id="btnBLAdd" class="btn btn-primary" title="Tạo mới vận đơn đường biển">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Thêm Vận Đơn (B/L)
           </button>
-          <button class="btn btn-default" id="btn-refresh-bl">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-            Nạp Lại
+          <button id="btnBLEdit" class="btn btn-default" disabled title="Chỉnh sửa vận đơn đã chọn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            Sửa
           </button>
-          <span id="bl-selected-count" style="display:none; margin-left: 15px; font-weight: 600; font-size: 13px; align-items:center;">Đã chọn: 0</span>
-          <button class="btn btn-default btn-sm" id="btn-bulk-delete-bl" style="display:none; align-items:center; color: #ef4444; border-color: #ef4444; padding: 4px 10px; margin-left: 10px;" title="Xóa dữ liệu đã chọn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <button id="btnBLDetail" class="btn btn-default" disabled title="Xem chi tiết vận đơn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Chi tiết
+          </button>
+          <button id="btnBLPrint" class="btn btn-default" disabled title="In bản B/L chuẩn A4">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            In B/L
+          </button>
+          <button id="btnBLDelete" class="btn btn-default" style="color: var(--amis-red);" disabled title="Xóa vận đơn đã chọn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             Xóa
           </button>
+          <button id="btnBLRefresh" class="btn btn-default" title="Nạp lại danh sách dữ liệu">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Nạp lại
+          </button>
+          <button id="btnBLExport" class="btn btn-default" title="Xuất danh sách ra file Excel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            Xuất khẩu
+          </button>
         </div>
-        <div class="toolbar-group" style="display:flex; gap:10px; flex-wrap:wrap;">
-          <input type="date" id="filter-bl-from" class="form-input" title="Từ ngày phát hành">
-          <input type="date" id="filter-bl-to" class="form-input" title="Đến ngày phát hành">
-          <select id="filter-bl-type" class="form-input" style="min-width: 140px;">
+
+        <!-- Right Side Filter Controls (Gọn gàng trên cùng 1 hàng, không bị tràn dòng) -->
+        <div class="toolbar-group" style="display: flex; gap: 8px; align-items: center;">
+          <select id="filterBLType" class="form-input" style="width: 140px; height: 32px; padding: 4px 8px; font-size: 12.5px;">
             <option value="">Tất cả loại B/L</option>
             <option value="Master B/L">Master B/L (MBL)</option>
             <option value="House B/L">House B/L (HBL)</option>
-            <option value="Seaway Bill">Seaway Bill</option>
             <option value="Telex Release">Surrendered / Telex</option>
+            <option value="Seaway Bill">Seaway Bill</option>
           </select>
-          <select id="filter-bl-carrier" class="form-input" style="min-width: 130px;">
+          <select id="filterBLCarrier" class="form-input" style="width: 130px; height: 32px; padding: 4px 8px; font-size: 12.5px;">
             <option value="">Tất cả hãng tàu</option>
-            <option value="COSCO">COSCO Shipping</option>
-            <option value="EVERGREEN">Evergreen Line</option>
-            <option value="ONE">Ocean Network (ONE)</option>
-            <option value="MAERSK">Maersk Line</option>
-            <option value="WAN HAI">Wan Hai Lines</option>
-            <option value="SITC">SITC Container</option>
-            <option value="YANG MING">Yang Ming</option>
-            <option value="CMA CGM">CMA CGM</option>
-            <option value="MSC">MSC</option>
+            <option value="COSCO">COSCO</option>
+            <option value="EVERGREEN">Evergreen</option>
+            <option value="ONE">ONE</option>
+            <option value="MAERSK">Maersk</option>
+            <option value="WAN HAI">Wan Hai</option>
+            <option value="SITC">SITC</option>
           </select>
-          <input type="text" id="bl-search-input" class="form-input" style="width: 240px;" placeholder="Tìm số B/L, tàu, cont, lô hàng...">
+          <input type="text" id="blSearchInput" class="form-input" style="width: 240px; height: 32px; padding: 4px 10px; font-size: 12.5px;" placeholder="Lọc số B/L, tàu, cont, đối tác...">
         </div>
       </div>
 
-      <!-- Grid Table -->
+      <!-- MISA Grid Scroll Table -->
       <div class="grid-scroll">
-        <table class="misa-table">
+        <table class="misa-table" id="blTable">
           <thead>
             <tr>
-              <th style="width:40px; text-align:center;"><input type="checkbox" id="chk-all-bl"></th>
+              <th style="width: 36px; text-align: center;"><input type="checkbox" id="chkAllBL" title="Chọn tất cả"></th>
+              <th style="width: 36px; text-align: center;"></th>
               <th>Số Vận Đơn (B/L No.)</th>
               <th>Loại B/L</th>
               <th>Lô Hàng Liên Kết</th>
@@ -68,74 +90,102 @@ export async function renderBillOfLading(container) {
               <th>Tên Tàu & Chuyến (Vessel/Voy)</th>
               <th>Cảng Đi ➔ Cảng Đến</th>
               <th>Ngày On-Board</th>
-              <th>Cont / Kiện / GW</th>
+              <th>Container / Seal</th>
+              <th style="text-align: right;">Số Lượng (Kiện)</th>
+              <th style="text-align: right;">Gross Weight (KG)</th>
               <th>Trạng Thái</th>
-              <th style="text-align:center;">File Scan</th>
-              <th style="width:160px; text-align:center;">Thao Tác</th>
+              <th style="text-align: center;">File Scan</th>
+              <th style="width: 130px; text-align: center;">Thao Tác</th>
             </tr>
           </thead>
-          <tbody id="bl-table-body">
-            <tr><td colspan="12" style="text-align:center; padding:30px;">Đang tải danh sách vận đơn...</td></tr>
+          <tbody id="blTbody">
+            <tr><td colspan="15" style="text-align: center; padding: 30px; color: var(--amis-text-muted);">Đang tải danh sách vận đơn...</td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Pagination -->
-      <div class="misa-pagination" style="display:flex; justify-content:space-between; align-items:center; padding: 10px;">
-        <div class="pagination-info" id="bl-pagination-info">Tổng: 0 vận đơn</div>
-        <div class="pagination-controls" style="display:flex; gap:10px; align-items:center;">
-          <select id="bl-items-per-page" class="form-input" style="width:auto; padding:4px;">
-            <option value="10">10 dòng/trang</option>
-            <option value="20">20 dòng/trang</option>
-            <option value="50">50 dòng/trang</option>
-            <option value="100">100 dòng/trang</option>
+      <!-- MISA Pagination Footer -->
+      <div class="misa-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px;">
+        <div id="blPaginationText">Tổng số: 0 bản ghi</div>
+        <div class="pagination-controls" style="display: flex; gap: 8px; align-items: center;">
+          <select id="blItemsPerPage" class="form-input" style="width: auto; padding: 2px 8px; height: 28px; font-size: 12px; margin-right: 8px;">
+            <option value="10">Hiển thị 10 dòng/trang</option>
+            <option value="20">Hiển thị 20 dòng/trang</option>
+            <option value="50">Hiển thị 50 dòng/trang</option>
+            <option value="100">Hiển thị 100 dòng/trang</option>
           </select>
-          <div id="bl-pagination-buttons" style="display:flex; gap:5px;"></div>
+          <div id="blPaginationButtons" style="display: flex; gap: 4px; align-items: center;"></div>
         </div>
       </div>
     </div>
   `;
 
-  // Attach event listeners
-  document.getElementById('btn-add-bl')?.addEventListener('click', () => openBLModal());
-  document.getElementById('btn-refresh-bl')?.addEventListener('click', () => loadBLs());
-  ['bl-search-input', 'filter-bl-from', 'filter-bl-to', 'filter-bl-type', 'filter-bl-carrier'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', filterBLs);
+  setupBLEvents();
+  await loadBLsData();
+}
+
+/**
+ * Gán sự kiện cho các nút Toolbar và Filter
+ */
+function setupBLEvents() {
+  document.getElementById('btnBLAdd')?.addEventListener('click', () => openBLModal());
+  document.getElementById('btnBLEdit')?.addEventListener('click', () => {
+    if (selectedId) {
+      const bl = currentBLs.find(b => b.id === selectedId);
+      if (bl) openBLModal(bl);
+    }
   });
+  document.getElementById('btnBLDetail')?.addEventListener('click', () => {
+    if (selectedId) viewBLDetail(selectedId);
+  });
+  document.getElementById('btnBLPrint')?.addEventListener('click', () => {
+    if (selectedId) printBL(selectedId);
+  });
+  document.getElementById('btnBLDelete')?.addEventListener('click', () => {
+    if (selectedId) {
+      const bl = currentBLs.find(b => b.id === selectedId);
+      if (bl) deleteBL(selectedId, bl.blNumber);
+    }
+  });
+  document.getElementById('btnBLRefresh')?.addEventListener('click', async () => {
+    await loadBLsData();
+    toast('Đã nạp lại dữ liệu vận đơn!', 'info');
+  });
+  document.getElementById('btnBLExport')?.addEventListener('click', () => exportBLExcel());
 
-  const chkAll = document.getElementById('chk-all-bl');
-  if (chkAll) {
-    chkAll.addEventListener('click', (e) => {
-      e.preventDefault();
-      const checkboxes = document.querySelectorAll('.chk-row-bl');
-      const checked = document.querySelectorAll('.chk-row-bl:checked');
-      const shouldCheck = checked.length < checkboxes.length;
-      checkboxes.forEach(chk => { chk.checked = shouldCheck; });
-      e.target.checked = shouldCheck;
-      e.target.indeterminate = false;
-      updateBLBulkActions();
-    });
-  }
+  // Filter events
+  ['filterBLType', 'filterBLCarrier'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', filterBLsData);
+  });
+  document.getElementById('blSearchInput')?.addEventListener('input', filterBLsData);
 
-  document.getElementById('bl-items-per-page')?.addEventListener('change', (e) => {
+  // Items per page
+  document.getElementById('blItemsPerPage')?.addEventListener('change', (e) => {
     itemsPerPage = parseInt(e.target.value);
     currentPage = 1;
     renderPaginatedBLs();
   });
 
-  document.getElementById('btn-bulk-delete-bl')?.addEventListener('click', () => {
-    const checked = Array.from(document.querySelectorAll('.chk-row-bl:checked')).map(c => c.value);
-    if (checked.length >= 1) bulkDeleteBLs(checked);
-  });
-
-  await loadBLs();
+  // Check all header checkbox
+  const chkAll = document.getElementById('chkAllBL');
+  if (chkAll) {
+    chkAll.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.row-checkbox');
+      checkboxes.forEach(cb => { cb.checked = e.target.checked; });
+      if (e.target.checked && checkboxes.length > 0) {
+        selectBLRow(checkboxes[0].value, false);
+      } else {
+        selectBLRow(null, false);
+      }
+    });
+  }
 }
 
 /**
- * Tải danh sách B/L từ Backend & Storage
+ * Tải dữ liệu B/L từ Backend
  */
-async function loadBLs() {
-  const tbody = document.getElementById('bl-table-body');
+async function loadBLsData() {
+  const tbody = document.getElementById('blTbody');
   if (!tbody) return;
 
   try {
@@ -190,7 +240,7 @@ async function loadBLs() {
       };
     });
 
-    // If there are documents uploaded under BillOfLading category that don't have an invoice record, surface them
+    // Surface document records
     blDocs.forEach(d => {
       const alreadyLinked = blList.some(b => b.docId === d.id || (b.shipmentId && d.shipmentId && b.shipmentId.toLowerCase() === d.shipmentId.toLowerCase()));
       if (!alreadyLinked && d.shipmentCode) {
@@ -202,7 +252,7 @@ async function loadBLs() {
           issueDate: d.createdAt,
           shipmentId: d.shipmentId,
           shipmentCode: d.shipmentCode,
-          partnerName: shp?.supplierName || shp?.customerName || 'VAR',
+          partnerName: shp?.supplierName || shp?.customerName || 'LONG CHENG WU TEXTILE CO., LTD',
           shipmentType: shp?.type || 'Import',
           totalPackages: shp?.totalPackages || 222,
           grossWeight: shp?.totalGrossWeight || 22,
@@ -222,7 +272,7 @@ async function loadBLs() {
       }
     });
 
-    // Provide default sample B/L if completely empty
+    // Sample fallback
     if (blList.length === 0 && shipments.length > 0) {
       const shp = shipments[0];
       blList.push({
@@ -232,13 +282,13 @@ async function loadBLs() {
         issueDate: shp.createdAt || new Date().toISOString(),
         shipmentId: shp.id,
         shipmentCode: shp.shipmentCode,
-        partnerName: shp.supplierName || 'VAR',
+        partnerName: shp.supplierName || 'LONG CHENG WU TEXTILE CO., LTD',
         shipmentType: shp.type || 'Import',
         totalPackages: shp.totalPackages || 222,
         grossWeight: shp.totalGrossWeight || 22,
         shippingLine: 'COSCO SHIPPING',
         vesselVoyage: 'COSCO PRIDE / 024E',
-        pol: shp.portOfLoading || 'Cat Lai Port, Ho Chi Minh City',
+        pol: shp.portOfLoading || 'Shanghai Port, China',
         pod: shp.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
         containerNo: 'TGHU9843210',
         sealNo: 'SL-88992',
@@ -252,21 +302,19 @@ async function loadBLs() {
     }
 
     currentBLs = blList;
-    filterBLs();
+    filterBLsData();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:red; padding:20px;">Lỗi tải dữ liệu vận đơn: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: var(--amis-red); padding: 24px;">Lỗi tải dữ liệu vận đơn: ${err.message}</td></tr>`;
   }
 }
 
 /**
- * Lọc B/L theo các điều kiện
+ * Bộ lọc dữ liệu bảng
  */
-function filterBLs() {
-  const q = document.getElementById('bl-search-input')?.value.toLowerCase().trim() || '';
-  const dateFrom = document.getElementById('filter-bl-from')?.value;
-  const dateTo = document.getElementById('filter-bl-to')?.value;
-  const blType = document.getElementById('filter-bl-type')?.value;
-  const carrier = document.getElementById('filter-bl-carrier')?.value;
+function filterBLsData() {
+  const q = document.getElementById('blSearchInput')?.value.toLowerCase().trim() || '';
+  const blType = document.getElementById('filterBLType')?.value || '';
+  const carrier = document.getElementById('filterBLCarrier')?.value || '';
 
   let filtered = currentBLs;
 
@@ -290,53 +338,47 @@ function filterBLs() {
     filtered = filtered.filter(b => (b.shippingLine || '').toLowerCase().includes(carrier.toLowerCase()));
   }
 
-  if (dateFrom) {
-    const dFrom = new Date(dateFrom).setHours(0, 0, 0, 0);
-    filtered = filtered.filter(b => new Date(b.issueDate).setHours(0, 0, 0, 0) >= dFrom);
-  }
-
-  if (dateTo) {
-    const dTo = new Date(dateTo).setHours(23, 59, 59, 999);
-    filtered = filtered.filter(b => new Date(b.issueDate).getTime() <= dTo);
-  }
-
   currentFilteredBLs = filtered;
   currentPage = 1;
   renderPaginatedBLs();
 }
 
 /**
- * Phân trang danh sách B/L
+ * Phân trang dữ liệu
  */
 function renderPaginatedBLs() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const pageItems = currentFilteredBLs.slice(startIndex, endIndex);
 
-  renderBLRows(pageItems);
+  renderBLTable(pageItems);
 
-  const info = document.getElementById('bl-pagination-info');
-  if (info) info.textContent = `Tổng cộng: ${currentFilteredBLs.length} vận đơn (B/L)`;
+  const textEl = document.getElementById('blPaginationText');
+  if (textEl) {
+    textEl.textContent = `Tổng số: ${currentFilteredBLs.length} bản ghi`;
+  }
 
-  renderBLPaginationButtons();
-  updateBLBulkActions();
+  renderPaginationControls();
+  syncToolbarButtons();
 }
 
 /**
- * Render các dòng bảng B/L
+ * Render dữ liệu vào Table chuẩn MISA AMIS
  */
-function renderBLRows(items) {
-  const tbody = document.getElementById('bl-table-body');
+function renderBLTable(items) {
+  const tbody = document.getElementById('blTbody');
   if (!tbody) return;
 
   if (items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px; color:#6b7280;">Không tìm thấy vận đơn (B/L) nào phù hợp</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; padding: 24px; color: var(--text-muted);">Không có vận đơn nào phù hợp điều kiện lọc.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = items.map((b) => {
+  tbody.innerHTML = items.map(b => {
+    const isCurSelected = selectedId === b.id;
     const dateStr = b.issueDate ? new Date(b.issueDate).toLocaleDateString('vi-VN') : '---';
 
+    // Status chip MISA AMIS
     let typeBadge = '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">MBL</span>';
     if (b.blType?.includes('House')) {
       typeBadge = '<span class="status-chip chip-pending" style="background:#fef3c7; color:#b45309;">HBL</span>';
@@ -356,105 +398,190 @@ function renderBLRows(items) {
     const podShort = b.pod?.split(',')[0] || '---';
 
     return `
-      <tr>
-        <td style="text-align:center;"><input type="checkbox" class="chk-row-bl" value="${b.id}"></td>
+      <tr data-id="${b.id}" class="bl-main-row ${isCurSelected ? 'selected' : ''}">
+        <td style="text-align: center;">
+          <input type="checkbox" class="row-checkbox" value="${b.id}" ${isCurSelected ? 'checked' : ''}>
+        </td>
+        <td style="text-align: center; cursor: pointer;" class="expand-btn" data-id="${b.id}">
+          <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
+        </td>
         <td>
-          <div style="font-weight:700; color:var(--amis-blue); font-family:monospace; font-size:13px; cursor:pointer;" onclick="window.viewBLDetail('${b.id}')" title="Click xem chi tiết vận đơn">
+          <div style="font-weight: 700; color: var(--amis-blue); font-family: monospace; font-size: 13px; cursor: pointer;" onclick="window.viewBLDetail('${b.id}')" title="Bấm xem chi tiết vận đơn">
             ${b.blNumber}
           </div>
-          <div style="font-size:11px; color:#64748b;">${b.freightTerm || 'Freight Prepaid'}</div>
+          <div style="font-size: 11px; color: #64748b;">${b.freightTerm || 'Freight Prepaid'}</div>
         </td>
         <td>${typeBadge}</td>
         <td>
-          <a href="#" onclick="window.appNavigateTo('shipment-detail', '${b.shipmentId}'); return false;" style="font-weight:600; color:#1e293b; text-decoration:none;" title="Xem chi tiết lô hàng">
+          <a href="#" onclick="window.appNavigateTo('shipment-detail', '${b.shipmentId}'); return false;" style="font-weight: 600; color: #1e293b; text-decoration: none;" title="Xem chi tiết lô hàng">
             🚢 ${b.shipmentCode}
           </a>
+          <div style="font-size: 11px; color: #64748b; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${b.partnerName}</div>
         </td>
-        <td style="font-weight:600; color:#334155;">
+        <td style="font-weight: 600; color: #334155;">
           ${b.shippingLine}
         </td>
         <td>
-          <div style="font-weight:500;">${b.vesselVoyage}</div>
+          <div style="font-weight: 500;">${b.vesselVoyage}</div>
         </td>
         <td>
-          <div style="font-size:12px;">${polShort} ➔ ${podShort}</div>
+          <div style="font-size: 12px;">${polShort} ➔ ${podShort}</div>
         </td>
         <td>${dateStr}</td>
         <td>
-          <div style="font-size:12px; font-weight:600; color:var(--amis-blue);">${b.containerNo || '---'}</div>
-          <div style="font-size:11px; color:#64748b;">Seal: ${b.sealNo || '---'} | ${Number(b.grossWeight || 0).toLocaleString()} kg</div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--amis-blue); font-family: monospace;">${b.containerNo || '---'}</div>
+          <div style="font-size: 11px; color: #64748b;">Seal: ${b.sealNo || '---'}</div>
+        </td>
+        <td style="text-align: right; font-weight: 600;">
+          ${Number(b.totalPackages || 0).toLocaleString()}
+        </td>
+        <td style="text-align: right; font-weight: 700; color: var(--text-main);">
+          ${Number(b.grossWeight || 0).toLocaleString()} kg
         </td>
         <td>${statusChip}</td>
-        <td style="text-align:center;">
+        <td style="text-align: center;">
           ${hasFile ? `
-            <button class="btn btn-default btn-sm" onclick="window.downloadBLDoc('${b.docId}', '${b.docName}')" title="Tải file đính kèm: ${b.docName}" style="color:#15803d; border-color:#86efac; background:#f0fdf4; padding:3px 7px;">
-              📎 ${b.docName.length > 10 ? b.docName.slice(0,10)+'…' : b.docName}
+            <button class="btn btn-default btn-sm" onclick="window.downloadBLDoc('${b.docId}', '${b.docName}')" title="Tải file đính kèm: ${b.docName}" style="color: #15803d; border-color: #86efac; background: #f0fdf4; padding: 2px 6px; font-size: 11.5px;">
+              📎 ${b.docName.length > 8 ? b.docName.slice(0, 8) + '…' : b.docName}
             </button>
-          ` : `<span style="color:#94a3b8; font-size:12px;">Chưa có</span>`}
+          ` : `<span style="color: #94a3b8; font-size: 12px;">Chưa có</span>`}
         </td>
-        <td style="text-align:center; white-space:nowrap;">
-          <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
-            <!-- Nút Xem chi tiết -->
-            <button class="btn btn-default btn-sm" onclick="window.viewBLDetail('${b.id}')" style="padding:5px 7px;" title="Xem chi tiết vận đơn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-            <!-- Nút Tải Icon -->
-            <button class="btn btn-default btn-sm" onclick="window.handleDownloadBL('${b.id}')" style="padding:5px 7px;" title="Tải file vận đơn / chứng từ B/L">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amis-green, #16a34a)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            </button>
-            <!-- Nút In B/L -->
-            <button class="btn btn-default btn-sm" onclick="window.printBL('${b.id}')" style="padding:5px 7px; color:#475569;" title="In mẫu vận đơn B/L">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            </button>
-            <!-- Nút Sửa -->
-            <button class="btn btn-default btn-sm" onclick="window.editBL('${b.id}')" style="padding:5px 7px; color:var(--amis-blue, #0284c7);" title="Chỉnh sửa vận đơn B/L">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            </button>
-            <!-- Nút Xóa -->
-            <button class="btn btn-default btn-sm" onclick="window.deleteBL('${b.id}', '${b.blNumber}')" style="padding:5px 7px; color:var(--amis-red, #ef4444);" title="Xóa vận đơn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
+        <td style="white-space: nowrap; text-align: center;">
+          <button class="btn btn-default btn-sm" title="Chi tiết" onclick="window.viewBLDetail('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+          <button class="btn btn-default btn-sm" title="Tải xuống" onclick="window.handleDownloadBL('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+          <button class="btn btn-default btn-sm" title="In B/L" onclick="window.printBL('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+          <button class="btn btn-default btn-sm" title="Sửa" onclick="window.editBL('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+          <button class="btn btn-default btn-sm" title="Xóa" style="color: var(--amis-red);" onclick="window.deleteBL('${b.id}', '${b.blNumber}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+        </td>
+      </tr>
+
+      <!-- Hidden Expandable Sub-Row (Chuẩn MISA AMIS) -->
+      <tr id="expand-row-${b.id}" class="expand-row" style="display: none; background-color: #f8fafc; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+        <td colspan="15" style="padding: 0;">
+          <div style="padding: 14px 18px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+              <!-- Hải trình -->
+              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                <div style="font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>⚓</span> Hải Trình & Cảng Biển
+                </div>
+                <div style="font-size: 12.5px; line-height: 1.6;">
+                  <div>• Hãng tàu: <strong>${b.shippingLine}</strong></div>
+                  <div>• Tên tàu / Chuyến: <strong>${b.vesselVoyage}</strong></div>
+                  <div>• Cảng xếp (POL): <strong>${b.pol}</strong></div>
+                  <div>• Cảng dỡ (POD): <strong>${b.pod}</strong></div>
+                  <div>• Ngày phát hành: <strong>${dateStr}</strong></div>
+                </div>
+              </div>
+
+              <!-- Hàng hóa & Container -->
+              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                <div style="font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>📦</span> Container & Quy Cách Hàng
+                </div>
+                <div style="font-size: 12.5px; line-height: 1.6;">
+                  <div>• Số Container: <strong style="color:var(--amis-blue); font-family:monospace;">${b.containerNo || '---'}</strong></div>
+                  <div>• Số Chì (Seal): <strong>${b.sealNo || '---'}</strong></div>
+                  <div>• Số lượng kiện: <strong>${Number(b.totalPackages || 0).toLocaleString()} kiện</strong></div>
+                  <div>• Tổng Gross Weight: <strong>${Number(b.grossWeight || 0).toLocaleString()} kg</strong></div>
+                  <div>• Điều kiện cước: <span class="status-chip chip-delivered" style="padding:1px 6px;">${b.freightTerm}</span></div>
+                </div>
+              </div>
+
+              <!-- Chứng từ & Ghi chú -->
+              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                <div style="font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>📋</span> File Đính Kèm & Ghi Chú
+                </div>
+                <div style="font-size: 12.5px; line-height: 1.6;">
+                  <div>• Trạng thái B/L: <strong>${b.status}</strong></div>
+                  <div>• File scan đính kèm: <strong>${b.docName || 'Chưa tải lên'}</strong></div>
+                  <div style="color: #64748b; margin-top: 4px;">• Ghi chú: ${b.notes || 'Không có ghi chú thêm.'}</div>
+                  <div style="margin-top: 8px; display: flex; gap: 6px;">
+                    <button class="btn btn-default btn-sm" onclick="window.viewBLDetail('${b.id}')">Xem Bản In B/L</button>
+                    ${hasFile ? `<button class="btn btn-default btn-sm" onclick="window.downloadBLDoc('${b.docId}', '${b.docName}')">Tải File Scan</button>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </td>
       </tr>
     `;
   }).join('');
 
-  // Row checkbox click event
-  tbody.querySelectorAll('.chk-row-bl').forEach(chk => {
-    chk.addEventListener('change', updateBLBulkActions);
+  // Row click & expand event listeners
+  tbody.querySelectorAll('.bl-main-row').forEach(tr => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'A') return;
+      if (e.target.closest('.expand-btn')) {
+        toggleExpandRow(tr.getAttribute('data-id'));
+        return;
+      }
+      selectBLRow(tr.getAttribute('data-id'));
+    });
   });
 }
 
 /**
- * Cập nhật thanh hành động xóa hàng loạt
+ * Mở/đóng dòng mở rộng chi tiết (Expandable row)
  */
-function updateBLBulkActions() {
-  const checkboxes = document.querySelectorAll('.chk-row-bl');
-  const checked = document.querySelectorAll('.chk-row-bl:checked');
-  const chkAll = document.getElementById('chk-all-bl');
-  const counter = document.getElementById('bl-selected-count');
-  const btnBulk = document.getElementById('btn-bulk-delete-bl');
+function toggleExpandRow(id) {
+  const row = document.getElementById(`expand-row-${id}`);
+  const btn = document.querySelector(`.expand-btn[data-id="${id}"] .chevron-icon`);
+  if (!row) return;
 
-  if (chkAll) {
-    chkAll.checked = (checkboxes.length > 0 && checked.length === checkboxes.length);
-    chkAll.indeterminate = (checked.length > 0 && checked.length < checkboxes.length);
+  const isHidden = row.style.display === 'none';
+  row.style.display = isHidden ? 'table-row' : 'none';
+  if (btn) {
+    btn.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
   }
+}
 
-  if (checked.length > 0) {
-    if (counter) { counter.style.display = 'inline-flex'; counter.textContent = `Đã chọn: ${checked.length}`; }
-    if (btnBulk) { btnBulk.style.display = 'inline-flex'; }
+/**
+ * Chọn 1 dòng trong bảng và đồng bộ các nút Toolbar MISA AMIS
+ */
+function selectBLRow(id, toggle = true) {
+  if (toggle && selectedId === id) {
+    selectedId = null;
   } else {
-    if (counter) counter.style.display = 'none';
-    if (btnBulk) btnBulk.style.display = 'none';
+    selectedId = id;
   }
+
+  const tbody = document.getElementById('blTbody');
+  if (tbody) {
+    tbody.querySelectorAll('.bl-main-row').forEach(tr => {
+      const isCur = tr.getAttribute('data-id') === selectedId;
+      tr.classList.toggle('selected', isCur);
+      const cb = tr.querySelector('.row-checkbox');
+      if (cb) cb.checked = isCur;
+    });
+  }
+
+  syncToolbarButtons();
+}
+
+/**
+ * Đồng bộ trạng thái Enable/Disable của các nút trên Toolbar
+ */
+function syncToolbarButtons() {
+  const hasSel = !!selectedId;
+  const btnEdit = document.getElementById('btnBLEdit');
+  const btnDetail = document.getElementById('btnBLDetail');
+  const btnPrint = document.getElementById('btnBLPrint');
+  const btnDelete = document.getElementById('btnBLDelete');
+
+  if (btnEdit) btnEdit.disabled = !hasSel;
+  if (btnDetail) btnDetail.disabled = !hasSel;
+  if (btnPrint) btnPrint.disabled = !hasSel;
+  if (btnDelete) btnDelete.disabled = !hasSel;
 }
 
 /**
  * Tạo các nút phân trang
  */
-function renderBLPaginationButtons() {
-  const container = document.getElementById('bl-pagination-buttons');
+function renderPaginationControls() {
+  const container = document.getElementById('blPaginationButtons');
   if (!container) return;
 
   const totalPages = Math.ceil(currentFilteredBLs.length / itemsPerPage) || 1;
@@ -477,7 +604,8 @@ function renderBLPaginationButtons() {
     } else if (i === currentPage - 3 || i === currentPage + 3) {
       const dots = document.createElement('span');
       dots.textContent = '...';
-      dots.style.padding = '0 5px';
+      dots.style.padding = '0 4px';
+      dots.style.color = '#94a3b8';
       container.appendChild(dots);
     }
   }
@@ -489,6 +617,56 @@ function renderBLPaginationButtons() {
   nextBtn.onclick = () => { currentPage++; renderPaginatedBLs(); };
   container.appendChild(nextBtn);
 }
+
+/**
+ * Xuất dữ liệu B/L ra Excel qua SheetJS
+ */
+export function exportBLExcel() {
+  if (currentFilteredBLs.length === 0) {
+    toast('Không có dữ liệu vận đơn để xuất Excel!', 'warning');
+    return;
+  }
+
+  if (typeof XLSX === 'undefined') {
+    toast('Thư viện SheetJS chưa được tải!', 'error');
+    return;
+  }
+
+  try {
+    const excelData = currentFilteredBLs.map((b, index) => ({
+      'STT': index + 1,
+      'Số Vận Đơn (B/L No.)': b.blNumber,
+      'Loại B/L': b.blType || 'Master B/L',
+      'Mã Lô Hàng': b.shipmentCode || '---',
+      'Đối Tác': b.partnerName || '---',
+      'Loại Lô Hàng': b.shipmentType === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu',
+      'Hãng Tàu': b.shippingLine || '---',
+      'Tên Tàu & Chuyến': b.vesselVoyage || '---',
+      'Cảng Đi (POL)': b.pol || '---',
+      'Cảng Đến (POD)': b.pod || '---',
+      'Ngày Phát Hành / On-Board': b.issueDate ? new Date(b.issueDate).toLocaleDateString('vi-VN') : '---',
+      'Số Container': b.containerNo || '---',
+      'Số Chì (Seal No.)': b.sealNo || '---',
+      'Số Kiện': b.totalPackages || 0,
+      'Gross Weight (KG)': b.grossWeight || 0,
+      'Điều Kiện Cước': b.freightTerm || 'Freight Prepaid',
+      'Trạng Thái': b.status || 'Original',
+      'File Scan': b.docName || 'Chưa đính kèm',
+      'Ghi Chú': b.notes || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Van_Don_BL');
+
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    XLSX.writeFile(workbook, `Danh_Sach_Van_Don_BL_${todayStr}.xlsx`);
+    toast(`Đã xuất ${currentFilteredBLs.length} vận đơn ra Excel thành công!`, 'success');
+  } catch (err) {
+    toast(`Lỗi khi xuất file Excel: ${err.message}`, 'error');
+  }
+}
+window.exportBLExcel = exportBLExcel;
 
 /**
  * Modal Xem Chi Tiết Vận Đơn Quốc Tế (Bill of Lading Viewer)
@@ -528,148 +706,174 @@ export async function viewBLDetail(blId, blData = null) {
   if (!bl) return;
 
   const content = `
-    <div class="bl-document-viewer" id="bl-print-area" style="background:#fff; color:#1e293b; font-family:'Segoe UI', Arial, sans-serif; font-size:12px; padding:16px; border:1px solid #cbd5e1; border-radius:4px; max-width:860px; margin:0 auto;">
-      <!-- B/L Header -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:12px;">
-        <div>
-          <div style="font-size:22px; font-weight:800; color:#0369a1; letter-spacing:1px; text-transform:uppercase;">
-            ${bl.shippingLine}
-          </div>
-          <div style="font-size:13px; font-weight:700; color:#475569; margin-top:2px;">
-            BILL OF LADING FOR OCEAN TRANSPORT / VẬN ĐƠN ĐƯỜNG BIỂN
-          </div>
-          <div style="font-size:11px; color:#64748b;">
-            Original Negotiable / Non-Negotiable Ocean Bill of Lading
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="display:inline-block; border:2px solid #0369a1; padding:6px 12px; border-radius:4px; background:#f0f9ff;">
-            <div style="font-size:11px; font-weight:700; color:#0369a1; text-transform:uppercase;">B/L NUMBER (SỐ VẬN ĐƠN)</div>
-            <div style="font-size:18px; font-weight:800; color:#0c4a6e; font-family:monospace;">${bl.blNumber}</div>
-          </div>
-          <div style="margin-top:4px;">
-            <span class="status-chip chip-transit" style="font-weight:700;">${bl.blType}</span>
-            <span class="status-chip chip-completed" style="font-weight:700; margin-left:4px;">${bl.status}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Parties Grid (Shipper, Consignee, Notify) -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-        <div style="border:1px solid #cbd5e1; padding:8px; border-radius:4px; background:#f8fafc;">
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">SHIPPER / CONSIGNOR (NGƯỜI GỬI HÀNG):</div>
-          <div style="font-size:13px; font-weight:700; color:#0f172a; margin-top:2px;">${bl.partnerName}</div>
-          <div style="font-size:11px; color:#475569; margin-top:2px;">China / Taiwan International Textile Supplier Co.</div>
-        </div>
-        <div style="border:1px solid #cbd5e1; padding:8px; border-radius:4px; background:#f8fafc;">
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">CONSIGNEE (NGƯỜI NHẬN HÀNG):</div>
-          <div style="font-size:13px; font-weight:700; color:#0f172a; margin-top:2px;">CONG TY TNHH XNK TEXTILE VIETNAM</div>
-          <div style="font-size:11px; color:#475569; margin-top:2px;">Cat Lai Port Area, Ho Chi Minh City, Vietnam</div>
-        </div>
-      </div>
-
-      <div style="border:1px solid #cbd5e1; padding:8px; border-radius:4px; background:#f8fafc; margin-bottom:12px;">
-        <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">NOTIFY PARTY (BÊN ĐƯỢC THÔNG BÁO):</div>
-        <div style="font-size:12px; font-weight:600; color:#0f172a;">SAME AS CONSIGNEE (HOẶC ĐẠI LÝ FORWARDER TẠI VIỆT NAM)</div>
-      </div>
-
-      <!-- Vessel, Voyage, POL, POD Grid -->
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; border:1px solid #cbd5e1; padding:8px; border-radius:4px; background:#fff; margin-bottom:12px;">
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">OCEAN VESSEL & VOY NO.</div>
-          <div style="font-size:12px; font-weight:700; color:#0369a1; margin-top:2px;">${bl.vesselVoyage}</div>
-        </div>
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">PORT OF LOADING (POL)</div>
-          <div style="font-size:12px; font-weight:600; color:#0f172a; margin-top:2px;">${bl.pol}</div>
-        </div>
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">PORT OF DISCHARGE (POD)</div>
-          <div style="font-size:12px; font-weight:600; color:#0f172a; margin-top:2px;">${bl.pod}</div>
-        </div>
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">PLACE OF DELIVERY</div>
-          <div style="font-size:12px; font-weight:600; color:#0f172a; margin-top:2px;">Cat Lai CY, Vietnam</div>
-        </div>
-      </div>
-
-      <!-- Cargo Details Table -->
-      <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1; margin-bottom:12px;">
-        <thead>
-          <tr style="background:#f1f5f9; text-align:left; font-size:11px; color:#475569;">
-            <th style="padding:6px 8px; border:1px solid #cbd5e1;">Container No. / Seal No.</th>
-            <th style="padding:6px 8px; border:1px solid #cbd5e1;">Marks & Numbers</th>
-            <th style="padding:6px 8px; border:1px solid #cbd5e1;">No. of Packages & Description</th>
-            <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:right;">Gross Weight (GW)</th>
-            <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:right;">Measurement</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="padding:8px; border:1px solid #cbd5e1; font-family:monospace; font-weight:700; color:#0369a1;">
-              ${bl.containerNo || 'TGHU9843210'}<br>
-              <span style="font-size:11px; color:#64748b; font-family:sans-serif;">Seal: ${bl.sealNo || 'SL-88992'}</span>
-            </td>
-            <td style="padding:8px; border:1px solid #cbd5e1;">
-              N/M<br><span style="font-size:11px; color:#64748b;">(Lô: ${bl.shipmentCode})</span>
-            </td>
-            <td style="padding:8px; border:1px solid #cbd5e1;">
-              <strong>${bl.totalPackages || 222} PACKAGES / KIỆN</strong><br>
-              <span style="color:#334155;">100% POLYESTER FILAMENT YARN (SỢI DỆT)</span><br>
-              <span style="font-size:11px; color:#64748b;">SAID TO CONTAIN / SHIPPED ON BOARD</span>
-            </td>
-            <td style="padding:8px; border:1px solid #cbd5e1; text-align:right; font-weight:700; color:#0f172a;">
-              ${Number(bl.grossWeight || 22).toLocaleString()} KGS
-            </td>
-            <td style="padding:8px; border:1px solid #cbd5e1; text-align:right; font-weight:600; color:#0f172a;">
-              15.50 CBM
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Freight & Issue Details -->
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; border:1px solid #cbd5e1; padding:8px; border-radius:4px; background:#f8fafc; margin-bottom:12px;">
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">FREIGHT & CHARGES</div>
-          <div style="font-size:12px; font-weight:700; color:#15803d; margin-top:2px;">${bl.freightTerm}</div>
-        </div>
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">SHIPPED ON BOARD DATE</div>
-          <div style="font-size:12px; font-weight:600; color:#0f172a; margin-top:2px;">${bl.issueDate ? new Date(bl.issueDate).toLocaleDateString('vi-VN') : '---'}</div>
-        </div>
-        <div>
-          <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase;">SIGNED FOR THE CARRIER</div>
-          <div style="font-size:11px; font-weight:700; color:#0369a1; margin-top:2px;">${bl.shippingLine} AS CARRIER</div>
-        </div>
-      </div>
-
-      ${bl.docName ? `
-        <div style="border:1px dashed #0284c7; background:#f0f9ff; padding:8px 12px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <div style="padding: 10px 0;">
+      <div class="bl-doc-container" id="bl-print-area">
+        <!-- 1. B/L Official Header -->
+        <div class="bl-doc-header">
           <div>
-            <span style="font-weight:700; color:#0369a1;">📎 File Scan B/L Đính Kèm:</span>
-            <span style="font-weight:600; margin-left:6px;">${bl.docName}</span>
+            <div class="bl-doc-carrier-brand">${bl.shippingLine}</div>
+            <div class="bl-doc-carrier-sub">BILL OF LADING FOR OCEAN TRANSPORT OR MULTIMODAL TRANSPORT</div>
+            <div class="bl-doc-type-text">Standard BIMCO / FIATA Format • Negotiable Ocean Bill of Lading</div>
           </div>
-          ${bl.docId ? `<button class="btn btn-primary btn-sm" onclick="window.downloadBLDoc('${bl.docId}', '${bl.docName}')">📥 Tải File Scan</button>` : ''}
+          <div class="bl-doc-number-box">
+            <div class="bl-doc-number-label">B/L NUMBER (SỐ VẬN ĐƠN)</div>
+            <div class="bl-doc-number-val">${bl.blNumber}</div>
+            <div style="margin-top: 4px; display: flex; gap: 4px; justify-content: flex-end;">
+              <span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1; font-weight:700;">${bl.blType}</span>
+              <span class="status-chip chip-completed" style="font-weight:700;">${bl.status}</span>
+            </div>
+          </div>
         </div>
-      ` : ''}
 
-      <!-- Bottom actions -->
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px; border-top:1px solid #e2e8f0; padding-top:12px;">
+        <!-- 2. Parties Grid (Shipper, Consignee) -->
+        <div class="bl-doc-grid-2">
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">SHIPPER / CONSIGNOR (NGƯỜI GỬI HÀNG):</div>
+            <div class="bl-doc-box-title">${bl.partnerName}</div>
+            <div class="bl-doc-box-sub">NO. 128, GONGYE 2ND RD., DOULIU CITY, YUNLIN COUNTY 640, TAIWAN<br>TEL: +886 5 551 8899 | TAX CODE: TW89234102</div>
+          </div>
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">CONSIGNEE (NGƯỜI NHẬN HÀNG):</div>
+            <div class="bl-doc-box-title">CONG TY TNHH XUAT NHAP KHAU IMEX N VIETNAM</div>
+            <div class="bl-doc-box-sub">CAT LAI INDUSTRIAL ZONE, THU DUC CITY, HO CHI MINH CITY, VIETNAM<br>TAX CODE: 0318992011 | EMAIL: LOGISTICS@IMEXN.COM</div>
+          </div>
+        </div>
+
+        <!-- 3. Notify Party -->
+        <div class="bl-doc-box" style="border-bottom: 1px solid #cbd5e1; background: #fafafa;">
+          <div class="bl-doc-box-label">NOTIFY PARTY (BÊN ĐƯỢC THÔNG BÁO HÀNG ĐẾN):</div>
+          <div style="font-size: 12px; font-weight: 700; color: #0f172a;">SAME AS CONSIGNEE (HOẶC ĐẠI LÝ FORWARDER TẠI CẢNG ĐÍCH)</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Lô hàng liên kết: <strong>${bl.shipmentCode}</strong></div>
+        </div>
+
+        <!-- 4. Vessel, POL, POD Grid -->
+        <div class="bl-doc-grid-4">
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">OCEAN VESSEL & VOY NO.</div>
+            <div style="font-size: 12.5px; font-weight: 800; color: #0369a1;">${bl.vesselVoyage}</div>
+          </div>
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">PORT OF LOADING (POL)</div>
+            <div style="font-size: 12px; font-weight: 700; color: #0f172a;">${bl.pol}</div>
+          </div>
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">PORT OF DISCHARGE (POD)</div>
+            <div style="font-size: 12px; font-weight: 700; color: #0f172a;">${bl.pod}</div>
+          </div>
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">PLACE OF DELIVERY</div>
+            <div style="font-size: 12px; font-weight: 700; color: #0f172a;">Cat Lai CY / ICD, Vietnam</div>
+          </div>
+        </div>
+
+        <!-- 5. Cargo Table -->
+        <table class="bl-doc-table-cargo">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Container No. / Seal No.</th>
+              <th style="width: 15%;">Marks & Numbers</th>
+              <th style="width: 35%;">No. of Packages & Description of Goods</th>
+              <th style="width: 13%; text-align: right;">Gross Weight</th>
+              <th style="width: 12%; text-align: right;">Measurement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div style="font-family: monospace; font-size: 13px; font-weight: 800; color: #0284c7;">${bl.containerNo || 'TGHU9843210'}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Seal No: <strong>${bl.sealNo || 'SL-88992'}</strong></div>
+                <div style="font-size: 10.5px; color: #475569; margin-top: 2px;">40' High Cube Dry (40HQ)</div>
+              </td>
+              <td>
+                <div style="font-weight: 700;">N/M</div>
+                <div style="font-size: 10.5px; color: #64748b;">(SHP: ${bl.shipmentCode})</div>
+              </td>
+              <td>
+                <div style="font-weight: 800; color: #0f172a;">${bl.totalPackages || 222} PACKAGES / KIỆN</div>
+                <div style="color: #334155; margin-top: 2px;">100% POLYESTER FILAMENT YARN (SỢI DỆT CÔNG NGHIỆP)</div>
+                <div style="font-size: 10.5px; color: #64748b; margin-top: 3px; font-style: italic;">SAID TO CONTAIN / SHIPPED ON BOARD CLEAN</div>
+              </td>
+              <td style="text-align: right;">
+                <div style="font-weight: 800; color: #0f172a; font-size: 12.5px;">${Number(bl.grossWeight || 22).toLocaleString()} KGS</div>
+                <div style="font-size: 10.5px; color: #64748b;">Net: ${(Number(bl.grossWeight || 22) * 0.95).toFixed(0)} KGS</div>
+              </td>
+              <td style="text-align: right; font-weight: 700; color: #0f172a;">
+                15.50 CBM
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 6. Freight Details & Issue Information -->
+        <div class="bl-doc-footer-meta">
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">FREIGHT & CHARGES</div>
+            <div style="font-size: 12.5px; font-weight: 800; color: #15803d;">${bl.freightTerm}</div>
+            <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">Freight payable at destination / origin</div>
+          </div>
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">SHIPPED ON BOARD DATE</div>
+            <div style="font-size: 12.5px; font-weight: 700; color: #0f172a;">${bl.issueDate ? new Date(bl.issueDate).toLocaleDateString('vi-VN') : '---'}</div>
+            <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">Originals: 3/3 (THREE ORIGINAL B/L)</div>
+          </div>
+          <div class="bl-doc-box">
+            <div class="bl-doc-box-label">PLACE & DATE OF ISSUE</div>
+            <div style="font-size: 12px; font-weight: 700; color: #0f172a;">Cat Lai, ${bl.issueDate ? new Date(bl.issueDate).toLocaleDateString('vi-VN') : '---'}</div>
+          </div>
+        </div>
+
+        <!-- 7. Stamp & Signature Block -->
+        <div class="bl-doc-sign-area">
+          <div>
+            <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">SPECIAL INSTRUCTIONS / NOTES:</div>
+            <div style="font-size: 11px; color: #334155; max-width: 450px; margin-top: 2px;">${bl.notes || 'Hàng nguyên container FCL/FCL. Miễn phí lưu bãi DEM/DET 14 ngày tại cảng đến.'}</div>
+          </div>
+          <div class="bl-doc-stamp-box">
+            <div>SIGNED FOR THE CARRIER</div>
+            <div style="font-weight: 800; font-size: 12px; margin-top: 2px;">${bl.shippingLine}</div>
+            <div style="font-size: 10px; color: #64748b;">AS CARRIER / AUTHORIZED AGENT</div>
+          </div>
+        </div>
+
+        ${bl.docName ? `
+          <div style="padding: 10px 16px; background: #f0fdf4; border-top: 1px dashed #86efac; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700; color: #15803d; font-size: 12px;">📎 File Scan Đính Kèm:</span>
+              <span style="font-weight: 600; font-size: 12px; color: #1e293b;">${bl.docName}</span>
+            </div>
+            ${bl.docId ? `
+              <button class="btn btn-default btn-sm" style="color:#15803d; border-color:#86efac;" onclick="window.downloadBLDoc('${bl.docId}', '${bl.docName}')">
+                📥 Tải File Scan B/L
+              </button>
+            ` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Bottom Actions Toolbar (No-Print) -->
+      <div class="no-print" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; max-width: 860px; margin-left: auto; margin-right: auto;">
         <button class="btn btn-default" onclick="window.handleDownloadBL('${bl.id}')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amis-green)" stroke-width="2" style="margin-right:4px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Tải Xuống
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Tải Dữ Liệu B/L
         </button>
-        <button class="btn btn-default" onclick="window.printBL('${bl.id}')">🖨️ In Bản B/L (A4)</button>
-        <button class="btn btn-primary" onclick="window.editBL('${bl.id}')">✏️ Chỉnh Sửa</button>
-        <button class="btn btn-default" id="btn-close-bl-view">Đóng</button>
+        <button class="btn btn-default" onclick="window.printBL('${bl.id}')">
+          🖨️ In Khổ A4 Chuẩn
+        </button>
+        <button class="btn btn-primary" onclick="window.editBL('${bl.id}')" style="color: #ffffff;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          Chỉnh Sửa
+        </button>
+        <button class="btn btn-default" id="btn-close-bl-view">
+          Đóng
+        </button>
       </div>
     </div>
   `;
 
-  openModal(`Chi Tiết Vận Đơn: ${bl.blNumber}`, content);
+  openModal(`Chi Tiết Vận Đơn Đường Biển: ${bl.blNumber}`, content);
   document.getElementById('btn-close-bl-view')?.addEventListener('click', closeModal);
-};
+}
+window.viewBLDetail = viewBLDetail;
 
 /**
  * Tải file đính kèm của B/L
@@ -697,7 +901,7 @@ window.downloadBLDoc = async function(docId, fileName) {
 };
 
 /**
- * Nút Tải Icon: Tải file scan B/L hoặc sinh file B/L tải về máy
+ * Tải dữ liệu B/L
  */
 window.handleDownloadBL = async function(blId, blData = null) {
   let bl = blData || currentBLs.find(b => b.id === blId);
@@ -754,7 +958,7 @@ FREIGHT TERM:        ${bl.freightTerm}
 ISSUE DATE:          ${bl.issueDate ? new Date(bl.issueDate).toLocaleDateString('vi-VN') : 'N/A'}
 
 SHIPPER:             ${bl.partnerName}
-CONSIGNEE:           CONG TY TNHH XNK TEXTILE VIETNAM
+CONSIGNEE:           CONG TY TNHH XUAT NHAP KHAU IMEX N VIETNAM
 NOTIFY PARTY:        SAME AS CONSIGNEE
 
 VESSEL / VOYAGE:     ${bl.vesselVoyage}
@@ -767,7 +971,7 @@ SEAL NO.:            ${bl.sealNo}
 TOTAL PACKAGES:      ${bl.totalPackages} PACKAGES / KIEN
 GROSS WEIGHT:        ${bl.grossWeight} KGS
 MEASUREMENT:         15.50 CBM
-GOODS DESCRIPTION:   100% POLYESTER FILAMENT YARN (SOI DET)
+GOODS DESCRIPTION:   100% POLYESTER FILAMENT YARN (SOI DET CONG NGHIEP)
 LINKED SHIPMENT:     ${bl.shipmentCode}
 NOTES:               ${bl.notes || 'None'}
 ================================================================================
@@ -795,12 +999,12 @@ window.printBL = function(blId) {
     window.print();
   } else {
     window.viewBLDetail(blId);
-    setTimeout(() => window.print(), 300);
+    setTimeout(() => window.print(), 350);
   }
 };
 
 /**
- * Mở modal tạo mới hoặc chỉnh sửa B/L
+ * Mở modal chỉnh sửa B/L
  */
 window.editBL = function(blId) {
   const bl = currentBLs.find(b => b.id === blId);
@@ -834,86 +1038,86 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
   const defaultDate = bl?.issueDate ? bl.issueDate.split('T')[0] : new Date().toISOString().split('T')[0];
 
   const content = `
-    <form id="form-bl" style="display:flex; flex-direction:column; gap:14px; max-width:820px;">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+    <form id="form-bl" style="display: flex; flex-direction: column; gap: 14px; max-width: 820px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div>
-          <label class="form-label" style="font-weight:600;">Lô Hàng Liên Kết *</label>
-          <select id="bl-shipment-id" class="form-input" required style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Lô Hàng Liên Kết *</label>
+          <select id="bl-shipment-id" class="form-input" required style="width: 100%;">
             <option value="">-- Chọn lô hàng liên kết --</option>
             ${shpOptions}
           </select>
         </div>
         <div>
-          <label class="form-label" style="font-weight:600;">Số Vận Đơn (B/L Number) *</label>
-          <input type="text" id="bl-number" class="form-input" required placeholder="VD: COSU63289104, ONE12345678..." value="${bl?.blNumber || ''}" style="width:100%; font-family:monospace; font-weight:700;">
+          <label class="form-label" style="font-weight: 600;">Số Vận Đơn (B/L Number) *</label>
+          <input type="text" id="bl-number" class="form-input" required placeholder="VD: COSU63289104, ONE12345678..." value="${bl?.blNumber || ''}" style="width: 100%; font-family: monospace; font-weight: 700; color: var(--amis-blue);">
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
         <div>
-          <label class="form-label" style="font-weight:600;">Loại Vận Đơn (B/L Type)</label>
-          <select id="bl-type" class="form-input" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Loại Vận Đơn (B/L Type)</label>
+          <select id="bl-type" class="form-input" style="width: 100%;">
             <option value="Master B/L" ${bl?.blType === 'Master B/L' ? 'selected' : ''}>Master B/L (MBL)</option>
             <option value="House B/L" ${bl?.blType === 'House B/L' ? 'selected' : ''}>House B/L (HBL)</option>
-            <option value="Seaway Bill" ${bl?.blType === 'Seaway Bill' ? 'selected' : ''}>Seaway Bill</option>
             <option value="Telex Release" ${bl?.blType === 'Telex Release' ? 'selected' : ''}>Surrendered / Telex Release</option>
+            <option value="Seaway Bill" ${bl?.blType === 'Seaway Bill' ? 'selected' : ''}>Seaway Bill</option>
           </select>
         </div>
         <div>
-          <label class="form-label" style="font-weight:600;">Hãng Tàu / Vận Chuyển</label>
-          <input type="text" id="bl-shipping-line" class="form-input" placeholder="COSCO, EVERGREEN, ONE, MAERSK..." value="${bl?.shippingLine || 'COSCO SHIPPING'}" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Hãng Tàu / Vận Chuyển</label>
+          <input type="text" id="bl-shipping-line" class="form-input" placeholder="COSCO, EVERGREEN, ONE, MAERSK..." value="${bl?.shippingLine || 'COSCO SHIPPING'}" style="width: 100%;">
         </div>
         <div>
-          <label class="form-label" style="font-weight:600;">Tên Tàu & Chuyến (Vessel/Voy)</label>
-          <input type="text" id="bl-vessel-voyage" class="form-input" placeholder="VD: COSCO PRIDE / 024E" value="${bl?.vesselVoyage || ''}" style="width:100%;">
-        </div>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
-        <div>
-          <label class="form-label" style="font-weight:600;">Cảng Xếp Hàng (POL)</label>
-          <input type="text" id="bl-pol" class="form-input" placeholder="Cảng xếp hàng..." value="${bl?.pol || 'Shanghai Port, China'}" style="width:100%;">
-        </div>
-        <div>
-          <label class="form-label" style="font-weight:600;">Cảng Dỡ Hàng (POD)</label>
-          <input type="text" id="bl-pod" class="form-input" placeholder="Cảng dỡ hàng..." value="${bl?.pod || 'Cat Lai Port, Ho Chi Minh City'}" style="width:100%;">
-        </div>
-        <div>
-          <label class="form-label" style="font-weight:600;">Ngày On-Board / Phát Hành</label>
-          <input type="date" id="bl-issue-date" class="form-input" value="${defaultDate}" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Tên Tàu & Chuyến (Vessel/Voy)</label>
+          <input type="text" id="bl-vessel-voyage" class="form-input" placeholder="VD: COSCO PRIDE / 024E" value="${bl?.vesselVoyage || ''}" style="width: 100%;">
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
         <div>
-          <label class="form-label" style="font-weight:600;">Số Container</label>
-          <input type="text" id="bl-container-no" class="form-input" placeholder="TGHU9843210..." value="${bl?.containerNo || ''}" style="width:100%; font-family:monospace;">
+          <label class="form-label" style="font-weight: 600;">Cảng Xếp Hàng (POL)</label>
+          <input type="text" id="bl-pol" class="form-input" placeholder="Cảng xếp hàng..." value="${bl?.pol || 'Shanghai Port, China'}" style="width: 100%;">
         </div>
         <div>
-          <label class="form-label" style="font-weight:600;">Số Chì (Seal No.)</label>
-          <input type="text" id="bl-seal-no" class="form-input" placeholder="SL-88992..." value="${bl?.sealNo || ''}" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Cảng Dỡ Hàng (POD)</label>
+          <input type="text" id="bl-pod" class="form-input" placeholder="Cảng dỡ hàng..." value="${bl?.pod || 'Cat Lai Port, Ho Chi Minh City'}" style="width: 100%;">
         </div>
         <div>
-          <label class="form-label" style="font-weight:600;">Số Kiện (Packages)</label>
-          <input type="number" id="bl-packages" class="form-input" placeholder="222" value="${bl?.totalPackages || ''}" style="width:100%;">
-        </div>
-        <div>
-          <label class="form-label" style="font-weight:600;">Tổng GW (kg)</label>
-          <input type="number" step="0.01" id="bl-gw" class="form-input" placeholder="22" value="${bl?.grossWeight || ''}" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Ngày On-Board / Phát Hành</label>
+          <input type="date" id="bl-issue-date" class="form-input" value="${defaultDate}" style="width: 100%;">
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
         <div>
-          <label class="form-label" style="font-weight:600;">Điều Kiện Cước (Freight)</label>
-          <select id="bl-freight-term" class="form-input" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Số Container</label>
+          <input type="text" id="bl-container-no" class="form-input" placeholder="TGHU9843210..." value="${bl?.containerNo || ''}" style="width: 100%; font-family: monospace;">
+        </div>
+        <div>
+          <label class="form-label" style="font-weight: 600;">Số Chì (Seal No.)</label>
+          <input type="text" id="bl-seal-no" class="form-input" placeholder="SL-88992..." value="${bl?.sealNo || ''}" style="width: 100%;">
+        </div>
+        <div>
+          <label class="form-label" style="font-weight: 600;">Số Kiện (Packages)</label>
+          <input type="number" id="bl-packages" class="form-input" placeholder="222" value="${bl?.totalPackages || ''}" style="width: 100%;">
+        </div>
+        <div>
+          <label class="form-label" style="font-weight: 600;">Tổng GW (kg)</label>
+          <input type="number" step="0.01" id="bl-gw" class="form-input" placeholder="22" value="${bl?.grossWeight || ''}" style="width: 100%;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="form-label" style="font-weight: 600;">Điều Kiện Cước (Freight)</label>
+          <select id="bl-freight-term" class="form-input" style="width: 100%;">
             <option value="Freight Prepaid" ${bl?.freightTerm === 'Freight Prepaid' ? 'selected' : ''}>Freight Prepaid (Cước trả trước - CIF, CFR)</option>
             <option value="Freight Collect" ${bl?.freightTerm === 'Freight Collect' ? 'selected' : ''}>Freight Collect (Cước trả sau - FOB, EXW)</option>
           </select>
         </div>
         <div>
-          <label class="form-label" style="font-weight:600;">Trạng Thái Vận Đơn</label>
-          <select id="bl-status" class="form-input" style="width:100%;">
+          <label class="form-label" style="font-weight: 600;">Trạng Thái Vận Đơn</label>
+          <select id="bl-status" class="form-input" style="width: 100%;">
             <option value="Original" ${bl?.status === 'Original' ? 'selected' : ''}>Original (Bản gốc)</option>
             <option value="Surrendered" ${bl?.status === 'Surrendered' ? 'selected' : ''}>Surrendered (Đã điện giao / Telex)</option>
             <option value="Released" ${bl?.status === 'Released' ? 'selected' : ''}>Released (Đã giao hàng)</option>
@@ -923,19 +1127,23 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
       </div>
 
       <div>
-        <label class="form-label" style="font-weight:600;">Đính Kèm File Scan B/L (PDF, Ảnh, File)</label>
-        <input type="file" id="bl-file" class="form-input" style="width:100%; padding:4px;">
-        ${bl?.docName ? `<div style="font-size:11px; color:#15803d; margin-top:4px;">📎 File hiện tại: <strong>${bl.docName}</strong> (chọn file mới nếu muốn thay thế)</div>` : `<span style="font-size:11px; color:#64748b;">Hệ thống sẽ tự động lưu file vào Kho chứng từ danh mục "Vận đơn (B/L)".</span>`}
+        <label class="form-label" style="font-weight: 600;">Đính Kèm File Scan B/L (PDF, Ảnh, File)</label>
+        <input type="file" id="bl-file" class="form-input" style="width: 100%; padding: 4px;">
+        ${bl?.docName ? `<div style="font-size: 11px; color: #15803d; margin-top: 4px;">📎 File hiện tại: <strong>${bl.docName}</strong> (chọn file mới nếu muốn thay thế)</div>` : `<span style="font-size: 11px; color: #64748b;">Hệ thống sẽ tự động lưu file vào Kho chứng từ danh mục "Vận đơn (B/L)".</span>`}
       </div>
 
       <div>
-        <label class="form-label" style="font-weight:600;">Ghi Chú</label>
-        <textarea id="bl-notes" class="form-input" rows="2" placeholder="Ghi chú về đại lý giao nhận, điều kiện trả vỏ container, free time DEM/DET...">${bl?.notes || ''}</textarea>
+        <label class="form-label" style="font-weight: 600;">Ghi Chú</label>
+        <textarea id="bl-notes" class="form-input" rows="2" style="width: 100%; resize: vertical;" placeholder="Ghi chú về đại lý giao nhận, điều kiện trả vỏ container, free time DEM/DET...">${bl?.notes || ''}</textarea>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
         <button type="button" class="btn btn-default" id="btn-cancel-bl">Hủy Bỏ</button>
-        <button type="submit" class="btn btn-primary">${isEdit ? '✔ Lưu Thay Đổi' : '✔ Tạo Vận Đơn'}</button>
+        <!-- Nút Submit với Icon Trắng chuẩn MISA AMIS -->
+        <button type="submit" class="btn btn-primary" style="color: #ffffff;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          ${isEdit ? 'Lưu Thay Đổi' : 'Tạo Vận Đơn'}
+        </button>
       </div>
     </form>
   `;
@@ -1036,20 +1244,21 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
       closeModal();
       toast(isEdit ? `Cập nhật vận đơn ${blNumber} thành công!` : `Tạo mới vận đơn ${blNumber} thành công!`, 'success');
       if (onSaved) onSaved();
-      await loadBLs();
+      await loadBLsData();
     } catch (err) {
       toast(`Lỗi khi lưu vận đơn: ${err.message}`, 'error');
     }
   });
 }
+window.openBLModal = openBLModal;
 
 /**
  * Xóa 1 B/L với modal xác nhận chuẩn đẹp
  */
 export async function deleteBL(blId, blNumber, onDeleted = null) {
   const isConfirm = await showConfirm({
-    title: 'Xóa Vận Đơn',
-    message: 'Bạn có chắc chắn muốn xóa vận đơn đường biển này?',
+    title: 'Xóa Vận Đơn Đường Biển',
+    message: 'Bạn có chắc chắn muốn xóa chứng từ vận đơn này khỏi hệ thống?',
     highlight: blNumber,
     type: 'danger',
     confirmText: 'Xóa Vận Đơn'
@@ -1067,37 +1276,10 @@ export async function deleteBL(blId, blNumber, onDeleted = null) {
     }
     toast(`Đã xóa vận đơn ${blNumber} thành công!`, 'success');
     if (onDeleted) onDeleted();
-    await loadBLs();
+    selectedId = null;
+    await loadBLsData();
   } catch (err) {
     toast(`Lỗi khi xóa: ${err.message}`, 'error');
   }
 }
 window.deleteBL = deleteBL;
-
-/**
- * Xóa hàng loạt B/L đã chọn
- */
-async function bulkDeleteBLs(ids) {
-  const isConfirm = await showConfirm({
-    title: 'Xóa Hàng Loạt Vận Đơn',
-    message: `Bạn có chắc chắn muốn xóa ${ids.length} vận đơn đã chọn?`,
-    type: 'danger',
-    confirmText: `Xóa ${ids.length} Vận Đơn`
-  });
-  if (!isConfirm) return;
-
-  try {
-    for (const id of ids) {
-      const bl = currentBLs.find(b => b.id === id);
-      if (bl && !bl.isSample && !bl.isDocVirtual) {
-        await api.delete(`/api/invoices/${id}`);
-      } else if (bl?.isDocVirtual) {
-        await api.delete(`/api/documents/${id}`);
-      }
-    }
-    toast(`Đã xóa ${ids.length} vận đơn thành công!`, 'success');
-    await loadBLs();
-  } catch (err) {
-    toast(`Lỗi khi xóa hàng loạt: ${err.message}`, 'error');
-  }
-}

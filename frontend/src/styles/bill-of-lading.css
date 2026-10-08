@@ -1,0 +1,235 @@
+/* =========================================================
+   MISA AMIS BILL OF LADING STYLES & PRINT VIEWER
+   ========================================================= */
+
+/* Button primary white icon */
+.btn-primary svg {
+  stroke: #ffffff !important;
+}
+
+/* Row selection & hover (đồng bộ với shipments) */
+.bl-main-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bl-main-row:hover td {
+  background-color: var(--amis-row-hover, #f8fafc);
+}
+
+.bl-main-row.selected td {
+  background-color: var(--amis-row-selected, #eff6ff) !important;
+}
+
+/* Expand chevron icon rotation */
+.expand-btn {
+  user-select: none;
+}
+
+.expand-btn .chevron-icon {
+  transition: transform 0.2s ease;
+}
+
+/* Sub-row styling */
+.expand-row td {
+  border-top: none;
+}
+
+/* =========================================================
+   INTERNATIONAL STANDARD BILL OF LADING VIEWER & PRINT
+   Authentic Maritime Document Design
+   ========================================================= */
+.bl-doc-container {
+  background: #ffffff;
+  color: #0f172a;
+  font-family: 'Segoe UI', Arial, -apple-system, sans-serif;
+  max-width: 860px;
+  margin: 0 auto;
+  border: 2px solid #334155;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bl-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 20px;
+  border-bottom: 2px solid #0f172a;
+  background: #f8fafc;
+}
+
+.bl-doc-carrier-brand {
+  font-size: 24px;
+  font-weight: 900;
+  color: #0369a1;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.bl-doc-carrier-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.bl-doc-type-text {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.bl-doc-number-box {
+  border: 2px solid #0369a1;
+  background: #f0f9ff;
+  border-radius: 6px;
+  padding: 8px 14px;
+  text-align: right;
+}
+
+.bl-doc-number-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bl-doc-number-val {
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  font-size: 19px;
+  font-weight: 900;
+  color: #0c4a6e;
+  letter-spacing: 1px;
+}
+
+.bl-doc-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.bl-doc-box {
+  padding: 10px 14px;
+  border-right: 1px solid #cbd5e1;
+}
+
+.bl-doc-box:last-child {
+  border-right: none;
+}
+
+.bl-doc-box-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.bl-doc-box-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.bl-doc-box-sub {
+  font-size: 11.5px;
+  color: #475569;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.bl-doc-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 2px solid #0f172a;
+  background: #f8fafc;
+}
+
+.bl-doc-table-cargo {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bl-doc-table-cargo th {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.bl-doc-table-cargo th:last-child {
+  border-right: none;
+}
+
+.bl-doc-table-cargo td {
+  padding: 10px;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  vertical-align: top;
+  font-size: 11.5px;
+}
+
+.bl-doc-table-cargo td:last-child {
+  border-right: none;
+}
+
+.bl-doc-footer-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.bl-doc-sign-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 20px;
+  background: #ffffff;
+}
+
+.bl-doc-stamp-box {
+  border: 2px dashed #0284c7;
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-align: center;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Print Optimization */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #bl-print-area, #bl-print-area * {
+    visibility: visible;
+  }
+  #bl-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
