@@ -1,0 +1,141 @@
+/* =========================================================
+   HS CODES PAGE — Biểu Thuế & HS Code
+   ========================================================= */
+
+/* ── HS Code badge ──────────────────────────────────────── */
+.hs-code-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--amis-blue);
+  letter-spacing: 0.3px;
+}
+
+/* ── Description cell ────────────────────────────────────── */
+.hs-td-desc {
+  white-space: normal;
+  line-height: 1.5;
+  max-width: 420px;
+  font-size: 12.5px;
+  color: var(--text-main);
+}
+
+/* ── Tax rate badges ─────────────────────────────────────── */
+.hs-tax-import {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.hs-tax-free {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.hs-tax-pref {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.hs-tax-vat {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.hs-tax-excise {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+/* ── C/O Form tags ───────────────────────────────────────── */
+.hs-co-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin: 1px 2px;
+  background: #e0e7ff;
+  color: #3730a3;
+  white-space: nowrap;
+}
+
+.hs-co-forme  { background: #dbeafe; color: #1d4ed8; }
+.hs-co-formd  { background: #dcfce7; color: #15803d; }
+.hs-co-formak { background: #fef3c7; color: #92400e; }
+.hs-co-formai { background: #f3e8ff; color: #6b21a8; }
+
+/* ── Tax grid in form modal ──────────────────────────────── */
+.hs-tax-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.hs-tax-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-top: 3px solid transparent;
+  background: var(--bg-surface);
+}
+
+.hs-tax-card-blue   { border-top-color: var(--amis-blue); }
+.hs-tax-card-green  { border-top-color: var(--amis-green); }
+.hs-tax-card-orange { border-top-color: #f59e0b; }
+.hs-tax-card-purple { border-top-color: #8b5cf6; }
+
+.hs-tax-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+.hs-tax-card-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hs-tax-card-field .form-input {
+  flex: 1;
+  text-align: right;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 6px 8px;
+}
+
+.hs-pct-unit {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}

@@ -595,3 +595,333 @@
 .chip-success { background: #dcfce7; color: #15803d; }
 .chip-warning { background: #fef3c7; color: #b45309; }
 .chip-danger  { background: #fee2e2; color: #b91c1c; }
+
+/* =========================================================
+   PRODUCT HISTORY PAGE
+   ========================================================= */
+
+/* ── Page layout ──────────────────────────────────────── */
+.ph-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Stat Cards ───────────────────────────────────────── */
+.ph-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.ph-stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid transparent;
+  transition: box-shadow 0.15s;
+}
+
+.ph-stat-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.ph-stat-blue   { border-left-color: var(--amis-blue); }
+.ph-stat-orange { border-left-color: #f59e0b; }
+.ph-stat-green  { border-left-color: var(--amis-green); }
+.ph-stat-purple { border-left-color: #8b5cf6; }
+
+.ph-stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ph-stat-blue   .ph-stat-icon { background: #eff6ff; color: var(--amis-blue); }
+.ph-stat-orange .ph-stat-icon { background: #fffbeb; color: #d97706; }
+.ph-stat-green  .ph-stat-icon { background: #f0fdf4; color: var(--amis-green); }
+.ph-stat-purple .ph-stat-icon { background: #f5f3ff; color: #7c3aed; }
+
+.ph-stat-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ph-stat-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ph-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.ph-stat-value {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+.ph-stat-blue   .ph-stat-value { color: var(--amis-blue); }
+.ph-stat-orange .ph-stat-value { color: #d97706; }
+.ph-stat-green  .ph-stat-value { color: var(--amis-green); }
+.ph-stat-purple .ph-stat-value { color: #7c3aed; }
+
+.ph-stat-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Progress bar (usage rate card) */
+.ph-stat-progress {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.ph-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #8b5cf6;
+  border-radius: 3px;
+  transition: width 0.4s ease, background 0.3s;
+}
+
+/* ── Spotlight card ───────────────────────────────────── */
+.ph-spotlight {
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.ph-spotlight-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ph-spotlight-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ph-spotlight-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: #e0e7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ph-spotlight-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  flex-wrap: wrap;
+}
+
+.ph-spotlight-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.ph-spotlight-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+}
+
+.ph-spotlight-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--border-color);
+}
+
+.ph-spotlight-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ph-kpi-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.ph-kpi-val {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ── Toolbar filter helpers ───────────────────────────── */
+.ph-toolbar-wrap {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.ph-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ph-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ph-filter-select {
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 13px;
+  padding: 0 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.ph-filter-select:focus {
+  border-color: var(--amis-blue);
+}
+
+.ph-select-wide {
+  min-width: 200px;
+}
+
+.ph-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ph-date-input {
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12.5px;
+  padding: 0 8px;
+  outline: none;
+  width: 128px;
+  transition: border-color 0.15s;
+}
+
+.ph-date-input:focus {
+  border-color: var(--amis-blue);
+}
+
+.ph-date-sep {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Row chips & badges ───────────────────────────────── */
+.ph-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ph-chip-import {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ph-chip-export {
+  background: #fef9c3;
+  color: #92400e;
+}
+
+.ph-status-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* ── Link style ───────────────────────────────────────── */
+.ph-link {
+  color: var(--amis-blue);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.ph-link:hover {
+  color: var(--amis-blue-hover);
+  text-decoration: underline;
+}
+
+/* ── Loading spinner ──────────────────────────────────── */
+.ph-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.ph-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(2, 102, 179, 0.15);
+  border-top-color: var(--amis-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── Utility ──────────────────────────────────────────── */
+.justify-end {
+  justify-content: flex-end;
+}
