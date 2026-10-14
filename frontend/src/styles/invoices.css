@@ -1,0 +1,80 @@
+/* =========================================================
+   INVOICES / PACKING LIST / SALES CONTRACT PAGE
+   ========================================================= */
+
+/* ── Invoice number (clickable) ─────────────────────────── */
+.inv-num-link {
+  color: var(--amis-blue);
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.inv-num-link:hover { color: var(--amis-blue-hover); text-decoration: underline; }
+
+/* ── Document type badges ────────────────────────────────── */
+.inv-type-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.inv-badge-commercial { background: #dbeafe; color: #1d4ed8; }
+.inv-badge-proforma   { background: #e0e7ff; color: #3730a3; }
+.inv-badge-debit      { background: #fef3c7; color: #92400e; }
+.inv-badge-packing    { background: #d1fae5; color: #065f46; }
+.inv-badge-contract   { background: #f3e8ff; color: #6b21a8; }
+.inv-badge-tax        { background: #fee2e2; color: #b91c1c; }
+
+/* ── Status badges ───────────────────────────────────────── */
+.inv-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.inv-status-paid    { background: #dcfce7; color: #15803d; }
+.inv-status-partial { background: #fef3c7; color: #92400e; }
+.inv-status-pending { background: #f1f5f9; color: #475569; }
+.inv-status-overdue { background: #fee2e2; color: #b91c1c; }
+.inv-status-cancel  { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
+.inv-status-default { color: var(--text-muted); }
+
+/* ── Currency tag ────────────────────────────────────────── */
+.inv-currency {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ── Delete confirm dialog ───────────────────────────────── */
+.confirm-dialog-body {
+  text-align: center;
+  padding: 8px 0;
+}
+.confirm-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.confirm-icon svg { width: 26px; height: 26px; }
+.confirm-icon-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.confirm-icon-warning {
+  background: #fef3c7;
+  color: #d97706;
+}

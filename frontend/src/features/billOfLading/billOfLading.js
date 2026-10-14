@@ -19,51 +19,51 @@ export async function renderBillOfLading(container) {
   selectedId = null;
 
   container.innerHTML = `
-    <div class="grid-card">
-      <!-- MISA Toolbar -->
-      <div class="misa-toolbar">
-        <div class="toolbar-group">
-          <!-- Nút Thêm Mới với Icon trắng chuẩn MISA AMIS -->
-          <button id="btnBLAdd" class="btn btn-primary" title="Tạo mới vận đơn đường biển">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <div class="amis-list-page">
+
+      <!-- TOOLBAR MISA AMIS -->
+      <div class="amis-toolbar-wrap">
+        <div class="amis-toolbar-left">
+          <button id="btnBLAdd" class="amis-btn amis-btn-primary" title="Tạo mới vận đơn đường biển">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Thêm Vận Đơn (B/L)
           </button>
-          <button id="btnBLEdit" class="btn btn-default" disabled title="Chỉnh sửa vận đơn đã chọn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          <button id="btnBLEdit" class="amis-btn amis-btn-ghost" disabled title="Chỉnh sửa vận đơn đã chọn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             Sửa
           </button>
-          <button id="btnBLDetail" class="btn btn-default" disabled title="Xem chi tiết vận đơn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <button id="btnBLDetail" class="amis-btn amis-btn-ghost" disabled title="Xem chi tiết vận đơn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             Chi tiết
           </button>
-          <button id="btnBLPrint" class="btn btn-default" disabled title="In bản B/L chuẩn A4">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <button id="btnBLPrint" class="amis-btn amis-btn-ghost" disabled title="In bản B/L chuẩn A4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             In B/L
           </button>
-          <button id="btnBLDelete" class="btn btn-default" style="color: var(--amis-red);" disabled title="Xóa vận đơn đã chọn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <button id="btnBLDelete" class="amis-btn amis-btn-ghost amis-btn-danger-text" disabled title="Xóa vận đơn đã chọn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             Xóa
           </button>
-          <button id="btnBLRefresh" class="btn btn-default" title="Nạp lại danh sách dữ liệu">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <div class="amis-btn-divider"></div>
+          <button id="btnBLRefresh" class="amis-btn amis-btn-ghost" title="Nạp lại danh sách dữ liệu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Nạp lại
           </button>
-          <button id="btnBLExport" class="btn btn-default" title="Xuất danh sách ra file Excel">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-            Xuất khẩu
+          <button id="btnBLExport" class="amis-btn amis-btn-ghost" title="Xuất danh sách ra file Excel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Excel
           </button>
         </div>
 
-        <!-- Right Side Filter Controls (Gọn gàng trên cùng 1 hàng, không bị tràn dòng) -->
-        <div class="toolbar-group" style="display: flex; gap: 8px; align-items: center;">
-          <select id="filterBLType" class="form-input" style="width: 140px; height: 32px; padding: 4px 8px; font-size: 12.5px;">
+        <div class="amis-toolbar-right">
+          <select id="filterBLType" class="ph-filter-select">
             <option value="">Tất cả loại B/L</option>
             <option value="Master B/L">Master B/L (MBL)</option>
             <option value="House B/L">House B/L (HBL)</option>
             <option value="Telex Release">Surrendered / Telex</option>
             <option value="Seaway Bill">Seaway Bill</option>
           </select>
-          <select id="filterBLCarrier" class="form-input" style="width: 130px; height: 32px; padding: 4px 8px; font-size: 12.5px;">
+          <select id="filterBLCarrier" class="ph-filter-select">
             <option value="">Tất cả hãng tàu</option>
             <option value="COSCO">COSCO</option>
             <option value="EVERGREEN">Evergreen</option>
@@ -72,49 +72,54 @@ export async function renderBillOfLading(container) {
             <option value="WAN HAI">Wan Hai</option>
             <option value="SITC">SITC</option>
           </select>
-          <input type="text" id="blSearchInput" class="form-input" style="width: 240px; height: 32px; padding: 4px 10px; font-size: 12.5px;" placeholder="Lọc số B/L, tàu, cont, đối tác...">
+          <div class="amis-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="blSearchInput" placeholder="Lọc số B/L, tàu, container, đối tác...">
+          </div>
         </div>
       </div>
 
-      <!-- MISA Grid Scroll Table -->
-      <div class="grid-scroll">
-        <table class="misa-table" id="blTable">
+      <!-- TABLE -->
+      <div class="amis-table-container">
+        <table class="amis-data-table" id="blTable">
           <thead>
             <tr>
-              <th style="width: 36px; text-align: center;"><input type="checkbox" id="chkAllBL" title="Chọn tất cả"></th>
-              <th style="width: 36px; text-align: center;"></th>
-              <th>Số Vận Đơn (B/L No.)</th>
-              <th>Loại B/L</th>
-              <th>Lô Hàng Liên Kết</th>
-              <th>Hãng Tàu / Vận Chuyển</th>
-              <th>Tên Tàu & Chuyến (Vessel/Voy)</th>
-              <th>Cảng Đi ➔ Cảng Đến</th>
-              <th>Ngày On-Board</th>
-              <th>Container / Seal</th>
-              <th style="text-align: right;">Số Lượng (Kiện)</th>
-              <th style="text-align: right;">Gross Weight (KG)</th>
-              <th>Trạng Thái</th>
-              <th style="text-align: center;">File Scan</th>
-              <th style="width: 130px; text-align: center;">Thao Tác</th>
+              <th class="amis-th-check"><input type="checkbox" id="chkAllBL" title="Chọn tất cả"></th>
+              <th style="width:32px"></th>
+              <th class="amis-th">Số Vận Đơn (B/L No.)</th>
+              <th class="amis-th">Loại B/L</th>
+              <th class="amis-th">Lô Hàng Liên Kết</th>
+              <th class="amis-th">Hãng Tàu</th>
+              <th class="amis-th">Tàu &amp; Chuyến</th>
+              <th class="amis-th">Cảng Đi → Đến</th>
+              <th class="amis-th">Ngày On-Board</th>
+              <th class="amis-th">Container / Seal</th>
+              <th class="amis-th" style="text-align:right">Số Kiện</th>
+              <th class="amis-th" style="text-align:right">Gross (KG)</th>
+              <th class="amis-th">Trạng Thái</th>
+              <th class="amis-th" style="text-align:center">File</th>
+              <th class="amis-th-actions">Thao tác</th>
             </tr>
           </thead>
           <tbody id="blTbody">
-            <tr><td colspan="15" style="text-align: center; padding: 30px; color: var(--amis-text-muted);">Đang tải danh sách vận đơn...</td></tr>
+            <tr><td colspan="15" class="amis-table-empty"><div class="ph-loading"><div class="ph-spinner"></div><span>Đang tải danh sách vận đơn...</span></div></td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- MISA Pagination Footer -->
-      <div class="misa-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px;">
-        <div id="blPaginationText">Tổng số: 0 bản ghi</div>
-        <div class="pagination-controls" style="display: flex; gap: 8px; align-items: center;">
-          <select id="blItemsPerPage" class="form-input" style="width: auto; padding: 2px 8px; height: 28px; font-size: 12px; margin-right: 8px;">
-            <option value="10">Hiển thị 10 dòng/trang</option>
-            <option value="20">Hiển thị 20 dòng/trang</option>
-            <option value="50">Hiển thị 50 dòng/trang</option>
-            <option value="100">Hiển thị 100 dòng/trang</option>
+      <!-- FOOTER -->
+      <div class="amis-table-footer">
+        <div class="amis-table-info" id="blPaginationText">Tổng số: 0 bản ghi</div>
+        <div class="amis-pagination-controls" id="blPaginationButtons"></div>
+        <div class="amis-page-size-select">
+          <span>Hiển thị</span>
+          <select id="blItemsPerPage">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
           </select>
-          <div id="blPaginationButtons" style="display: flex; gap: 4px; align-items: center;"></div>
+          <span>dòng/trang</span>
         </div>
       </div>
     </div>
@@ -446,12 +451,24 @@ function renderBLTable(items) {
             </button>
           ` : `<span style="color: #94a3b8; font-size: 12px;">Chưa có</span>`}
         </td>
-        <td style="white-space: nowrap; text-align: center;">
-          <button class="btn btn-default btn-sm" title="Chi tiết" onclick="window.viewBLDetail('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-          <button class="btn btn-default btn-sm" title="Tải xuống" onclick="window.handleDownloadBL('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
-          <button class="btn btn-default btn-sm" title="In B/L" onclick="window.printBL('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-          <button class="btn btn-default btn-sm" title="Sửa" onclick="window.editBL('${b.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-          <button class="btn btn-default btn-sm" title="Xóa" style="color: var(--amis-red);" onclick="window.deleteBL('${b.id}', '${b.blNumber}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+        <td class="amis-td-actions">
+          <div class="amis-row-actions">
+            <button class="amis-icon-btn" title="Chi tiết" onclick="window.viewBLDetail('${b.id}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="amis-icon-btn" title="In B/L" onclick="window.printBL('${b.id}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            </button>
+            <button class="amis-icon-btn" title="Tải xuống" onclick="window.handleDownloadBL('${b.id}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button class="amis-icon-btn" title="Sửa" onclick="window.editBL('${b.id}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </button>
+            <button class="amis-icon-btn amis-icon-btn-danger" title="Xóa" onclick="window.deleteBL('${b.id}', '${b.blNumber}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
         </td>
       </tr>
 
