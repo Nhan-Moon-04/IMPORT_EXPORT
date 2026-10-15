@@ -730,3 +730,67 @@
 [data-theme="dark"] .tl-input-wrap { background: #0f172a; border-color: #334155; }
 [data-theme="dark"] .tl-input { background: #1e293b; border-color: #475569; color: #f1f5f9; }
 
+/* ── SHIPMENT FORM STYLING ─────────────────────────────── */
+.sd-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sd-form-input, .sd-form-select {
+  height: 30px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--text-main, #1e293b);
+  outline: none;
+  transition: all 0.15s ease-in-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+.sd-form-input:focus, .sd-form-select:focus {
+  border-color: var(--amis-blue, #0266b3);
+  box-shadow: 0 0 0 2.5px rgba(2, 102, 179, 0.12);
+}
+.sd-form-input[readonly], .sd-form-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+.sd-table-input {
+  height: 28px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-main, #1e293b);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+.sd-table-input:focus {
+  border-color: var(--amis-blue, #0266b3);
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.15);
+}
+.sd-table-input.text-right {
+  text-align: right;
+}
+[data-theme="dark"] .sd-form-input,
+[data-theme="dark"] .sd-form-select,
+[data-theme="dark"] .sd-table-input {
+  background: #1e293b;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .sd-form-input[readonly],
+[data-theme="dark"] .sd-form-input:disabled {
+  background: #0f172a;
+  color: #94a3b8;
+  border-color: #334155;
+}
+

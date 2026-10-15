@@ -1040,7 +1040,12 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
   } catch (e) {}
 
   const targetShipmentId = bl?.shipmentId || defaultShipmentId;
-  const shpOptions = shipments.map(s => `
+  const activeShipments = shipments.filter(s => {
+    if (s.id === targetShipmentId) return true;
+    return s.status !== 'Completed' && s.status !== 'Cancelled';
+  });
+
+  const shpOptions = activeShipments.map(s => `
     <option value="${s.id}" ${s.id === targetShipmentId ? 'selected' : ''} 
       data-code="${s.shipmentCode}" 
       data-pol="${s.portOfLoading || ''}" 

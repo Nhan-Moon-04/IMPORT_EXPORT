@@ -292,7 +292,9 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
             <label class="form-label">Liên Kết Lô Hàng (Shipment)</label>
             <select id="modalDocShipmentId" class="form-select">
               <option value="">-- Không liên kết --</option>
-            ${shipments.map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} (${s.type})</option>`).join('')}
+              ${(shipments || [])
+              .filter(s => s.id === defaultShipmentId || (s.status !== 'Completed' && s.status !== 'Cancelled'))
+              .map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} (${s.type === 'Export' ? 'Xuất' : 'Nhập'})</option>`).join('')}
             </select>
           </div>
         </div>

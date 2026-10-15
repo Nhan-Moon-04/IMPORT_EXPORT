@@ -52,7 +52,7 @@ export function toast(message, type = "success", title = null) {
 export const showToast = toast;
 
 // Global Modal Controller
-export function openModal(title, contentHtml) {
+export function openModal(title, contentHtml, footerHtml) {
   const overlay = document.getElementById("modalOverlay") || document.getElementById("modal-backdrop");
   const titleEl = document.getElementById("modalTitle") || document.getElementById("modal-title");
   const bodyEl = document.getElementById("modalBody") || document.getElementById("modal-body");
@@ -64,7 +64,11 @@ export function openModal(title, contentHtml) {
   if (title !== undefined) titleEl.innerHTML = title;
   if (contentHtml !== undefined) bodyEl.innerHTML = contentHtml;
   if (tabs) tabs.style.display = "none";
-  if (footer) footer.innerHTML = "";
+  if (footerHtml !== undefined) {
+    footer.innerHTML = footerHtml;
+  } else if (contentHtml !== undefined) {
+    footer.innerHTML = "";
+  }
 
   overlay.style.display = "flex";
   overlay.classList.add("show");

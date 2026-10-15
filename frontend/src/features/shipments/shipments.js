@@ -99,16 +99,42 @@ export async function renderShipments(container, filterType = 'All') {
   await loadShipmentsData(currentShipmentFilter);
 }
 
-async function loadShipmentsData(filterType = 'All') {
+async function loadShipmentsData(filterType = currentShipmentFilter) {
   try {
+    currentShipmentFilter = filterType;
     const res = await api.get("/api/shipments?pageSize=100");
-    shipmentsList = res.data.items || [];
+    let items = res.data.items || [];
 
-    if (filterType !== 'All') {
-      shipmentsList = shipmentsList.filter(s => s.type === filterType);
+    if (currentShipmentFilter && currentShipmentFilter !== 'All') {
+      items = items.filter(s => s.type?.toLowerCase() === currentShipmentFilter.toLowerCase());
     }
+    shipmentsList = items;
 
-    renderShipmentsTable(shipmentsList);
+    // Giữ trạng thái chọn hàng hoặc reset nếu không còn tồn tại
+    if (selectedId && !shipmentsList.some(s => s.id === selectedId)) {
+      selectedId = null;
+    }
+    const editBtn = document.getElementById("btnShipmentEdit");
+    const statusBtn = document.getElementById("btnShipmentStatus");
+    const deleteBtn = document.getElementById("btnShipmentDelete");
+    if (editBtn) editBtn.disabled = !selectedId;
+    if (statusBtn) statusBtn.disabled = !selectedId;
+    if (deleteBtn) deleteBtn.disabled = !selectedId;
+
+    const searchVal = document.getElementById("shipmentSearchInput")?.value?.toLowerCase().trim();
+    if (searchVal) {
+      const filtered = shipmentsList.filter(s => {
+        const codeMatch = s.shipmentCode?.toLowerCase().includes(searchVal);
+        const partnerMatch = (s.supplierName || s.customerName || '').toLowerCase().includes(searchVal);
+        const prodMatch = (s.productNames || []).some(p => p.toLowerCase().includes(searchVal));
+        const invMatch = (s.invoiceNumbers || []).some(inv => inv.toLowerCase().includes(searchVal));
+        const declMatch = (s.declarationNumbers || []).some(d => d.toLowerCase().includes(searchVal));
+        return codeMatch || partnerMatch || prodMatch || invMatch || declMatch;
+      });
+      renderShipmentsTable(filtered);
+    } else {
+      renderShipmentsTable(shipmentsList);
+    }
   } catch (err) {
     // Handled
   }
@@ -412,6 +438,36 @@ export function openShipmentForm(id) {
 }
 window.xnkEditShipment = openShipmentForm;
 
+// ─── SVG Icons & Timeline Helper for Shipment Form ────────────────────────
+const FORM_ICON = {
+  ship: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1 2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 2-1 2.4 2.4 0 0 1 2 1"/><path d="M4 18V14l8-4 4 2v6"/><path d="M12 2v6"/><path d="M8 6h8"/></svg>`,
+  calendar: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  anchor: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="20"/><path d="M5 14l7 6 7-6"/></svg>`,
+  building: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/></svg>`,
+  incoterm: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
+  barcode: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>`,
+  user: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  file: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`,
+  refresh: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  trash: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
+};
+
+function addShipmentTimeline(shipmentId, text, by = 'admin') {
+  try {
+    const key = `xnk_timeline_${shipmentId}`;
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    entries.push({
+      id: Date.now().toString(),
+      text: text.trim(),
+      ts: new Date().toLocaleString('vi-VN'),
+      by
+    });
+    localStorage.setItem(key, JSON.stringify(entries));
+    window.dispatchEvent(new CustomEvent('xnk:timeline-updated', { detail: { shipmentId } }));
+  } catch (e) {}
+}
+
 export async function renderShipmentForm(container, id) {
   let s = null;
   if (id) {
@@ -428,410 +484,834 @@ export async function renderShipmentForm(container, id) {
   }
   const isEdit = !!s;
 
-  // Load all data in parallel
+  // Tự động tạo mã gợi ý nếu là tạo mới
+  const autoGenCode = s?.shipmentCode || `SHP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+
+  // Load master data song song
   const [supRes, cusRes, prodRes] = await Promise.all([
     api.get("/api/suppliers?pageSize=200"),
     api.get("/api/customers?pageSize=200"),
     api.get("/api/products?pageSize=500")
   ]);
 
-  const suppliers = supRes.data.items;
-  const customers = cusRes.data.items;
-  allProducts = prodRes.data.items;
+  const suppliers = supRes.data?.items || supRes.data || [];
+  const customers = cusRes.data?.items || cusRes.data || [];
+  allProducts = prodRes.data?.items || prodRes.data || [];
 
-  // Init form items from existing shipment items
+  // Khởi tạo formItems từ dữ liệu cũ nếu edit
   if (isEdit && s.items && s.items.length > 0) {
-    formItems = s.items.map(i => ({
-      productId: i.productId,
-      productName: i.productName,
-      sku: i.sku,
-      unit: i.unit,
-      quantity: i.quantity || 0,
-      grossWeight: i.grossWeight || 0,
-      unitPrice: i.unitPrice || 0
-    }));
+    formItems = s.items.map(i => {
+      const p = allProducts.find(x => x.id === i.productId);
+      return {
+        productId: i.productId,
+        productCode: i.sku || i.productCode || p?.sku || '---',
+        productName: i.productName || p?.name || '---',
+        sku: i.sku || p?.sku || '---',
+        hsCode: i.hsCode || p?.hsCode || '5402.47.00',
+        origin: i.origin || p?.countryOfOrigin || 'Taiwan',
+        unit: i.unit || p?.unit || 'kg',
+        quantity: Number(i.quantity || 0),
+        unitPrice: Number(i.unitPrice || 0),
+        netWeight: Number(i.netWeight || i.quantity || 0),
+        grossWeight: Number(i.grossWeight || 0),
+        notes: i.notes || ''
+      };
+    });
   } else if (isEdit) {
-    // Fetch items if not loaded
     try {
       const itemsRes = await api.get(`/api/shipments/${id}/items`);
-      formItems = (itemsRes.data || []).map(i => ({
-        productId: i.productId,
-        productName: i.productName,
-        sku: i.sku,
-        unit: i.unit,
-        quantity: i.quantity || 0,
-        grossWeight: i.grossWeight || 0,
-        unitPrice: i.unitPrice || 0
-      }));
-    } catch { formItems = []; }
+      const fetched = itemsRes.data?.items || itemsRes.data || [];
+      formItems = fetched.map(i => {
+        const p = allProducts.find(x => x.id === i.productId);
+        return {
+          productId: i.productId,
+          productCode: i.sku || i.productCode || p?.sku || '---',
+          productName: i.productName || p?.name || '---',
+          sku: i.sku || p?.sku || '---',
+          hsCode: i.hsCode || p?.hsCode || '5402.47.00',
+          origin: i.origin || p?.countryOfOrigin || 'Taiwan',
+          unit: i.unit || p?.unit || 'kg',
+          quantity: Number(i.quantity || 0),
+          unitPrice: Number(i.unitPrice || 0),
+          netWeight: Number(i.netWeight || i.quantity || 0),
+          grossWeight: Number(i.grossWeight || 0),
+          notes: i.notes || ''
+        };
+      });
+    } catch {
+      formItems = [];
+    }
   } else {
     formItems = [];
   }
 
   const currentType = s?.type || 'Import';
+  const isEditTitle = isEdit ? 'Chỉnh sửa lô hàng' : 'Thêm mới lô hàng';
+  const partnerTitle = s?.supplierName || s?.customerName || 'Chưa chọn đối tác';
 
-  const isEditTitle = isEdit ? `Chỉnh sửa lô hàng` : `Thêm mới lô hàng`;
+  // Format dates
+  const createdAtVal = s?.createdAt ? s.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+  const etaVal = s?.expectedDate ? s.expectedDate.split('T')[0] : '';
+  const etdVal = s?.etd ? s.etd.split('T')[0] : '';
+
+  // Initial partner code & contact
+  let initialPartnerCode = s?.supplierCode || s?.customerCode || '---';
+  let initialContact = s?.contactPerson || '';
+
+  // Pre-calculate sums
+  const initQty = formItems.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0) || Number(s?.totalQuantity || 0);
+  const initGw = formItems.reduce((acc, it) => acc + (Number(it.grossWeight) || 0), 0) || Number(s?.totalGrossWeight || 0);
+  const initVal = formItems.reduce((acc, it) => acc + ((Number(it.quantity) || 0) * (Number(it.unitPrice) || 0)), 0) || Number(s?.totalValue || 0);
 
   container.innerHTML = `
     <div class="sd-page">
+      <!-- BREADCRUMB -->
       <div class="sd-breadcrumb">
-        <a href="#" onclick="window.appNavigateTo('shipments'); return false;">Tất cả lô hàng</a>
+        <a href="#" id="form-back-link">Tất cả lô hàng</a>
         <span class="sd-breadcrumb-sep">›</span>
         <span class="sd-breadcrumb-cur">${isEditTitle}</span>
       </div>
 
-      <form id="shipmentForm" style="display:contents">
+      <!-- HEADER -->
       <div class="sd-header">
-        <div class="sd-header-row1" style="justify-content: space-between; align-items: center;">
-          <div style="display:flex; align-items:center; gap: 16px;">
-            <div class="sd-icon-box">🚢</div>
-            <div class="sd-title-group">
-              <input type="text" id="sCode" class="form-input" style="font-size:20px; font-weight:700; width: 280px; margin-bottom: 4px; padding: 4px 8px; border-radius:4px; border:1px solid #cbd5e1;" required value="${s?.shipmentCode || ''}" placeholder="Nhập Mã Lô Hàng *">
-              <div class="sd-company" style="font-size:13px; color:#64748b; font-weight: 500;">
-                Mã Lô Hàng XNK (Bắt buộc)
-              </div>
+        <div class="sd-header-row1">
+          <div class="sd-icon-box">${FORM_ICON.ship}</div>
+
+          <div class="sd-title-group" style="display:flex; flex-direction:column; gap:2px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="sCode" class="sd-form-input" style="font-size:16px; font-weight:800; width: 230px; height: 32px; letter-spacing: -0.3px; color: var(--amis-blue);" required value="${s?.shipmentCode || autoGenCode}" placeholder="Nhập Mã Lô Hàng *">
+              <button type="button" id="btnAutoCode" class="sd-btn-sm" title="Tự động sinh mã lô hàng chuẩn" style="height:32px; padding:0 10px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                ${FORM_ICON.refresh} Tự sinh mã
+              </button>
+            </div>
+            <div class="sd-company" id="headerPartnerName">
+              ${FORM_ICON.building} <span>${escapeHtml(partnerTitle)}</span>
             </div>
           </div>
+
+          <div class="sd-badges">
+            <span id="headerStatusBadge" class="chip chip-amber">${isEdit ? (s.status || 'Bản nháp') : 'Bản nháp'}</span>
+            <span id="headerTypeBadge" class="chip ${currentType === 'Export' ? 'chip-purple' : 'chip-blue'}">${currentType === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu'}</span>
+          </div>
+
           <div class="sd-header-actions">
-            <button type="button" class="btn btn-default" onclick="window.appNavigateTo('shipments')">Hủy bỏ</button>
-            <button type="button" id="btnSaveShipment" class="btn btn-primary">✔ Cất (Lưu)</button>
+            <button type="button" class="sd-btn-sm" id="btnCancelShipment">
+              ✕ Hủy bỏ
+            </button>
+            <button type="button" id="btnSaveShipment" class="sd-btn-sm sd-btn-primary" style="background:var(--amis-green, #00a152); border-color:var(--amis-green, #00a152); color:#fff; font-weight:600; padding:6px 16px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px;">
+              ${FORM_ICON.check} Cất (Lưu)
+            </button>
           </div>
         </div>
       </div>
 
+      <!-- INFO BAR (10 ô thông tin đồng bộ với shipment-detail) -->
       <div class="sd-infobar">
         <div class="sd-field">
-          <div class="sd-field-label">Loại hình *</div>
-          <select id="sType" class="form-select" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.building} Loại hình *</div>
+          <select id="sType" class="sd-form-select">
             <option value="Import" ${currentType === 'Import' ? 'selected' : ''}>📥 Nhập khẩu</option>
             <option value="Export" ${currentType === 'Export' ? 'selected' : ''}>📤 Xuất khẩu</option>
           </select>
         </div>
-        <div class="sd-field" id="supplierGroup" style="${currentType === 'Export' ? 'display:none;' : ''}">
-          <div class="sd-field-label">Đối tác (NCC) *</div>
-          <select id="sSupplierId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
+
+        <div class="sd-field" id="supplierField" style="${currentType === 'Export' ? 'display:none;' : ''}">
+          <div class="sd-field-label">${FORM_ICON.user} Đối tác (NCC) *</div>
+          <select id="sSupplierId" class="sd-form-select">
             <option value="">-- Chọn Nhà Cung Cấp --</option>
             ${suppliers.map(sup => {
-    const contactParts = [sup.contactPerson || sup.contactName, sup.phone].filter(Boolean);
-    const contact = contactParts.join(' - ');
-    return `<option value="${sup.id}" data-contact="${escapeHtml(contact)}" ${s?.supplierId === sup.id ? 'selected' : ''}>${sup.companyName} (${sup.country || 'VN'})</option>`;
-  }).join('')}
+              const code = sup.code || sup.tradeName || sup.taxCode || (sup.id ? 'NCC-' + sup.id.substring(0, 5).toUpperCase() : '');
+              const contactParts = [sup.contactPerson || sup.contactName, sup.phone, sup.email].filter(Boolean);
+              return `<option value="${sup.id}" data-code="${escapeHtml(code)}" data-name="${escapeHtml(sup.companyName)}" data-contact="${escapeHtml(contactParts[0] || '')}" data-sub="${escapeHtml(contactParts.slice(1).join(' • '))}" ${s?.supplierId === sup.id ? 'selected' : ''}>${escapeHtml(sup.companyName)} (${sup.country || 'VN'})</option>`;
+            }).join('')}
           </select>
+          <div class="sd-field-sub" id="dispSupCode">Mã: ${escapeHtml(initialPartnerCode)}</div>
         </div>
-        <div class="sd-field" id="customerGroup" style="${currentType === 'Import' ? 'display:none;' : ''}">
-          <div class="sd-field-label">Đối tác (KH) *</div>
-          <select id="sCustomerId" class="form-select" required style="width:100%; margin-top:4px; height:32px;">
+
+        <div class="sd-field" id="customerField" style="${currentType === 'Import' ? 'display:none;' : ''}">
+          <div class="sd-field-label">${FORM_ICON.user} Đối tác (KH) *</div>
+          <select id="sCustomerId" class="sd-form-select">
             <option value="">-- Chọn Khách Hàng --</option>
             ${customers.map(c => {
-    const contactParts = [c.contactPerson || c.contactName, c.phone].filter(Boolean);
-    const contact = contactParts.join(' - ');
-    return `<option value="${c.id}" data-contact="${escapeHtml(contact)}" ${s?.customerId === c.id ? 'selected' : ''}>${c.companyName}</option>`;
-  }).join('')}
+              const code = c.code || c.tradeName || c.taxCode || (c.id ? 'KH-' + c.id.substring(0, 5).toUpperCase() : '');
+              const contactParts = [c.contactPerson || c.contactName, c.phone, c.email].filter(Boolean);
+              return `<option value="${c.id}" data-code="${escapeHtml(code)}" data-name="${escapeHtml(c.companyName)}" data-contact="${escapeHtml(contactParts[0] || '')}" data-sub="${escapeHtml(contactParts.slice(1).join(' • '))}" ${s?.customerId === c.id ? 'selected' : ''}>${escapeHtml(c.companyName)}</option>`;
+            }).join('')}
           </select>
+          <div class="sd-field-sub" id="dispCusCode">Mã: ${escapeHtml(initialPartnerCode)}</div>
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Ngày tạo lập *</div>
-          <input type="date" id="sCreatedAt" class="form-input" required value="${s?.createdAt ? s.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]}" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.calendar} Ngày tạo lập *</div>
+          <input type="date" id="sCreatedAt" class="sd-form-input" value="${createdAtVal}">
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Ngày dự kiến ETA</div>
-          <input type="date" id="sExpectedDate" class="form-input" value="${s?.expectedDate ? s.expectedDate.split('T')[0] : ''}" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.calendar} Ngày dự kiến ETA</div>
+          <input type="date" id="sExpectedDate" class="sd-form-input" value="${etaVal}">
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Cảng xếp hàng (POL)</div>
-          <input type="text" id="sPol" class="form-input" value="${s?.portOfLoading || 'Cat Lai Port, Ho Chi Minh City'}" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.anchor} Cảng xếp hàng (POL)</div>
+          <input type="text" id="sPol" class="sd-form-input" value="${escapeHtml(s?.portOfLoading || (currentType === 'Export' ? 'Cat Lai Port, Ho Chi Minh City' : 'Shanghai Port, China'))}">
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Cảng dỡ hàng (POD)</div>
-          <input type="text" id="sPod" class="form-input" value="${s?.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City'}" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.anchor} Cảng dỡ hàng (POD)</div>
+          <input type="text" id="sPod" class="sd-form-input" value="${escapeHtml(s?.portOfDischarge || (currentType === 'Export' ? 'Tokyo Port, Japan' : 'Cat Lai Port, Ho Chi Minh City'))}">
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Incoterm</div>
-          <select id="sTerm" class="form-select" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.incoterm} Incoterm</div>
+          <select id="sTerm" class="sd-form-select">
             <option value="CIF" ${(!s || s?.deliveryTerm === 'CIF') ? 'selected' : ''}>CIF</option>
             <option value="FOB" ${s?.deliveryTerm === 'FOB' ? 'selected' : ''}>FOB</option>
             <option value="EXW" ${s?.deliveryTerm === 'EXW' ? 'selected' : ''}>EXW</option>
             <option value="CFR" ${s?.deliveryTerm === 'CFR' ? 'selected' : ''}>CFR</option>
             <option value="DDP" ${s?.deliveryTerm === 'DDP' ? 'selected' : ''}>DDP</option>
+            <option value="DAP" ${s?.deliveryTerm === 'DAP' ? 'selected' : ''}>DAP</option>
+            <option value="FCA" ${s?.deliveryTerm === 'FCA' ? 'selected' : ''}>FCA</option>
           </select>
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Người liên hệ *</div>
-          <input type="text" id="sContactPerson" class="form-input" readonly value="${s?.contactPerson || ''}" style="width:100%; margin-top:4px; height:32px; background:#f8fafc; color:#64748b; border-color:#e2e8f0; cursor:not-allowed;" placeholder="Tự động liên kết">
+          <div class="sd-field-label">${FORM_ICON.user} Người liên hệ</div>
+          <input type="text" id="sContactPerson" class="sd-form-input" value="${escapeHtml(initialContact)}" placeholder="Tên / SĐT liên hệ">
+          <div class="sd-field-sub" id="dispContactSub">Tự động liên kết</div>
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Tổng SL NW (kg) *</div>
-          <input type="number" step="0.01" id="sQty" class="form-input" required value="${s?.totalQuantity || ''}" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.barcode} Số vận đơn (B/L)</div>
+          <input type="text" id="sBlNumber" class="sd-form-input" style="font-family:monospace; color:var(--amis-blue); font-weight:600;" value="${escapeHtml(s?.blNumber || s?.bLNumber || '')}" placeholder="VD: COSU63289104">
         </div>
+
         <div class="sd-field">
-          <div class="sd-field-label">Tổng TL GW (kg)</div>
-          <input type="number" step="0.01" id="sGrossWeight" class="form-input" value="${s?.totalGrossWeight || ''}" style="width:100%; margin-top:4px; height:32px;">
-        </div>
-        <div class="sd-field">
-          <div class="sd-field-label">Tổng trị giá (USD) *</div>
-          <input type="number" step="0.01" id="sValue" class="form-input" required value="${s?.totalValue || ''}" style="width:100%; margin-top:4px; height:32px;">
-        </div>
-        <div class="sd-field" style="grid-column: span 3;">
-          <div class="sd-field-label">Ghi chú</div>
-          <input type="text" id="sNotes" class="form-input" value="${s?.notes || ''}" style="width:100%; margin-top:4px; height:32px;">
+          <div class="sd-field-label">${FORM_ICON.file} Mã đối tác</div>
+          <div class="sd-field-value" id="dispPartnerCode" style="font-weight:700; color:var(--amis-blue); line-height:30px;">${escapeHtml(initialPartnerCode)}</div>
         </div>
       </div>
 
-      <div class="sd-body" style="background:#fff; border-top:1px solid #e2e8f0;">
-        <div class="sd-content" style="width:100%; border-right: none;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 24px 24px 0 24px;">
-            <label class="form-label" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main);">
-              Danh Sách Sản Phẩm Trong Lô
-            </label>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <select id="productPickerSelect" class="form-select" style="width: 320px; font-size: 13px;">
-                <option value="">-- Chọn sản phẩm để thêm --</option>
-                ${allProducts.map(p => `<option value="${p.id}" data-name="${escapeHtml(p.name)}" data-sku="${escapeHtml(p.sku)}" data-unit="${escapeHtml(p.unit || '')}">${p.sku} - ${p.name}${p.unit ? ' (' + p.unit + ')' : ''}</option>`).join('')}
-              </select>
-              <button type="button" id="btnAddProduct" class="btn btn-primary" style="white-space: nowrap; font-size: 13px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm dòng
-              </button>
+      <!-- BODY: 2 CỘT TƯƠNG ĐỒNG SHIPMENT-DETAIL -->
+      <div class="sd-body">
+        <!-- LEFT: TABS & CONTENT -->
+        <div class="sd-content">
+          <div class="sd-tabbar">
+            <button type="button" class="sd-tab active" data-pane="items">
+              Tổng quan & Hàng hóa <span class="sd-tab-badge" id="tabItemsBadge">${formItems.length}</span>
+            </button>
+            <button type="button" class="sd-tab" data-pane="logistics">
+              Thông tin vận tải & Container
+            </button>
+          </div>
+
+          <div class="sd-pane-wrap">
+            <!-- PANE 1: HÀNG HÓA & TỔNG QUAN -->
+            <div class="sd-pane active" id="pane-items">
+              <!-- Row 2 cards tổng quan thông số -->
+              <div class="sd-overview-grid">
+                <div class="sd-card">
+                  <div class="sd-card-header">
+                    <div class="sd-card-header-left">📋 Thông số vận chuyển & Đóng gói</div>
+                  </div>
+                  <div class="sd-card-body" style="display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; font-size:12px;">
+                    <div>
+                      <label class="sd-field-label">Ngày xếp hàng (ETD)</label>
+                      <input type="date" id="sEtd" class="sd-form-input" value="${etdVal}">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Tổng số kiện (Packages)</label>
+                      <input type="number" id="sPackages" class="sd-form-input" placeholder="VD: 222" value="${s?.totalPackages || ''}">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Tổng số lượng NW (kg) *</label>
+                      <input type="number" step="0.01" id="sQty" class="sd-form-input" value="${initQty || ''}" placeholder="Tự động tính từ bảng">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Tổng trọng lượng GW (kg)</label>
+                      <input type="number" step="0.01" id="sGrossWeight" class="sd-form-input" value="${initGw || ''}" placeholder="Tự động tính từ bảng">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="sd-card">
+                  <div class="sd-card-header">
+                    <div class="sd-card-header-left">🚢 Hãng tàu & Thiết bị Container</div>
+                  </div>
+                  <div class="sd-card-body" style="display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; font-size:12px;">
+                    <div>
+                      <label class="sd-field-label">Hãng tàu / Vận tải</label>
+                      <input type="text" id="sShippingLine" class="sd-form-input" placeholder="VD: COSCO SHIPPING" value="COSCO SHIPPING">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Tên tàu / Chuyến (Vessel/Voy)</label>
+                      <input type="text" id="sVesselVoyage" class="sd-form-input" placeholder="VD: COSCO PRIDE / 024E" value="COSCO PRIDE / 024E">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Số Container</label>
+                      <input type="text" id="sContainerNo" class="sd-form-input" placeholder="VD: TGHU9843210" value="TGHU9843210">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Số Chì (Seal No)</label>
+                      <input type="text" id="sSealNo" class="sd-form-input" placeholder="VD: SL-88992" value="SL-88992">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BẢNG DANH SÁCH HÀNG HÓA -->
+              <div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; margin-top:4px;">
+                  <span style="font-size:13px; font-weight:700; color:var(--text-main);">
+                    Danh sách hàng hóa <span style="font-weight:400; color:#64748b;" id="itemsCountText">(${formItems.length})</span>
+                  </span>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <select id="productPickerSelect" class="sd-form-select" style="min-width:320px; height:32px; font-size:12px;">
+                      <option value="">-- Chọn sản phẩm thêm vào lô hàng --</option>
+                      ${allProducts.map(p => `
+                        <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-unit="${escapeHtml(p.unit || 'kg')}" data-hscode="${escapeHtml(p.hsCode || '5402.47.00')}" data-origin="${escapeHtml(p.countryOfOrigin || 'Taiwan')}" data-price="${p.unitPrice || p.standardPrice || 1.0}">
+                          [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.unit || 'kg'})
+                        </option>
+                      `).join('')}
+                    </select>
+                    <button type="button" id="btnAddProduct" class="sd-btn-sm sd-btn-primary" style="height:32px; padding:0 12px; font-weight:600; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      Thêm vào lô
+                    </button>
+                  </div>
+                </div>
+
+                <div class="sd-table-wrap" id="shipmentItemsContainer">
+                  ${renderFormItemsTable()}
+                </div>
+              </div>
+
+              <!-- Input ẩn chứa tổng giá trị để form validate -->
+              <input type="hidden" id="sValue" value="${initVal || 0}">
+            </div>
+
+            <!-- PANE 2: VẬN TẢI & LOGISTICS -->
+            <div class="sd-pane" id="pane-logistics">
+              <div class="sd-overview-grid">
+                <div class="sd-card">
+                  <div class="sd-card-header">
+                    <div class="sd-card-header-left">🌐 Thông tin Vận chuyển Đường biển / Hàng không</div>
+                  </div>
+                  <div class="sd-card-body" style="display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; font-size:12px;">
+                    <div>
+                      <label class="sd-field-label">Phương thức vận tải</label>
+                      <select id="sTransportMode" class="sd-form-select">
+                        <option value="Sea" selected>Đường biển (Ocean Freight - FCL/LCL)</option>
+                        <option value="Air">Đường hàng không (Air Freight)</option>
+                        <option value="Road">Đường bộ / Xe tải</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Điều kiện cước phí</label>
+                      <select id="sFreightTerm" class="sd-form-select">
+                        <option value="Freight Prepaid" ${(!s || s?.deliveryTerm === 'CIF') ? 'selected' : ''}>Freight Prepaid (Cước trả trước)</option>
+                        <option value="Freight Collect" ${s?.deliveryTerm === 'FOB' ? 'selected' : ''}>Freight Collect (Cước trả sau)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Tuyến đường hành trình</label>
+                      <input type="text" id="sTransitRoute" class="sd-form-input" placeholder="Shanghai ➔ Cat Lai Port" value="Shanghai Port ➔ Cat Lai Port">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Đại lý giao nhận (Forwarder)</label>
+                      <input type="text" id="sForwarder" class="sd-form-input" placeholder="COSCO LOGISTICS VN" value="COSCO LOGISTICS VN">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="sd-card">
+                  <div class="sd-card-header">
+                    <div class="sd-card-header-left">📦 Ký mã hiệu & Quy cách bao bì</div>
+                  </div>
+                  <div class="sd-card-body" style="display:grid; grid-template-columns:1fr; gap:10px; font-size:12px;">
+                    <div>
+                      <label class="sd-field-label">Ký mã hiệu (Shipping Marks)</label>
+                      <input type="text" id="sShippingMarks" class="sd-form-input" placeholder="IMEX / HCM / NO. 1-UP" value="IMEX-VN / ORDER-2026 / NO. 1-UP">
+                    </div>
+                    <div>
+                      <label class="sd-field-label">Loại bao bì đóng gói</label>
+                      <input type="text" id="sPackagingType" class="sd-form-input" placeholder="VD: Thùng carton / Pallet gỗ / Cuộn" value="Carton / Wooden Pallet">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div id="shipmentItemsContainer" style="padding: 0 24px 24px 24px;">
-            ${renderFormItemsTable()}
+        </div>
+
+        <!-- RIGHT: SIDEBAR TỔNG GIÁ TRỊ & CHỨNG TỪ (ĐỒNG BỘ 100% VỚI SHIPMENT-DETAIL) -->
+        <div class="sd-sidebar">
+          <!-- Tổng giá trị lô hàng callout -->
+          <div class="sd-price-callout">
+            <div class="sd-price-label">TỔNG GIÁ TRỊ LÔ HÀNG</div>
+            <div class="sd-price-amount" id="sbTotalValue">$${Number(initVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div class="sd-price-vnd" id="sbTotalVnd">≈ ${(Number(initVal) * 25450).toLocaleString('vi-VN')} ₫</div>
+            <div class="sd-price-meta">
+              <div>Đơn vị tiền tệ: <strong>USD</strong></div>
+              <div>Tổng số lượng NW: <strong id="sbTotalQty">${Number(initQty).toLocaleString()}</strong> kg</div>
+              <div>Tổng Gross Weight: <strong id="sbTotalGw">${Number(initGw).toLocaleString()}</strong> kg</div>
+              <div>Số mặt hàng: <strong id="sbTotalItems">${formItems.length}</strong> sản phẩm</div>
+            </div>
+          </div>
+
+          <!-- Chứng từ tự động sinh -->
+          <div class="sd-sidebar-section">
+            <div class="sd-sidebar-label">📎 Chứng từ liên quan</div>
+            <div class="sd-qdoc-list">
+              <div class="sd-qdoc-item">
+                <div class="sd-qdoc-left">
+                  <span class="sd-qdoc-icon">🧾</span>
+                  <span class="sd-qdoc-name">Hóa đơn (Invoice)</span>
+                </div>
+                <span class="sd-qdoc-count">Khởi tạo</span>
+              </div>
+              <div class="sd-qdoc-item">
+                <div class="sd-qdoc-left">
+                  <span class="sd-qdoc-icon">📦</span>
+                  <span class="sd-qdoc-name">Packing List</span>
+                </div>
+                <span class="sd-qdoc-count">Đồng bộ</span>
+              </div>
+              <div class="sd-qdoc-item">
+                <div class="sd-qdoc-left">
+                  <span class="sd-qdoc-icon">🚢</span>
+                  <span class="sd-qdoc-name">Vận đơn (B/L)</span>
+                </div>
+                <span class="sd-qdoc-count">Liên kết</span>
+              </div>
+              <div class="sd-qdoc-item">
+                <div class="sd-qdoc-left">
+                  <span class="sd-qdoc-icon">🏛️</span>
+                  <span class="sd-qdoc-name">Tờ khai HQ</span>
+                </div>
+                <span class="sd-qdoc-count">VNACCS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ghi chú lô hàng -->
+          <div class="sd-sidebar-section" style="flex:1;">
+            <div class="sd-sidebar-label">✏️ Ghi chú lô hàng</div>
+            <textarea id="sNotes" class="sd-form-input" style="width:100%; height:85px; resize:vertical; font-size:12px; padding:6px 8px;" placeholder="Ghi chú về kiểm dịch, phân tích mẫu, yêu cầu giao nhận...">${escapeHtml(s?.notes || '')}</textarea>
+            <div class="sd-note-meta" style="margin-top:4px; font-size:11px; color:#94a3b8;">Hệ thống tự động ghi nhận nhật ký cập nhật</div>
+          </div>
+
+          <!-- Quy trình AMIS IMEX -->
+          <div class="sd-sidebar-section" style="background:#f8fafc; font-size:11.5px; color:#64748b; line-height:1.5;">
+            <div style="font-weight:700; color:var(--text-main); margin-bottom:4px;">💡 Quy trình AMIS IMEX</div>
+            <div>1. Điền thông tin & thêm sản phẩm</div>
+            <div>2. Hệ thống tự động tính NW, GW, Trị giá</div>
+            <div>3. Bấm <strong>Cất (Lưu)</strong> để xuất dữ liệu sang Packing List & Tờ khai HQ</div>
           </div>
         </div>
       </div>
-      </form>
     </div>
   `;
 
-  // Wire up type change to show/hide supplier/customer
-  document.getElementById("sType").addEventListener("change", function () {
+  // ─── Event Handlers & Reactivity ──────────────────────────────────────────
+
+  // Back link & cancel
+  const goBack = () => window.appNavigateTo('shipments');
+  document.getElementById("form-back-link")?.addEventListener("click", (e) => { e.preventDefault(); goBack(); });
+  document.getElementById("btnCancelShipment")?.addEventListener("click", goBack);
+
+  // Tab switching
+  container.querySelectorAll('.sd-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      container.querySelectorAll('.sd-tab').forEach(t => t.classList.remove('active'));
+      container.querySelectorAll('.sd-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const targetPane = container.querySelector(`#pane-${tab.dataset.pane}`);
+      if (targetPane) targetPane.classList.add('active');
+    });
+  });
+
+  // Tự sinh mã lô hàng
+  document.getElementById("btnAutoCode")?.addEventListener("click", () => {
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randNum = Math.floor(100 + Math.random() * 900);
+    const newCode = `SHP-${todayStr}-${randNum}`;
+    const codeInp = document.getElementById("sCode");
+    if (codeInp) codeInp.value = newCode;
+    showToast(`Đã tạo mã lô hàng mới: ${newCode}`, "info");
+  });
+
+  // Chuyển loại hình (Import / Export)
+  document.getElementById("sType")?.addEventListener("change", function () {
     const type = this.value;
-    const supplierGroup = document.getElementById("supplierGroup");
-    const customerGroup = document.getElementById("customerGroup");
+    const supField = document.getElementById("supplierField");
+    const cusField = document.getElementById("customerField");
+    const badgeType = document.getElementById("headerTypeBadge");
+
     if (type === 'Import') {
-      supplierGroup.style.display = '';
-      customerGroup.style.display = 'none';
-      document.getElementById("sCustomerId").value = '';
+      supField.style.display = '';
+      cusField.style.display = 'none';
+      if (badgeType) {
+        badgeType.className = 'chip chip-blue';
+        badgeType.textContent = 'Nhập khẩu';
+      }
+      document.getElementById("sPol").value = 'Shanghai Port, China';
+      document.getElementById("sPod").value = 'Cat Lai Port, Ho Chi Minh City';
+      document.getElementById("sSupplierId")?.dispatchEvent(new Event('change'));
     } else {
-      supplierGroup.style.display = 'none';
-      customerGroup.style.display = '';
-      document.getElementById("sSupplierId").value = '';
+      supField.style.display = 'none';
+      cusField.style.display = '';
+      if (badgeType) {
+        badgeType.className = 'chip chip-purple';
+        badgeType.textContent = 'Xuất khẩu';
+      }
+      document.getElementById("sPol").value = 'Cat Lai Port, Ho Chi Minh City';
+      document.getElementById("sPod").value = 'Tokyo Port, Japan';
+      document.getElementById("sCustomerId")?.dispatchEvent(new Event('change'));
     }
   });
 
-  const onPartnerChange = (e) => {
+  // Chọn đối tác (Supplier / Customer)
+  const onPartnerSelect = (e) => {
     const sel = e.target;
     const opt = sel.options[sel.selectedIndex];
     if (opt && opt.value) {
-      const contact = opt.getAttribute("data-contact");
-      if (contact) {
-        document.getElementById("sContactPerson").value = contact;
+      const code = opt.getAttribute("data-code") || '---';
+      const name = opt.getAttribute("data-name") || '---';
+      const contact = opt.getAttribute("data-contact") || '';
+      const sub = opt.getAttribute("data-sub") || '';
+
+      const dispCode = document.getElementById("dispPartnerCode");
+      if (dispCode) dispCode.textContent = code;
+
+      const headerPartner = document.getElementById("headerPartnerName");
+      if (headerPartner) {
+        headerPartner.innerHTML = `${FORM_ICON.building} <span>${escapeHtml(name)}</span>`;
+      }
+
+      const dispSub = document.getElementById("dispSupCode");
+      const dispCusSub = document.getElementById("dispCusCode");
+      if (dispSub) dispSub.textContent = `Mã: ${code}`;
+      if (dispCusSub) dispCusSub.textContent = `Mã: ${code}`;
+
+      const contactInp = document.getElementById("sContactPerson");
+      if (contactInp && !contactInp.value) {
+        contactInp.value = contact;
+      }
+      const dispContactSub = document.getElementById("dispContactSub");
+      if (dispContactSub && sub) {
+        dispContactSub.textContent = sub;
       }
     }
   };
-  document.getElementById("sSupplierId").addEventListener("change", onPartnerChange);
-  document.getElementById("sCustomerId").addEventListener("change", onPartnerChange);
+  document.getElementById("sSupplierId")?.addEventListener("change", onPartnerSelect);
+  document.getElementById("sCustomerId")?.addEventListener("change", onPartnerSelect);
 
-  // Khởi tạo liên kết data khi mở form
+  // Kích hoạt đối tác ban đầu
   if (currentType === 'Import') {
-    document.getElementById("sSupplierId").dispatchEvent(new Event('change'));
+    document.getElementById("sSupplierId")?.dispatchEvent(new Event('change'));
   } else {
-    document.getElementById("sCustomerId").dispatchEvent(new Event('change'));
+    document.getElementById("sCustomerId")?.dispatchEvent(new Event('change'));
   }
 
-  // Wire up add product button
-  document.getElementById("btnAddProduct").addEventListener("click", async () => {
+  // Thêm sản phẩm từ select box
+  document.getElementById("btnAddProduct")?.addEventListener("click", () => {
     const sel = document.getElementById("productPickerSelect");
     const opt = sel.options[sel.selectedIndex];
     if (!opt || !opt.value) {
-      showToast("Vui lòng chọn sản phẩm", "error");
+      showToast("Vui lòng chọn một sản phẩm từ danh mục", "error");
       return;
     }
     const pid = opt.value;
     const already = formItems.find(i => i.productId === pid);
     if (already) {
-      showToast("Sản phẩm này đã được thêm vào lô hàng", "error");
+      showToast("Sản phẩm này đã có trong danh sách lô hàng", "warning");
       return;
     }
+
     formItems.push({
       productId: pid,
-      productName: opt.getAttribute("data-name"),
-      sku: opt.getAttribute("data-sku"),
-      unit: opt.getAttribute("data-unit"),
-      quantity: 0,
-      grossWeight: 0,
-      unitPrice: 0
+      productCode: opt.getAttribute("data-sku") || '---',
+      productName: opt.getAttribute("data-name") || '---',
+      sku: opt.getAttribute("data-sku") || '---',
+      hsCode: opt.getAttribute("data-hscode") || '5402.47.00',
+      origin: opt.getAttribute("data-origin") || 'Taiwan',
+      unit: opt.getAttribute("data-unit") || 'kg',
+      quantity: 100,
+      unitPrice: parseFloat(opt.getAttribute("data-price")) || 1.5,
+      netWeight: 100,
+      grossWeight: 10,
+      notes: ''
     });
+
     sel.value = "";
     refreshFormItemsTable();
-    updateTotalFields();
+    updateCalculations();
+    showToast("Đã thêm sản phẩm vào lô hàng", "success");
   });
 
-  // Wire up global remove/input handlers (delegated)
-  document.getElementById("shipmentItemsContainer").addEventListener("click", async (e) => {
+  // Delegate input & remove trong bảng
+  document.getElementById("shipmentItemsContainer")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".btn-remove-item");
     if (btn) {
       const idx = parseInt(btn.getAttribute("data-idx"));
       formItems.splice(idx, 1);
       refreshFormItemsTable();
-      updateTotalFields();
+      updateCalculations();
+      showToast("Đã xóa dòng sản phẩm", "info");
+      return;
+    }
+
+    const btnBlank = e.target.closest("#btnQuickAddBlank");
+    if (btnBlank) {
+      const defProd = allProducts[0];
+      formItems.push({
+        productId: defProd?.id || `custom-${Date.now()}`,
+        productCode: defProd?.sku || 'NEW-SKU',
+        productName: defProd?.name || 'Mặt hàng sợi chỉ dệt',
+        sku: defProd?.sku || 'NEW-SKU',
+        hsCode: defProd?.hsCode || '5402.47.00',
+        origin: defProd?.countryOfOrigin || 'Taiwan',
+        unit: defProd?.unit || 'kg',
+        quantity: 50,
+        unitPrice: 2.0,
+        netWeight: 50,
+        grossWeight: 5,
+        notes: ''
+      });
+      refreshFormItemsTable();
+      updateCalculations();
     }
   });
 
-  document.getElementById("shipmentItemsContainer").addEventListener("input", (e) => {
+  document.getElementById("shipmentItemsContainer")?.addEventListener("input", (e) => {
     const inp = e.target;
+    const idx = parseInt(inp.getAttribute("data-idx"));
+    if (isNaN(idx) || !formItems[idx]) return;
+
     if (inp.classList.contains("item-qty")) {
-      const idx = parseInt(inp.getAttribute("data-idx"));
-      formItems[idx].quantity = parseFloat(inp.value) || 0;
-      updateItemTotal(idx);
-      updateTotalFields();
-    }
-    if (inp.classList.contains("item-gw")) {
-      const idx = parseInt(inp.getAttribute("data-idx"));
-      formItems[idx].grossWeight = parseFloat(inp.value) || 0;
-      updateTotalFields();
+      const val = parseFloat(inp.value) || 0;
+      formItems[idx].quantity = val;
+      formItems[idx].netWeight = val;
     }
     if (inp.classList.contains("item-price")) {
-      const idx = parseInt(inp.getAttribute("data-idx"));
       formItems[idx].unitPrice = parseFloat(inp.value) || 0;
-      updateItemTotal(idx);
-      updateTotalFields();
     }
+    if (inp.classList.contains("item-gw")) {
+      formItems[idx].grossWeight = parseFloat(inp.value) || 0;
+    }
+
+    updateCalculations();
   });
 
-
-
-  document.getElementById("btnSaveShipment").onclick = async () => {
-    const shipmentCode = document.getElementById("sCode").value.trim();
+  // Lưu lô hàng
+  document.getElementById("btnSaveShipment")?.addEventListener("click", async () => {
+    const shipmentCode = document.getElementById("sCode")?.value.trim();
     if (!shipmentCode) {
-      showToast("Vui lòng nhập mã lô hàng", "error");
+      showToast("Vui lòng nhập Mã lô hàng", "error");
+      document.getElementById("sCode")?.focus();
       return;
     }
 
-    const contactPerson = document.getElementById("sContactPerson").value.trim();
-    if (!contactPerson) {
-      showToast("Vui lòng nhập Người liên hệ", "error");
+    const sType = document.getElementById("sType")?.value || 'Import';
+    const supplierId = document.getElementById("sSupplierId")?.value || null;
+    const customerId = document.getElementById("sCustomerId")?.value || null;
+
+    if (sType === 'Import' && !supplierId) {
+      showToast("Vui lòng chọn Đối tác Nhà Cung Cấp (NCC)", "error");
+      return;
+    }
+    if (sType === 'Export' && !customerId) {
+      showToast("Vui lòng chọn Đối tác Khách hàng (KH)", "error");
       return;
     }
 
-    const sType = document.getElementById("sType").value;
-    if (sType === 'Import' && !document.getElementById("sSupplierId")?.value) {
-      showToast("Vui lòng chọn Đối tác NCC", "error");
-      return;
-    }
-    if (sType === 'Export' && !document.getElementById("sCustomerId")?.value) {
-      showToast("Vui lòng chọn Đối tác Khách hàng", "error");
-      return;
-    }
+    const contactPerson = document.getElementById("sContactPerson")?.value.trim() || 'admin';
+    const totalQty = parseFloat(document.getElementById("sQty")?.value) || formItems.reduce((s, i) => s + (i.quantity || 0), 0);
+    const totalGw = parseFloat(document.getElementById("sGrossWeight")?.value) || formItems.reduce((s, i) => s + (i.grossWeight || 0), 0);
+    const totalVal = parseFloat(document.getElementById("sValue")?.value) || formItems.reduce((s, i) => s + ((i.quantity || 0) * (i.unitPrice || 0)), 0);
 
     const payload = {
       shipmentCode,
       type: sType,
-      expectedDate: document.getElementById("sExpectedDate").value ? new Date(document.getElementById("sExpectedDate").value).toISOString() : null,
-      createdAt: document.getElementById("sCreatedAt").value ? new Date(document.getElementById("sCreatedAt").value).toISOString() : null,
-      supplierId: document.getElementById("sSupplierId")?.value || null,
-      customerId: document.getElementById("sCustomerId")?.value || null,
-      portOfLoading: document.getElementById("sPol").value.trim() || null,
-      portOfDischarge: document.getElementById("sPod").value.trim() || null,
-      deliveryTerm: document.getElementById("sTerm").value,
+      expectedDate: document.getElementById("sExpectedDate")?.value ? new Date(document.getElementById("sExpectedDate").value).toISOString() : null,
+      createdAt: document.getElementById("sCreatedAt")?.value ? new Date(document.getElementById("sCreatedAt").value).toISOString() : null,
+      supplierId: sType === 'Import' ? supplierId : null,
+      customerId: sType === 'Export' ? customerId : null,
+      portOfLoading: document.getElementById("sPol")?.value.trim() || null,
+      portOfDischarge: document.getElementById("sPod")?.value.trim() || null,
+      deliveryTerm: document.getElementById("sTerm")?.value || 'CIF',
       contactPerson,
-      totalQuantity: parseFloat(document.getElementById("sQty").value) || 0,
-      totalGrossWeight: parseFloat(document.getElementById("sGrossWeight").value) || 0,
-      totalValue: parseFloat(document.getElementById("sValue").value) || 0,
+      totalQuantity: totalQty,
+      totalGrossWeight: totalGw,
+      totalValue: totalVal,
       currency: "USD",
-      notes: document.getElementById("sNotes").value.trim() || null
+      notes: document.getElementById("sNotes")?.value.trim() || null
     };
 
     try {
       let savedId = id;
       if (isEdit) {
         await api.put(`/api/shipments/${s.id}`, payload);
-        showToast("Cập nhật lô hàng thành công!");
+        showToast("Cập nhật lô hàng thành công!", "success");
+        addShipmentTimeline(s.id, `Cập nhật thông tin lô hàng: Tổng ${totalQty.toLocaleString()} kg, trị giá $${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'admin');
       } else {
         const createRes = await api.post("/api/shipments", payload);
-        savedId = createRes.data?.id;
-        showToast("Tạo lô hàng mới thành công!");
+        savedId = createRes.data?.id || createRes.data?.data?.id;
+        showToast("Tạo mới lô hàng thành công!", "success");
+        addShipmentTimeline(savedId, `Khởi tạo lô hàng mới ${shipmentCode} trên hệ thống (Loại hình: ${sType === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu'})`, 'admin');
       }
 
-      // Save items nếu có
+      // Lưu chi tiết hàng hóa (Items)
       if (savedId && formItems.length > 0) {
         const itemsPayload = {
           items: formItems.map(i => ({
-            productId: i.productId,
+            productId: i.productId.startsWith('custom-') ? allProducts[0]?.id : i.productId,
             quantity: i.quantity,
-            netWeight: i.quantity,
+            netWeight: i.netWeight || i.quantity,
             grossWeight: i.grossWeight,
             unitPrice: i.unitPrice
           }))
         };
         await api.post(`/api/shipments/${savedId}/items`, itemsPayload);
       } else if (savedId && formItems.length === 0 && isEdit) {
-        // Xóa hết items nếu người dùng xóa hết
         await api.post(`/api/shipments/${savedId}/items`, { items: [] });
       }
 
+      // Lưu B/L nếu người dùng nhập số B/L
+      const blNum = document.getElementById("sBlNumber")?.value.trim();
+      if (savedId && blNum) {
+        try {
+          const blPayload = {
+            invoiceNumber: blNum,
+            type: 'BillOfLading',
+            shipmentId: savedId,
+            supplierId: sType === 'Import' ? supplierId : null,
+            customerId: sType === 'Export' ? customerId : null,
+            invoiceDate: new Date().toISOString(),
+            totalAmount: 0,
+            currency: 'USD',
+            paymentTerms: document.getElementById("sFreightTerm")?.value || (payload.deliveryTerm === 'CIF' ? 'Freight Prepaid' : 'Freight Collect'),
+            notes: JSON.stringify({
+              shippingLine: document.getElementById("sShippingLine")?.value || 'COSCO SHIPPING',
+              vesselVoyage: document.getElementById("sVesselVoyage")?.value || 'COSCO PRIDE / 024E',
+              containerNo: document.getElementById("sContainerNo")?.value || 'TGHU9843210',
+              sealNo: document.getElementById("sSealNo")?.value || 'SL-88992',
+              packages: parseFloat(document.getElementById("sPackages")?.value) || 0,
+              grossWeight: totalGw,
+              pol: payload.portOfLoading,
+              pod: payload.portOfDischarge,
+              status: 'Original'
+            })
+          };
+          await api.post('/api/invoices', blPayload);
+        } catch (e) {
+          // B/L fallback
+        }
+      }
+
+      // Chuyển ngay đến màn hình Chi tiết lô hàng
       window.appNavigateTo('shipment-detail', savedId);
     } catch (err) {
-      // Handled
+      showToast(`Lỗi khi lưu lô hàng: ${err.message || err}`, "error");
     }
-  };
+  });
+
+  // Chạy tính toán ban đầu
+  updateCalculations();
 }
 
 // ==================== HELPERS FOR ITEMS TABLE ====================
 function escapeHtml(str) {
   if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderFormItemsTable() {
   if (formItems.length === 0) {
     return `
-      <div style="text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 13px; border: 1.5px dashed var(--border-color); border-radius: 8px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block; margin: 0 auto 8px;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-        Chưa có sản phẩm nào. Hãy chọn sản phẩm từ danh sách bên trên.
-      </div>`;
+      <div style="text-align: center; padding: 36px 16px; color: #64748b; font-size: 13px; border: 1.5px dashed #cbd5e1; border-radius: 6px; background:#fff; margin: 4px 0;">
+        <div style="font-size:32px; margin-bottom:8px;">📦</div>
+        <div style="font-weight:600; font-size:13.5px; color:#334155;">Chưa có sản phẩm nào trong lô hàng</div>
+        <div style="font-size:12px; color:#94a3b8; margin-top:3px;">Hãy chọn sản phẩm từ danh mục phía trên hoặc nhấn nút <strong>"Thêm vào lô"</strong></div>
+      </div>
+    `;
   }
 
-  const grandTotal = formItems.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0);
+  const totalQty = formItems.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
+  const totalGw = formItems.reduce((s, i) => s + (Number(i.grossWeight) || 0), 0);
+  const totalVal = formItems.reduce((s, i) => s + ((Number(i.quantity) || 0) * (Number(i.unitPrice) || 0)), 0);
 
   return `
-    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <table class="sd-table">
       <thead>
-        <tr style="background:var(--bg-surface-alt);">
-          <th style="width:40px;">#</th>
-          <th>Sản Phẩm (SKU)</th>
-          <th style="width:80px;">Đơn vị</th>
-          <th style="width:120px;">Số Lượng NW</th>
-          <th style="width:120px;">Trọng lượng GW</th>
-          <th style="width:120px;">Đơn Giá (USD)</th>
-          <th style="width:140px;">Thành Tiền</th>
-          <th style="width:50px;"></th>
+        <tr>
+          <th style="width:36px; text-align:center;">#</th>
+          <th style="width:115px;">Mã sản phẩm</th>
+          <th>Tên sản phẩm</th>
+          <th style="width:95px;">HS Code</th>
+          <th style="width:85px;">Xuất xứ</th>
+          <th style="width:60px; text-align:center;">ĐVT</th>
+          <th style="width:115px; text-align:right;">Số lượng (NW)</th>
+          <th style="width:115px; text-align:right;">Đơn giá ($)</th>
+          <th style="width:130px; text-align:right;">Thành tiền ($)</th>
+          <th style="width:115px; text-align:right;">Gross Weight (kg)</th>
+          <th style="width:50px; text-align:center;">Xóa</th>
         </tr>
       </thead>
       <tbody>
-        ${formItems.map((item, idx) => `
-          <tr>
-            <td style="font-size:12px; color:var(--text-muted);">${idx + 1}</td>
-            <td>
-              <div style="font-weight:600; font-size:13px;">${escapeHtml(item.productName)}</div>
-              <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(item.sku)}</div>
-            </td>
-            <td>${escapeHtml(item.unit)}</td>
-            <td><input type="number" step="0.01" class="form-input item-qty" data-idx="${idx}" value="${item.quantity}" style="width:100px;"></td>
-            <td><input type="number" step="0.01" class="form-input item-gw" data-idx="${idx}" value="${item.grossWeight || ''}" style="width:100px;"></td>
-            <td><input type="number" step="0.0001" class="form-input item-price" data-idx="${idx}" value="${item.unitPrice}" style="width:100px;"></td>
-            <td style="font-weight:700; color:var(--misa-blue);">$<span id="item-total-${idx}">${Number((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></td>
-            <td><button type="button" class="btn btn-default btn-sm btn-remove-item" data-idx="${idx}" style="color:var(--amis-red); border-color:#fecaca;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
-          </tr>
-        `).join('')}
-      </tbody>
-      <tfoot>
-        <tr style="border-top: 2px solid var(--border-color); background: var(--bg-hover, #f8fafc);">
-          <td colspan="6" style="padding: 8px; text-align:right; font-weight:700; font-size:13px;">Tổng cộng:</td>
-          <td id="grandTotal" style="padding: 8px; text-align:right; font-weight:700; color:var(--amis-blue); font-size:14px;">$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        ${formItems.map((item, idx) => {
+          const q = Number(item.quantity) || 0;
+          const p = Number(item.unitPrice) || 0;
+          const rowVal = q * p;
+          return `
+            <tr>
+              <td style="text-align:center; color:#64748b;">${idx + 1}</td>
+              <td style="font-weight:700; color:var(--amis-blue);">${escapeHtml(item.productCode || item.sku)}</td>
+              <td><strong>${escapeHtml(item.productName)}</strong></td>
+              <td style="font-family:monospace; color:#475569;">${escapeHtml(item.hsCode || '---')}</td>
+              <td>${escapeHtml(item.origin || '---')}</td>
+              <td style="text-align:center;">${escapeHtml(item.unit || 'kg')}</td>
+              <td style="text-align:right;">
+                <input type="number" step="0.01" class="sd-table-input text-right item-qty" data-idx="${idx}" value="${item.quantity}" style="width:95px; font-weight:600;">
+              </td>
+              <td style="text-align:right;">
+                <input type="number" step="0.0001" class="sd-table-input text-right item-price" data-idx="${idx}" value="${item.unitPrice}" style="width:95px;">
+              </td>
+              <td style="text-align:right; font-weight:700; color:var(--amis-green); font-size:12.5px;">
+                $<span id="item-total-${idx}">${rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </td>
+              <td style="text-align:right;">
+                <input type="number" step="0.01" class="sd-table-input text-right item-gw" data-idx="${idx}" value="${item.grossWeight || ''}" style="width:95px;">
+              </td>
+              <td style="text-align:center;">
+                <button type="button" class="btn-remove-item" data-idx="${idx}" title="Xóa dòng sản phẩm" style="background:transparent; border:none; cursor:pointer; color:#ef4444; padding:4px; border-radius:4px; display:inline-flex; align-items:center;">
+                  ${FORM_ICON.trash}
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+        <tr class="sd-total-row">
+          <td colspan="6" style="text-align:right;">Tổng cộng (${formItems.length} dòng):</td>
+          <td style="text-align:right; color:var(--amis-blue);" id="tblTotalQty">${totalQty.toLocaleString()} kg</td>
+          <td></td>
+          <td style="text-align:right; color:var(--amis-green);" id="tblTotalVal">$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align:right;" id="tblTotalGw">${totalGw.toLocaleString()} kg</td>
           <td></td>
         </tr>
-      </tfoot>
+      </tbody>
     </table>
+    <div class="sd-table-toolbar">
+      <div class="sd-table-toolbar-left">
+        <button type="button" class="sd-btn-sm" id="btnQuickAddBlank" style="display:inline-flex; align-items:center; gap:4px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Thêm dòng mới
+        </button>
+      </div>
+      <span style="font-size:11px; color:#64748b;">
+        Tự động tính toán tổng số lượng NW, GW và Trị giá để đồng bộ hồ sơ
+      </span>
+    </div>
   `;
 }
 
@@ -840,33 +1320,60 @@ function refreshFormItemsTable() {
   if (container) container.innerHTML = renderFormItemsTable();
 }
 
-function updateItemTotal(idx) {
-  const item = formItems[idx];
-  const t = (item.quantity || 0) * (item.unitPrice || 0);
-  const el = document.getElementById(`item-total-${idx}`);
-  if (el) el.textContent = Number(t).toLocaleString('en-US', { minimumFractionDigits: 2 });
-
-  const grandTotal = formItems.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0);
-  const gtCell = document.getElementById("grandTotal");
-  if (gtCell) gtCell.textContent = `$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-}
-
-function updateTotalFields() {
+function updateCalculations() {
   let totalQty = 0;
   let totalGw = 0;
   let totalVal = 0;
-  for (const item of formItems) {
-    totalQty += (item.quantity || 0);
-    totalGw += (item.grossWeight || 0);
-    totalVal += (item.quantity || 0) * (item.unitPrice || 0);
-  }
-  const qtyEl = document.getElementById("sQty");
-  const gwEl = document.getElementById("sGrossWeight");
-  const valEl = document.getElementById("sValue");
-  if (qtyEl) qtyEl.value = totalQty > 0 ? totalQty : '';
-  if (gwEl) gwEl.value = totalGw > 0 ? totalGw : '';
-  if (valEl) valEl.value = totalVal > 0 ? totalVal : '';
+
+  formItems.forEach((item, idx) => {
+    const q = Number(item.quantity) || 0;
+    const p = Number(item.unitPrice) || 0;
+    const gw = Number(item.grossWeight) || 0;
+    const rowVal = q * p;
+    totalQty += q;
+    totalGw += gw;
+    totalVal += rowVal;
+
+    const rowValEl = document.getElementById(`item-total-${idx}`);
+    if (rowValEl) {
+      rowValEl.textContent = rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  });
+
+  // Cập nhật tổng bảng
+  const tblQty = document.getElementById('tblTotalQty');
+  const tblVal = document.getElementById('tblTotalVal');
+  const tblGw = document.getElementById('tblTotalGw');
+  if (tblQty) tblQty.textContent = `${totalQty.toLocaleString()} kg`;
+  if (tblVal) tblVal.textContent = `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (tblGw) tblGw.textContent = `${totalGw.toLocaleString()} kg`;
+
+  // Cập nhật sidebar & badge
+  const sbVal = document.getElementById('sbTotalValue');
+  const sbVnd = document.getElementById('sbTotalVnd');
+  const sbQty = document.getElementById('sbTotalQty');
+  const sbGw = document.getElementById('sbTotalGw');
+  const sbItems = document.getElementById('sbTotalItems');
+  const tabBadge = document.getElementById('tabItemsBadge');
+  const itemsCountText = document.getElementById('itemsCountText');
+
+  if (sbVal) sbVal.textContent = `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (sbVnd) sbVnd.textContent = `≈ ${(totalVal * 25450).toLocaleString('vi-VN')} ₫`;
+  if (sbQty) sbQty.textContent = totalQty.toLocaleString();
+  if (sbGw) sbGw.textContent = totalGw.toLocaleString();
+  if (sbItems) sbItems.textContent = formItems.length;
+  if (tabBadge) tabBadge.textContent = formItems.length;
+  if (itemsCountText) itemsCountText.textContent = `(${formItems.length})`;
+
+  // Cập nhật input ẩn / hiển thị
+  const sQty = document.getElementById('sQty');
+  const sGw = document.getElementById('sGrossWeight');
+  const sVal = document.getElementById('sValue');
+  if (sQty && totalQty > 0) sQty.value = totalQty;
+  if (sGw && totalGw > 0) sGw.value = totalGw;
+  if (sVal) sVal.value = totalVal;
 }
+
 
 // ==================== STATUS MODAL ====================
 window.xnkStatusShipment = openStatusModal;
@@ -926,7 +1433,7 @@ async function openStatusModal(id) {
 
       showToast("Cập nhật trạng thái lô hàng thành công!");
       window.closeModal();
-      await loadShipmentsData();
+      await loadShipmentsData(currentShipmentFilter);
     } catch (err) {
       // Handled
     }

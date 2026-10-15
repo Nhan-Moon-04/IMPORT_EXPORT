@@ -525,10 +525,22 @@ window.xnkCreateInvoiceModal = openCreateInvoiceModal;
 export async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null) {
   let shipments = [], products = [];
   try {
-    const [s, p] = await Promise.all([api.get('/api/shipments'), api.get('/api/products')]);
+    const [s, p] = await Promise.all([
+      api.get('/api/shipments?pageSize=200'),
+      api.get('/api/products?pageSize=200')
+    ]);
     shipments = s.data?.items || s.data || [];
     products  = p.data?.items || p.data || [];
   } catch {}
+
+  // Kiểm tra nếu lô hàng mặc định đã hoàn thành / khóa
+  if (defaultShipmentId) {
+    const target = shipments.find(s => s.id === defaultShipmentId);
+    if (target && (target.status === 'Completed' || target.status === 'Cancelled')) {
+      toast(`Lô hàng ${target.shipmentCode} đã [${target.status === 'Completed' ? 'Hoàn thành' : 'Hủy'}] và bị KHÓA. Không thể thêm chứng từ mới!`, 'warning');
+      return;
+    }
+  }
 
   const docToCreate = forceType || currentDocType;
   const isPacking   = docToCreate === 'PackingList';
@@ -544,115 +556,199 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
        <option value="ProformaInvoice">Proforma Invoice</option>
        <option value="DebitNote">Debit Note</option>`;
 
-  const shipOpts = shipments.map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} – ${s.supplierName || s.customerName || ''}</option>`).join('');
+  // Lọc ẩn hoàn toàn các lô hàng đã hoàn thành hoặc đã hủy (chỉ hiển thị lô đang xử lý)
+  const activeShipments = shipments.filter(s => {
+    if (s.id === defaultShipmentId) return true;
+    return s.status !== 'Completed' && s.status !== 'Cancelled';
+  });
+
+  const shipOpts = activeShipments.map(s => `
+    <option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>
+      ${s.shipmentCode} – ${s.supplierName || s.customerName || ''} (${s.type === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu'})
+    </option>
+  `).join('');
 
   const title  = document.getElementById('modalTitle');
   const tabs   = document.getElementById('modalTabs');
   const body   = document.getElementById('modalBody');
   const footer = document.getElementById('modalFooter');
 
-  title.innerHTML = isPacking ? 'Lập Packing List Mới' : isSales ? 'Lập Hợp Đồng Mới' : 'Lập Hóa Đơn Mới';
-  tabs.style.display = 'none';
+  if (title) title.innerHTML = isPacking ? 'Lập Packing List Mới' : isSales ? 'Lập Hợp Đồng Mới' : 'Lập Hóa Đơn Mới';
+  if (tabs) tabs.style.display = 'none';
 
-  body.innerHTML = `
-    <form id="create-invoice-form" autocomplete="off">
-      <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label required">${numLabel}</label>
-          <input type="text" id="inv-num" class="form-input" required placeholder="${numPH}">
+  if (body) {
+    body.innerHTML = `
+      <form id="create-invoice-form" autocomplete="off">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label required">${numLabel}</label>
+            <input type="text" id="inv-num" class="form-input" required placeholder="${numPH}">
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Ngày Lập</label>
+            <input type="date" id="inv-date" class="form-input" required value="${new Date().toISOString().slice(0,10)}">
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label required">Ngày Lập</label>
-          <input type="date" id="inv-date" class="form-input" required value="${new Date().toISOString().slice(0,10)}">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Lô Hàng Liên Quan</label>
+            <select id="inv-shipment" class="form-select" ${defaultShipmentId ? 'disabled' : ''}>
+              <option value="">-- Chọn lô hàng (tuỳ chọn) --</option>
+              ${shipOpts}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phân Loại</label>
+            <select id="inv-type" class="form-select">${typeOpts}</select>
+          </div>
         </div>
-      </div>
-      <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label">Lô Hàng Liên Quan</label>
-          <select id="inv-shipment" class="form-select" ${defaultShipmentId ? 'disabled' : ''}>
-            <option value="">-- Chọn lô hàng (tuỳ chọn) --</option>
-            ${shipOpts}
-          </select>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">Tài liệu đính kèm (PDF, ảnh...)</label>
+          <input type="file" id="inv-file" class="form-input">
         </div>
-        <div class="form-group">
-          <label class="form-label">Phân Loại</label>
-          <select id="inv-type" class="form-select">${typeOpts}</select>
+        <div style="margin-top:14px">
+          <div style="font-weight:600;font-size:13px;color:var(--text-main);margin-bottom:8px">Chi Tiết Sản Phẩm (tự động từ lô hàng)</div>
+          <table class="amis-data-table">
+            <thead><tr>
+              <th>Mặt Hàng</th>
+              <th style="text-align:right">Net Weight</th>
+              <th style="text-align:right">Gross Weight</th>
+              <th style="text-align:right">Đơn Giá ($)</th>
+              <th style="text-align:right">Thành Tiền ($)</th>
+            </tr></thead>
+            <tbody id="inv-items-body">
+              <tr><td colspan="5" class="amis-table-empty" style="padding:16px">Vui lòng chọn lô hàng...</td></tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-      <div class="form-group" style="margin-top:10px">
-        <label class="form-label">Tài liệu đính kèm (PDF, ảnh...)</label>
-        <input type="file" id="inv-file" class="form-input">
-      </div>
-      <div style="margin-top:14px">
-        <div style="font-weight:600;font-size:13px;color:var(--text-main);margin-bottom:8px">Chi Tiết Sản Phẩm (tự động từ lô hàng)</div>
-        <table class="amis-data-table">
-          <thead><tr>
-            <th>Mặt Hàng</th>
-            <th style="text-align:right">Net Weight</th>
-            <th style="text-align:right">Gross Weight</th>
-            <th style="text-align:right">Đơn Giá ($)</th>
-            <th style="text-align:right">Thành Tiền ($)</th>
-          </tr></thead>
-          <tbody id="inv-items-body">
-            <tr><td colspan="5" class="amis-table-empty" style="padding:16px">Vui lòng chọn lô hàng...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </form>
-  `;
+      </form>
+    `;
+  }
 
-  footer.innerHTML = `
-    <button type="button" class="btn btn-default" id="btn-cancel-inv">Hủy</button>
-    <button type="submit" form="create-invoice-form" class="btn btn-primary">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      ${isPacking ? 'Lập Packing List' : isSales ? 'Lập Hợp Đồng' : 'Lập Hóa Đơn'}
-    </button>
-  `;
-
+  // Mở modal trước
   window.openModal();
-  document.getElementById('btn-cancel-inv').addEventListener('click', window.closeGlobalModal);
+
+  // Gán nội dung footer sau khi mở modal để đảm bảo các nút bấm không bị ghi đè
+  if (footer) {
+    footer.innerHTML = `
+      <button type="button" class="btn btn-default" id="btn-cancel-inv">Hủy</button>
+      <button type="submit" form="create-invoice-form" class="btn btn-primary" id="btn-submit-inv">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        ${isPacking ? 'Lập Packing List' : isSales ? 'Lập Hợp Đồng' : 'Lập Hóa Đơn'}
+      </button>
+    `;
+  }
+
+  document.getElementById('btn-cancel-inv')?.addEventListener('click', () => {
+    if (typeof window.closeModal === 'function') window.closeModal();
+    else if (typeof window.closeGlobalModal === 'function') window.closeGlobalModal();
+  });
 
   const loadItems = async (shipId) => {
     const tb = document.getElementById('inv-items-body');
-    if (!shipId) { tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty" style="padding:14px">Vui lòng chọn lô hàng...</td></tr>`; return; }
-    tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty"><div class="ph-loading"><div class="ph-spinner"></div><span>Đang tải...</span></div></td></tr>`;
+    const lockedHint = document.getElementById('inv-shipment-locked-hint');
+    const submitBtn = document.getElementById('btn-submit-inv');
+    if (!tb) return;
+
+    if (!shipId) {
+      if (lockedHint) lockedHint.style.display = 'none';
+      if (submitBtn) submitBtn.disabled = false;
+      tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty" style="padding:14px">Vui lòng chọn lô hàng...</td></tr>`;
+      return;
+    }
+
+    const ship = shipments.find(s => s.id === shipId);
+    if (ship && (ship.status === 'Completed' || ship.status === 'Cancelled')) {
+      if (lockedHint) {
+        lockedHint.style.display = 'block';
+        lockedHint.textContent = `⚠️ Lô hàng ${ship.shipmentCode} đã [${ship.status === 'Completed' ? 'Hoàn thành' : 'Hủy'}] và bị KHÓA. Không thể thêm chứng từ mới!`;
+      }
+      if (submitBtn) submitBtn.disabled = true;
+      tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty" style="color:var(--amis-red); padding:16px; font-weight:600;">🔒 Lô hàng này đã hoàn thành (Đã khóa). Không thể thêm chứng từ cho lô hàng đã khóa.</td></tr>`;
+      return;
+    } else {
+      if (lockedHint) lockedHint.style.display = 'none';
+      if (submitBtn) submitBtn.disabled = false;
+    }
+
+    tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty"><div class="ph-loading"><div class="ph-spinner"></div><span>Đang tải sản phẩm từ lô hàng...</span></div></td></tr>`;
     try {
-      const r   = await api.get(`/api/shipments/${shipId}/items`);
-      const its = r.data?.items || r.data || [];
-      if (!its.length) { tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty">Lô hàng không có sản phẩm</td></tr>`; return; }
+      let its = (ship && Array.isArray(ship.items) && ship.items.length > 0) ? ship.items : null;
+      if (!its) {
+        const r = await api.get(`/api/shipments/${shipId}/items`);
+        its = r?.data?.items || r?.data || [];
+      }
+      if (!its.length) {
+        tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty">Lô hàng không có sản phẩm</td></tr>`;
+        return;
+      }
       tb.innerHTML = its.map(si => {
-        const qty = +si.quantity||0, gross = +si.grossWeight||0, price = +si.unitPrice||0;
-        return `<tr data-productid="${si.productId}" data-productname="${si.productName||''}" data-sku="${si.sku||''}" data-qty="${qty}" data-unit="${si.unit||'KG'}" data-price="${price}">
-          <td>${si.sku} – ${si.productName}</td>
-          <td style="text-align:right">${qty.toLocaleString()} ${si.unit||'KG'}</td>
-          <td style="text-align:right">${gross.toLocaleString()} ${si.unit||'KG'}</td>
-          <td style="text-align:right">${price.toLocaleString()}</td>
-          <td style="text-align:right;font-weight:700">${(qty*price).toLocaleString()}</td>
+        const qty = +si.quantity || 0, gross = +si.grossWeight || 0, price = +si.unitPrice || 0;
+        const pName = si.productName || si.product?.name || 'Sợi';
+        const pSku = si.sku || si.product?.sku || si.productCode || '';
+        const pUnit = si.unit || si.product?.unit || 'KG';
+        const pId = si.productId || si.id;
+        return `<tr data-productid="${pId}" data-productname="${pName}" data-sku="${pSku}" data-qty="${qty}" data-unit="${pUnit}" data-price="${price}">
+          <td><strong>${pSku}</strong>${pSku ? ' – ' : ''}${pName}</td>
+          <td style="text-align:right">${qty.toLocaleString()} ${pUnit}</td>
+          <td style="text-align:right">${gross.toLocaleString()} ${pUnit}</td>
+          <td style="text-align:right">$${price.toLocaleString()}</td>
+          <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${(qty * price).toLocaleString()}</td>
         </tr>`;
       }).join('');
-    } catch (e) { tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty" style="color:var(--amis-red)">Lỗi: ${e.message}</td></tr>`; }
+    } catch (e) {
+      tb.innerHTML = `<tr><td colspan="5" class="amis-table-empty" style="color:var(--amis-red)">Lỗi: ${e.message}</td></tr>`;
+    }
   };
 
-  if (defaultShipmentId) loadItems(defaultShipmentId);
-  document.getElementById('inv-shipment').addEventListener('change', e => loadItems(e.target.value));
+  const shipmentSelect = document.getElementById('inv-shipment');
+  if (shipmentSelect) {
+    shipmentSelect.addEventListener('change', e => {
+      loadItems(e.target.value);
+    });
+  }
 
-  document.getElementById('create-invoice-form').addEventListener('submit', async e => {
+  // Tự động load nếu có defaultShipmentId hoặc giá trị ban đầu
+  if (defaultShipmentId) {
+    loadItems(defaultShipmentId);
+  } else if (shipmentSelect && shipmentSelect.value) {
+    loadItems(shipmentSelect.value);
+  }
+
+  document.getElementById('create-invoice-form')?.addEventListener('submit', async e => {
     e.preventDefault();
+
+    const selectedShipId = document.getElementById('inv-shipment')?.value;
+    if (selectedShipId) {
+      const ship = shipments.find(s => s.id === selectedShipId);
+      if (ship && (ship.status === 'Completed' || ship.status === 'Cancelled')) {
+        toast(`Lô hàng ${ship.shipmentCode} đã hoàn thành (đã khóa). Không thể lập chứng từ!`, 'error');
+        return;
+      }
+    }
+
     const rows  = document.querySelectorAll('#inv-items-body tr[data-productid]');
     const items = Array.from(rows).map(r => ({
-      productId: r.dataset.productid, productName: r.dataset.productname,
-      productCode: r.dataset.sku, description: r.dataset.sku,
-      quantity: +r.dataset.qty, unit: r.dataset.unit, unitPrice: +r.dataset.price,
+      productId: r.dataset.productid,
+      productName: r.dataset.productname,
+      productCode: r.dataset.sku,
+      description: r.dataset.sku,
+      quantity: +r.dataset.qty,
+      unit: r.dataset.unit,
+      unitPrice: +r.dataset.price,
     }));
 
-    if (!items.length) { toast('Lô hàng không có sản phẩm', 'warning'); return; }
+    if (!items.length) {
+      toast('Lô hàng chưa có sản phẩm hoặc chưa chọn lô hàng hợp lệ', 'warning');
+      return;
+    }
 
     const payload = {
       invoiceNumber: document.getElementById('inv-num').value.trim(),
       invoiceDate:   new Date(document.getElementById('inv-date').value).toISOString(),
       type:          document.getElementById('inv-type').value,
       currency:      'USD',
-      shipmentId:    document.getElementById('inv-shipment').value || null,
+      shipmentId:    selectedShipId || null,
       items,
     };
 
@@ -662,15 +758,20 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
       const fileInput = document.getElementById('inv-file');
       if (fileInput?.files.length && invoiceId) {
         const fd = new FormData();
-        fd.append('File', fileInput.files[0]); fd.append('Category', 'Invoice');
-        fd.append('EntityType', 'Invoice'); fd.append('EntityId', invoiceId);
+        fd.append('File', fileInput.files[0]);
+        fd.append('Category', 'Invoice');
+        fd.append('EntityType', 'Invoice');
+        fd.append('EntityId', invoiceId);
         if (payload.shipmentId) fd.append('ShipmentId', payload.shipmentId);
         await api.upload('/api/documents/upload', fd);
       }
       toast('Tạo chứng từ thành công!', 'success');
-      window.closeGlobalModal();
+      if (typeof window.closeModal === 'function') window.closeModal();
+      else if (typeof window.closeGlobalModal === 'function') window.closeGlobalModal();
       await loadInvoices();
-    } catch (err) { toast(`Lỗi: ${err.message}`, 'error'); }
+    } catch (err) {
+      toast(`Lỗi: ${err.message}`, 'error');
+    }
   });
 }
 
