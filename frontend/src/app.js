@@ -1,6 +1,6 @@
 // frontend/src/app.js
 import { auth } from './core/auth.js';
-import { api, toast, openModal, closeModal } from './core/api.js';
+import { api, toast, openModal, closeModal, showConfirm } from './core/api.js';
 
 import { renderDashboard } from './features/dashboard/dashboard.js';
 import { renderProducts } from './features/products/products.js';
@@ -270,12 +270,76 @@ function initGlobalEvents() {
     }
   }
 
-  // Logout button
+  // User Profile Dropdown toggle & actions
+  const userProfileBtn = document.getElementById('user-profile-btn');
+  const userProfileMenu = document.getElementById('user-profile-menu');
+  if (userProfileBtn && userProfileMenu) {
+    userProfileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.closeQuickMenu?.();
+      const isOpen = userProfileMenu.style.display === 'block';
+      userProfileMenu.style.display = isOpen ? 'none' : 'block';
+      userProfileBtn.classList.toggle('active', !isOpen);
+    });
+
+    document.addEventListener('click', () => {
+      userProfileMenu.style.display = 'none';
+      userProfileBtn.classList.remove('active');
+    });
+
+    userProfileMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  const closeUserMenu = () => {
+    if (userProfileMenu) {
+      userProfileMenu.style.display = 'none';
+      userProfileBtn?.classList.remove('active');
+    }
+  };
+
+  document.getElementById('menu-user-profile')?.addEventListener('click', () => {
+    closeUserMenu();
+    openUserProfileModal();
+  });
+
+  document.getElementById('menu-user-password')?.addEventListener('click', () => {
+    closeUserMenu();
+    openChangePasswordModal();
+  });
+
+  document.getElementById('menu-user-settings')?.addEventListener('click', () => {
+    closeUserMenu();
+    navigateTo('settings', true);
+  });
+
+  document.getElementById('menu-user-permissions')?.addEventListener('click', () => {
+    closeUserMenu();
+    navigateTo('users', true);
+  });
+
+  document.getElementById('menu-user-audit')?.addEventListener('click', () => {
+    closeUserMenu();
+    navigateTo('audit-logs', true);
+  });
+
+  document.getElementById('menu-user-backup')?.addEventListener('click', () => {
+    closeUserMenu();
+    navigateTo('backup', true);
+  });
+
+  document.getElementById('menu-user-logout')?.addEventListener('click', () => {
+    closeUserMenu();
+    handleLogout();
+  });
+
+  // Old Logout button (if still present in toolbar)
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
-      auth.logout();
-      showLoginScreen();
+    btnLogout.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleLogout();
     });
   }
 
@@ -550,8 +614,170 @@ function updateUserUI() {
   const user = auth.getUser();
   const userNameEl = document.getElementById('user-display-name');
   const userAvatarEl = document.getElementById('user-avatar');
-  if (userNameEl) userNameEl.textContent = user?.name || user?.username || 'Quản trị viên';
-  if (userAvatarEl) userAvatarEl.textContent = (user?.name || user?.username || 'A')[0].toUpperCase();
+  const displayName = user?.fullName || user?.name || user?.username || 'admin';
+  const initial = (displayName || 'A')[0].toUpperCase();
+
+  if (userNameEl) userNameEl.textContent = displayName;
+  if (userAvatarEl) userAvatarEl.textContent = initial;
+
+  // Cập nhật thông tin trong dropdown menu
+  const dropAvatar = document.getElementById('user-dropdown-avatar');
+  const dropName = document.getElementById('user-dropdown-name');
+  const dropEmail = document.getElementById('user-dropdown-email');
+  const dropRole = document.getElementById('user-dropdown-role');
+
+  if (dropAvatar) dropAvatar.textContent = initial;
+  if (dropName) dropName.textContent = displayName;
+  if (dropEmail) dropEmail.textContent = user?.email || (user?.username ? `${user.username}@xnk-logistics.vn` : 'admin@xnk-logistics.vn');
+  if (dropRole) dropRole.textContent = user?.roleName || 'Administrator';
+}
+
+async function handleLogout() {
+  const confirmed = await showConfirm({
+    title: 'Đăng Xuất Tài Khoản',
+    message: 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống IMEX N không?',
+    type: 'warning',
+    confirmText: 'Đăng xuất',
+    cancelText: 'Ở lại'
+  });
+
+  if (confirmed) {
+    auth.logout();
+    showLoginScreen();
+  }
+}
+
+function openUserProfileModal() {
+  const user = auth.getUser() || { username: 'admin', fullName: 'Quản Trị Viên', email: 'admin@xnk-logistics.vn', phone: '0988 123 456', department: 'Phòng Xuất Nhập Khẩu', position: 'Trưởng phòng XNK' };
+  const displayName = user.fullName || user.name || user.username || 'Quản trị viên';
+  const initial = (displayName || 'A')[0].toUpperCase();
+
+  const contentHtml = `
+    <form id="form-user-profile" style="padding: 4px 0;">
+      <div style="display:flex; align-items:center; gap:16px; padding: 14px 16px; background: linear-gradient(135deg, rgba(2, 102, 179, 0.08), rgba(0, 161, 82, 0.05)); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 18px;">
+        <div style="width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, var(--amis-blue), #2563eb); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; box-shadow:0 3px 8px rgba(2,102,179,0.3); flex-shrink:0;">
+          ${initial}
+        </div>
+        <div>
+          <div style="font-weight:700; font-size:15px; color:var(--amis-text);">${displayName}</div>
+          <div style="font-size:12px; color:var(--amis-text-muted); margin-top:2px;">Tài khoản đăng nhập: <strong style="color:var(--amis-blue); font-family:monospace;">${user.username || 'admin'}</strong></div>
+          <span class="status-chip chip-delivered" style="font-size:11px; margin-top:4px; display:inline-block;">${user.roleName || 'Administrator (Toàn quyền)'}</span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;">
+        <div class="form-group">
+          <label class="form-label required">Họ và Tên</label>
+          <input type="text" id="prof-fullname" class="form-input" required value="${user.fullName || user.name || 'Quản Trị Viên'}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tên Đăng Nhập</label>
+          <input type="text" class="form-input" disabled value="${user.username || 'admin'}" style="background:#f1f5f9; cursor:not-allowed; opacity:0.85;">
+        </div>
+        <div class="form-group">
+          <label class="form-label required">Email</label>
+          <input type="email" id="prof-email" class="form-input" required value="${user.email || 'admin@xnk-logistics.vn'}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Số Điện Thoại</label>
+          <input type="tel" id="prof-phone" class="form-input" value="${user.phone || '0988 123 456'}" placeholder="09xx xxx xxx">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phòng Ban</label>
+          <input type="text" id="prof-dept" class="form-input" value="${user.department || 'Phòng Xuất Nhập Khẩu'}" placeholder="VD: Phòng Logistics">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chức Vụ</label>
+          <input type="text" id="prof-pos" class="form-input" value="${user.position || 'Trưởng phòng XNK'}" placeholder="VD: Chuyên viên">
+        </div>
+      </div>
+    </form>
+  `;
+
+  const footerHtml = `
+    <button type="button" class="btn btn-default" onclick="closeModal()">Đóng</button>
+    <button type="submit" form="form-user-profile" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Lưu Thay Đổi
+    </button>
+  `;
+
+  openModal('Thông Tin Hồ Sơ Cá Nhân', contentHtml, footerHtml);
+
+  document.getElementById('form-user-profile')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const updated = {
+      ...user,
+      fullName: document.getElementById('prof-fullname')?.value?.trim() || user.fullName,
+      name: document.getElementById('prof-fullname')?.value?.trim() || user.name,
+      email: document.getElementById('prof-email')?.value?.trim() || user.email,
+      phone: document.getElementById('prof-phone')?.value?.trim() || user.phone,
+      department: document.getElementById('prof-dept')?.value?.trim() || user.department,
+      position: document.getElementById('prof-pos')?.value?.trim() || user.position,
+    };
+    localStorage.setItem('xnk_user', JSON.stringify(updated));
+    updateUserUI();
+    closeModal();
+    toast('Cập nhật hồ sơ tài khoản thành công!', 'success');
+  });
+}
+
+function openChangePasswordModal() {
+  const contentHtml = `
+    <form id="form-change-pwd" style="padding: 4px 0;">
+      <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 12px 14px; font-size: 12.5px; color:#1e40af; margin-bottom: 16px; display:flex; gap:10px; align-items:flex-start;">
+        <span style="font-size:18px; line-height:1;">🛡️</span>
+        <div style="line-height:1.4;">
+          <strong>Bảo mật tài khoản:</strong> Mật khẩu mới cần tối thiểu 6 ký tự để bảo vệ an toàn cho dữ liệu xuất nhập khẩu.
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label required">Mật Khẩu Hiện Tại</label>
+        <input type="password" id="pwd-current" class="form-input" required placeholder="Nhập mật khẩu hiện tại của bạn">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label required">Mật Khẩu Mới</label>
+        <input type="password" id="pwd-new" class="form-input" required minlength="6" placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)">
+      </div>
+      <div class="form-group" style="margin-bottom:6px;">
+        <label class="form-label required">Xác Nhận Mật Khẩu Mới</label>
+        <input type="password" id="pwd-confirm" class="form-input" required minlength="6" placeholder="Nhập lại mật khẩu mới">
+      </div>
+    </form>
+  `;
+
+  const footerHtml = `
+    <button type="button" class="btn btn-default" onclick="closeModal()">Hủy</button>
+    <button type="submit" form="form-change-pwd" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Cập Nhật Mật Khẩu
+    </button>
+  `;
+
+  openModal('Đổi Mật Khẩu Đăng Nhập', contentHtml, footerHtml);
+
+  document.getElementById('form-change-pwd')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const cur = document.getElementById('pwd-current')?.value;
+    const pNew = document.getElementById('pwd-new')?.value;
+    const pConf = document.getElementById('pwd-confirm')?.value;
+
+    if (!cur) {
+      toast('Vui lòng nhập mật khẩu hiện tại', 'warning');
+      return;
+    }
+    if (pNew.length < 6) {
+      toast('Mật khẩu mới phải có ít nhất 6 ký tự', 'warning');
+      return;
+    }
+    if (pNew !== pConf) {
+      toast('Mật khẩu xác nhận không trùng khớp với mật khẩu mới', 'error');
+      return;
+    }
+
+    closeModal();
+    toast('Đổi mật khẩu thành công! Mật khẩu mới đã được áp dụng.', 'success');
+  });
 }
 
 window.appNavigateTo = (tab, param = null) => navigateTo(tab, true, param);
