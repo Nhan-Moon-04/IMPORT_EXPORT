@@ -231,6 +231,12 @@
   padding: 14px 16px;
   background: linear-gradient(135deg, rgba(2, 102, 179, 0.06), rgba(0, 161, 82, 0.05));
   border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.user-menu-header:hover {
+  background: linear-gradient(135deg, rgba(2, 102, 179, 0.12), rgba(0, 161, 82, 0.09));
 }
 
 .user-menu-avatar {
