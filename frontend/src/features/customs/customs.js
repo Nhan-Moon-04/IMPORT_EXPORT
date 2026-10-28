@@ -1,7 +1,11 @@
 // frontend/src/features/customs/customs.js
 /**
- * Quản Lý Tờ Khai Hải Quan Điện Tử (VNACCS/VCIS)
+ * Quản Lý Tờ Khai Hải Quan
  * Giao diện chuẩn MISA AMIS 2025: Sort, Filter, Column Picker, Multi-Select, Print & Excel
+ * Hỗ trợ:
+ * - Nhập khẩu nước ngoài (Trị giá USD, quy đổi theo Tỷ giá Hải quan để tính thuế)
+ * - Nhập khẩu trong nước (Trị giá VNĐ trực tiếp, không quy đổi)
+ * - Đính kèm và xem/tải file tờ khai thực tế (.xlsx, .pdf)
  */
 import { api, toast, openModal, closeModal, showConfirm, API_BASE, getToken } from '../../core/api.js';
 
@@ -20,21 +24,24 @@ let sortDirection = 'desc';
 const DEFAULT_COLUMNS = [
   { id: 'declarationNumber', label: 'Số Tờ Khai', minWidth: '150px', defaultVisible: true, sortable: true },
   { id: 'status', label: 'Phân Luồng', minWidth: '130px', defaultVisible: true, sortable: true },
-  { id: 'declarationType', label: 'Loại Hình', minWidth: '100px', defaultVisible: true, sortable: true },
+  { id: 'originScope', label: 'Nguồn Gốc', minWidth: '130px', defaultVisible: true, sortable: true },
+  { id: 'declarationType', label: 'Loại Hình', minWidth: '95px', defaultVisible: true, sortable: true },
   { id: 'shipmentCode', label: 'Mã Lô Hàng', minWidth: '150px', defaultVisible: true, sortable: true },
   { id: 'declarationDate', label: 'Ngày Đăng Ký', minWidth: '110px', defaultVisible: true, sortable: true },
-  { id: 'customsBranch', label: 'Chi Cục Hải Quan', minWidth: '220px', defaultVisible: true, sortable: true },
-  { id: 'partnerName', label: 'Doanh Nghiệp / Đối Tác', minWidth: '180px', defaultVisible: true, sortable: true },
-  { id: 'totalValue', label: 'Trị Giá Tính Thuế ($)', minWidth: '140px', defaultVisible: true, sortable: true },
-  { id: 'taxAmount', label: 'Tiền Thuế ($)', minWidth: '120px', defaultVisible: false, sortable: true },
-  { id: 'notes', label: 'Ghi Chú', minWidth: '150px', defaultVisible: false, sortable: false },
-  { id: 'hasFile', label: 'Tệp Đính Kèm', minWidth: '110px', defaultVisible: true, sortable: false },
+  { id: 'customsBranch', label: 'Chi Cục Hải Quan', minWidth: '200px', defaultVisible: true, sortable: true },
+  { id: 'partnerName', label: 'Doanh Nghiệp / Đối Tác', minWidth: '170px', defaultVisible: true, sortable: true },
+  { id: 'valueUsd', label: 'Trị Giá USD ($)', minWidth: '130px', defaultVisible: true, sortable: true },
+  { id: 'exchangeRate', label: 'Tỷ Giá HQ', minWidth: '110px', defaultVisible: true, sortable: true },
+  { id: 'taxableValueVnd', label: 'Trị Giá Tính Thuế (VNĐ)', minWidth: '160px', defaultVisible: true, sortable: true },
+  { id: 'totalTaxAmount', label: 'Tiền Thuế (VNĐ)', minWidth: '140px', defaultVisible: true, sortable: true },
+  { id: 'notes', label: 'Ghi Chú', minWidth: '140px', defaultVisible: false, sortable: false },
+  { id: 'hasFile', label: 'Tệp Đính Kèm', minWidth: '140px', defaultVisible: true, sortable: false },
   { id: 'actions', label: 'Thao Tác', minWidth: '120px', defaultVisible: true, sortable: false }
 ];
 
 function getSavedColumns() {
   try {
-    const saved = localStorage.getItem('xnk_customs_columns');
+    const saved = localStorage.getItem('xnk_customs_columns_v3');
     if (saved) return JSON.parse(saved);
   } catch (e) {}
   const initial = {};
@@ -44,8 +51,49 @@ function getSavedColumns() {
 
 function saveColumnConfig(cols) {
   try {
-    localStorage.setItem('xnk_customs_columns', JSON.stringify(cols));
+    localStorage.setItem('xnk_customs_columns_v3', JSON.stringify(cols));
   } catch (e) {}
+}
+
+// ─── HELPER PARSE CUSTOMS METADATA ───────────────────────────────────────────
+export function parseCustomsMeta(notes) {
+  const def = {
+    userNotes: '',
+    scope: 'foreign',
+    isDomestic: false,
+    currency: 'USD',
+    valueUsd: null,
+    exchangeRate: null,
+    taxableValueVnd: null,
+    importTaxRate: 0,
+    importTaxAmount: 0,
+    vatRate: 8,
+    vatAmount: 0,
+    totalTaxAmount: 0
+  };
+  if (!notes) return def;
+  if (typeof notes === 'object') return { ...def, ...notes };
+  try {
+    if (typeof notes === 'string' && notes.trim().startsWith('{')) {
+      const parsed = JSON.parse(notes);
+      const isDom = parsed.scope === 'domestic' || parsed.isDomestic === true;
+      return {
+        userNotes: parsed.userNotes || parsed.notes || '',
+        scope: isDom ? 'domestic' : 'foreign',
+        isDomestic: isDom,
+        currency: parsed.currency || (isDom ? 'VND' : 'USD'),
+        valueUsd: parsed.valueUsd !== undefined && parsed.valueUsd !== null ? Number(parsed.valueUsd) : (parsed.totalValue ? Number(parsed.totalValue) : null),
+        exchangeRate: parsed.exchangeRate ? Number(parsed.exchangeRate) : (parsed.rate ? Number(parsed.rate) : null),
+        taxableValueVnd: parsed.taxableValueVnd !== undefined && parsed.taxableValueVnd !== null ? Number(parsed.taxableValueVnd) : (parsed.valVnd ? Number(parsed.valVnd) : null),
+        importTaxRate: Number(parsed.importTaxRate || 0),
+        importTaxAmount: Number(parsed.importTaxAmount || 0),
+        vatRate: Number(parsed.vatRate !== undefined ? parsed.vatRate : 8),
+        vatAmount: Number(parsed.vatAmount || 0),
+        totalTaxAmount: Number(parsed.totalTaxAmount || parsed.taxAmount || 0)
+      };
+    }
+  } catch (e) {}
+  return { ...def, userNotes: String(notes) };
 }
 
 // ─── MAIN RENDER ──────────────────────────────────────────────────────────────
@@ -59,7 +107,7 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
       <!-- TOOLBAR MISA AMIS -->
       <div class="amis-toolbar-wrap">
         <div class="amis-toolbar-left">
-          <button id="btnCustomsAdd" class="amis-btn amis-btn-primary" title="Mở tờ khai hải quan điện tử mới">
+          <button id="btnCustomsAdd" class="amis-btn amis-btn-primary" title="Mở tờ khai hải quan mới">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Thêm Tờ Khai HQ
           </button>
@@ -67,11 +115,15 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             Sửa
           </button>
-          <button id="btnCustomsDetail" class="amis-btn amis-btn-ghost" disabled title="Xem tờ khai chi tiết VNACCS">
+          <button id="btnCustomsDetail" class="amis-btn amis-btn-ghost" disabled title="Xem chi tiết tờ khai">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             Chi tiết
           </button>
-          <button id="btnCustomsPrint" class="amis-btn amis-btn-ghost" disabled title="In bản tờ khai chuẩn Hải quan A4">
+          <button id="btnCustomsDownloadDoc" class="amis-btn amis-btn-ghost" disabled title="Xem hoặc tải file đính kèm tờ khai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Tải File Tờ Khai
+          </button>
+          <button id="btnCustomsPrint" class="amis-btn amis-btn-ghost" disabled title="In bản tờ khai Hải quan A4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             In Tờ Khai
           </button>
@@ -88,13 +140,16 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Excel
           </button>
-          <button id="btnCustomsSync" class="amis-btn amis-btn-ghost" title="Kết nối Token Chữ ký số và đồng bộ hệ thống VNACCS">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            Đồng Bộ VNACCS
-          </button>
         </div>
 
         <div class="amis-toolbar-right">
+          <!-- Lọc nguồn gốc -->
+          <select id="filterCustomsScope" class="ph-filter-select">
+            <option value="">Tất cả nguồn gốc</option>
+            <option value="foreign">🌐 Nhập khẩu nước ngoài (USD)</option>
+            <option value="domestic">🏠 Nhập khẩu trong nước (VNĐ)</option>
+          </select>
+
           <!-- Lọc ngày đăng ký -->
           <div class="ph-date-range">
             <input type="date" id="filterCustomsDateFrom" class="ph-date-input" title="Từ ngày đăng ký">
@@ -135,9 +190,7 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
             </button>
             <div class="amis-col-dropdown" id="colDropdownCustoms" style="display:none;">
               <div class="col-dropdown-header">Tùy chỉnh cột hiển thị</div>
-              <div class="col-dropdown-body" id="colDropdownBodyCustoms">
-                <!-- Sẽ render các checkbox cột -->
-              </div>
+              <div class="col-dropdown-body" id="colDropdownBodyCustoms"></div>
               <div class="col-dropdown-footer">
                 <button type="button" class="btn btn-secondary btn-sm" id="btnResetColCustoms">Mặc định</button>
                 <button type="button" class="btn btn-primary btn-sm" id="btnSaveColCustoms">Áp dụng</button>
@@ -151,13 +204,11 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
       <div class="amis-table-container">
         <table class="amis-table" id="customsMainTable">
           <thead>
-            <tr id="customsTableHeadRow">
-              <!-- Sẽ render dynamically theo config cột -->
-            </tr>
+            <tr id="customsTableHeadRow"></tr>
           </thead>
           <tbody id="customsTableBody">
             <tr>
-              <td colspan="12" style="text-align:center; padding: 40px; color: var(--text-muted);">
+              <td colspan="15" style="text-align:center; padding: 40px; color: var(--text-muted);">
                 <div class="spinner" style="margin-bottom:8px;"></div>
                 Đang tải dữ liệu tờ khai hải quan...
               </td>
@@ -227,21 +278,49 @@ async function fetchAllData() {
       const shp = allShipments.find(s => s.id === cd.shipmentId || s.shipmentCode === cd.shipmentCode);
       const doc = customsDocs.find(d => 
         (d.entityId && d.entityId.toLowerCase() === cd.id.toLowerCase()) ||
-        (cd.declarationNumber && d.fileName && d.fileName.toLowerCase().includes(cd.declarationNumber.toLowerCase()))
+        (cd.declarationNumber && d.fileName && d.fileName.toLowerCase().includes(cd.declarationNumber.toLowerCase())) ||
+        (cd.declarationNumber && d.originalFileName && d.originalFileName.toLowerCase().includes(cd.declarationNumber.toLowerCase())) ||
+        (cd.shipmentId && d.shipmentId && d.shipmentId.toLowerCase() === cd.shipmentId.toLowerCase())
       );
 
-      // Parse metadata from notes if present
-      let parsedNotes = cd.notes || '';
-      let meta = {};
-      try {
-        if (cd.notes && cd.notes.startsWith('{')) {
-          meta = JSON.parse(cd.notes);
-          parsedNotes = meta.notes || '';
-        }
-      } catch (e) {}
+      // Parse metadata from notes
+      const meta = parseCustomsMeta(cd.notes);
+      const shpCurrency = (shp?.currency || 'USD').toUpperCase();
+      const isDomestic = meta.isDomestic || shpCurrency === 'VND';
 
-      const totalVal = meta.totalValue || shp?.totalValue || 0;
-      const taxVal = meta.taxAmount || (totalVal * 0.1); // default estimate 10%
+      let valueUsd = meta.valueUsd;
+      let exchangeRate = meta.exchangeRate;
+      let taxableValueVnd = meta.taxableValueVnd;
+      let importTaxAmount = meta.importTaxAmount;
+      let vatAmount = meta.vatAmount;
+      let totalTaxAmount = meta.totalTaxAmount;
+
+      if (isDomestic) {
+        if (taxableValueVnd === null || taxableValueVnd === undefined) {
+          taxableValueVnd = shp?.totalValue || 0;
+        }
+        if (!vatAmount && taxableValueVnd) {
+          vatAmount = Math.round(taxableValueVnd * (meta.vatRate || 8) / 100);
+        }
+        totalTaxAmount = vatAmount;
+        valueUsd = null;
+        exchangeRate = null;
+      } else {
+        if (valueUsd === null || valueUsd === undefined) {
+          valueUsd = shp?.totalValue || 0;
+        }
+        if (!exchangeRate && meta.exchangeRate) {
+          exchangeRate = meta.exchangeRate;
+        }
+        if ((taxableValueVnd === null || taxableValueVnd === undefined) && valueUsd && exchangeRate) {
+          taxableValueVnd = Math.round(valueUsd * exchangeRate);
+        }
+        if (!totalTaxAmount && taxableValueVnd) {
+          const it = Math.round(taxableValueVnd * (meta.importTaxRate || 0) / 100);
+          const vt = Math.round((taxableValueVnd + it) * (meta.vatRate || 8) / 100);
+          totalTaxAmount = it + vt;
+        }
+      }
 
       return {
         id: cd.id,
@@ -250,13 +329,22 @@ async function fetchAllData() {
         declarationType: cd.declarationType || (shp?.type === 'Export' ? 'B11' : 'A11'),
         customsBranch: cd.customsBranch || '02CI - Chi cục HQ CK Cảng Sài Gòn KV1',
         status: typeof cd.status === 'number' ? cd.status : 1, // 1: Xanh, 2: Vàng, 3: Đỏ
-        notes: parsedNotes,
+        notes: meta.userNotes,
+        isDomestic,
+        scope: isDomestic ? 'domestic' : 'foreign',
+        currency: isDomestic ? 'VND' : 'USD',
+        valueUsd,
+        exchangeRate,
+        taxableValueVnd,
+        importTaxRate: meta.importTaxRate || 0,
+        importTaxAmount,
+        vatRate: meta.vatRate || 8,
+        vatAmount,
+        totalTaxAmount,
         shipmentId: cd.shipmentId || shp?.id,
         shipmentCode: cd.shipmentCode || shp?.shipmentCode || '---',
         shipmentType: shp?.type || (cd.declarationType?.startsWith('B') ? 'Export' : 'Import'),
         partnerName: shp?.supplierName || shp?.customerName || (shp?.type === 'Export' ? 'CÔNG TY CP XUẤT NHẬP KHẨU IMEX' : 'LONG CHENG WU TEXTILE CO., LTD'),
-        totalValue: Number(totalVal),
-        taxAmount: Number(taxVal),
         docId: doc?.id,
         docName: doc?.originalFileName || doc?.fileName,
         createdAt: cd.createdAt
@@ -268,7 +356,7 @@ async function fetchAllData() {
     console.error('Lỗi khi tải dữ liệu tờ khai:', err);
     toast('Không thể kết nối đến máy chủ lấy danh sách tờ khai', 'error');
     const tbody = document.getElementById('customsTableBody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px; color:#ef4444;">Lỗi khi tải dữ liệu tờ khai hải quan</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; padding:30px; color:#ef4444;">Lỗi khi tải dữ liệu tờ khai hải quan</td></tr>`;
   }
 }
 
@@ -277,6 +365,7 @@ function applyFilters() {
   const searchTerm = (document.getElementById('customsSearchInput')?.value || '').toLowerCase().trim();
   const filterStatus = document.getElementById('filterCustomsStatus')?.value;
   const filterType = document.getElementById('filterCustomsType')?.value;
+  const filterScope = document.getElementById('filterCustomsScope')?.value;
   const dateFrom = document.getElementById('filterCustomsDateFrom')?.value;
   const dateTo = document.getElementById('filterCustomsDateTo')?.value;
 
@@ -288,7 +377,13 @@ function applyFilters() {
       const matchBranch = (d.customsBranch || '').toLowerCase().includes(searchTerm);
       const matchPartner = (d.partnerName || '').toLowerCase().includes(searchTerm);
       const matchType = (d.declarationType || '').toLowerCase().includes(searchTerm);
-      if (!matchNumber && !matchShp && !matchBranch && !matchPartner && !matchType) return false;
+      const matchFile = (d.docName || '').toLowerCase().includes(searchTerm);
+      if (!matchNumber && !matchShp && !matchBranch && !matchPartner && !matchType && !matchFile) return false;
+    }
+
+    // Scope
+    if (filterScope && filterScope !== '') {
+      if (d.scope !== filterScope) return false;
     }
 
     // Status / Channel
@@ -369,10 +464,14 @@ function renderTableHead() {
       }
     }
 
+    const isNumeric = col.id === 'valueUsd' || col.id === 'exchangeRate' || col.id === 'taxableValueVnd' || col.id === 'totalTaxAmount';
+    const isCenter = col.id === 'actions' || col.id === 'hasFile' || col.id === 'declarationType' || col.id === 'originScope';
+    const justify = isNumeric ? 'flex-end' : (isCenter ? 'center' : 'flex-start');
+
     const cursorStyle = col.sortable ? 'cursor:pointer; user-select:none;' : '';
     html += `
       <th style="min-width:${col.minWidth}; ${cursorStyle}" data-col="${col.id}" class="${col.sortable ? 'sortable-header' : ''}">
-        <div style="display:flex; align-items:center; justify-content:${col.id === 'totalValue' || col.id === 'taxAmount' ? 'flex-end' : (col.id === 'actions' || col.id === 'hasFile' ? 'center' : 'flex-start')}">
+        <div style="display:flex; align-items:center; justify-content:${justify}">
           <span>${col.label}</span>
           ${sortIcon}
         </div>
@@ -418,7 +517,7 @@ function renderTableBody() {
   if (filteredDeclarations.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="12" style="text-align: center; padding: 48px; color: var(--text-muted);">
+        <td colspan="15" style="text-align: center; padding: 48px; color: var(--text-muted);">
           <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
           <div style="font-weight: 600; font-size: 14px; color: #334155;">Không tìm thấy tờ khai hải quan nào</div>
           <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Thử thay đổi bộ lọc tìm kiếm hoặc nhấn nút "Thêm Tờ Khai HQ"</div>
@@ -441,17 +540,33 @@ function renderTableBody() {
     else if (d.status === 2) channelBadge = '<span class="customs-channel-chip channel-yellow">🟡 Luồng Vàng (2)</span>';
     else if (d.status === 3) channelBadge = '<span class="customs-channel-chip channel-red">🔴 Luồng Đỏ (3)</span>';
 
+    // Scope badge
+    const scopeBadge = d.isDomestic
+      ? `<span class="customs-scope-badge domestic" title="Hàng mua bán nội địa, giao dịch VNĐ">🏠 Trong nước</span>`
+      : `<span class="customs-scope-badge foreign" title="Hàng nhập khẩu nước ngoài, giao dịch USD quy đổi tỷ giá">🌐 Nước ngoài</span>`;
+
     // Type badge
     const isExport = d.declarationType?.startsWith('B') || d.shipmentType === 'Export';
     const typeBadge = `<span class="customs-type-badge ${isExport ? 'export' : ''}">${d.declarationType || 'A11'}</span>`;
 
-    // File attached icon
-    const fileHtml = d.docId ? `
-      <div style="display:inline-flex; align-items:center; gap:4px; color:var(--amis-blue); font-size:12px; cursor:pointer;" onclick="event.stopPropagation(); window.viewCustomsDoc('${d.id}')" title="Xem/Tải file: ${escapeHtml(d.docName || 'PDF')}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <span>PDF</span>
-      </div>
-    ` : `<span style="color:#94a3b8; font-size:11px;">Chưa có</span>`;
+    // File attached icon & name
+    let fileHtml = `<span style="color:#94a3b8; font-size:11px;">Chưa đính kèm</span>`;
+    if (d.docId || d.docName) {
+      const isXlsx = d.docName?.endsWith('.xlsx') || d.docName?.endsWith('.xls');
+      const badgeColor = isXlsx ? '#15803d' : '#b91c1c';
+      const badgeBg = isXlsx ? '#f0fdf4' : '#fef2f2';
+      const badgeBorder = isXlsx ? '#bbf7d0' : '#fecaca';
+      const iconLabel = isXlsx ? '📗 Excel' : '📕 PDF';
+
+      fileHtml = `
+        <div style="display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; background:${badgeBg}; border:1px solid ${badgeBorder}; color:${badgeColor}; font-size:11px; font-weight:700; cursor:pointer;" 
+             onclick="event.stopPropagation(); window.viewCustomsDoc('${d.id}')" 
+             title="Xem / Tải file: ${escapeHtml(d.docName || 'File tờ khai')}">
+          <span>${iconLabel}</span>
+          <span style="max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">${escapeHtml(d.docName || 'Tải file')}</span>
+        </div>
+      `;
+    }
 
     return `
       <tr class="bl-main-row ${isSelected ? 'selected' : ''}" data-id="${d.id}">
@@ -461,7 +576,7 @@ function renderTableBody() {
 
         ${colConfig.declarationNumber ? `
           <td>
-            <span class="customs-num-link" onclick="event.stopPropagation(); window.viewCustomsVNACCS('${d.id}')" title="Xem bản tờ khai chuẩn VNACCS">
+            <span class="customs-num-link" onclick="event.stopPropagation(); window.viewCustomsVNACCS('${d.id}')" title="Xem bản tờ khai">
               ${escapeHtml(d.declarationNumber)}
             </span>
           </td>
@@ -469,7 +584,9 @@ function renderTableBody() {
 
         ${colConfig.status ? `<td>${channelBadge}</td>` : ''}
 
-        ${colConfig.declarationType ? `<td>${typeBadge}</td>` : ''}
+        ${colConfig.originScope ? `<td style="text-align:center;">${scopeBadge}</td>` : ''}
+
+        ${colConfig.declarationType ? `<td style="text-align:center;">${typeBadge}</td>` : ''}
 
         ${colConfig.shipmentCode ? `
           <td>
@@ -483,21 +600,44 @@ function renderTableBody() {
 
         ${colConfig.customsBranch ? `<td style="font-size:12px; color:#334155;">${escapeHtml(d.customsBranch)}</td>` : ''}
 
-        ${colConfig.partnerName ? `<td><div style="font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(d.partnerName)}">${escapeHtml(d.partnerName)}</div></td>` : ''}
+        ${colConfig.partnerName ? `<td><div style="font-weight:600; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(d.partnerName)}">${escapeHtml(d.partnerName)}</div></td>` : ''}
 
-        ${colConfig.totalValue ? `<td style="text-align:right; font-weight:700; color:var(--amis-green); font-size:12.5px;">$${Number(d.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+        ${colConfig.valueUsd ? `
+          <td style="text-align:right; font-weight:700; color:#0369a1; font-size:12.5px;">
+            ${d.isDomestic || d.valueUsd === null ? '<span style="color:#94a3b8; font-weight:normal;">---</span>' : `$${Number(d.valueUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          </td>
+        ` : ''}
 
-        ${colConfig.taxAmount ? `<td style="text-align:right; font-weight:600; color:#b45309;">$${Number(d.taxAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+        ${colConfig.exchangeRate ? `
+          <td style="text-align:right; font-family:monospace; font-weight:600; color:#475569;">
+            ${d.isDomestic || !d.exchangeRate ? '<span style="color:#94a3b8; font-weight:normal;">---</span>' : Number(d.exchangeRate).toLocaleString('vi-VN')}
+          </td>
+        ` : ''}
 
-        ${colConfig.notes ? `<td style="font-size:12px; color:#64748b; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(d.notes || '---')}</td>` : ''}
+        ${colConfig.taxableValueVnd ? `
+          <td style="text-align:right; font-weight:700; color:var(--amis-green); font-size:12.5px;">
+            ${d.taxableValueVnd ? `${Number(d.taxableValueVnd).toLocaleString('vi-VN')} ₫` : '<span style="color:#94a3b8; font-weight:normal;">---</span>'}
+          </td>
+        ` : ''}
+
+        ${colConfig.totalTaxAmount ? `
+          <td style="text-align:right; font-weight:600; color:#b45309; font-size:12px;">
+            ${d.totalTaxAmount ? `${Number(d.totalTaxAmount).toLocaleString('vi-VN')} ₫` : '<span style="color:#94a3b8; font-weight:normal;">0 ₫</span>'}
+          </td>
+        ` : ''}
+
+        ${colConfig.notes ? `<td style="font-size:12px; color:#64748b; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(d.notes || '---')}</td>` : ''}
 
         ${colConfig.hasFile ? `<td style="text-align:center;">${fileHtml}</td>` : ''}
 
         ${colConfig.actions ? `
           <td style="text-align:center;">
             <div style="display:inline-flex; align-items:center; gap:4px;">
-              <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.viewCustomsVNACCS('${d.id}')" title="Xem chi tiết">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.viewCustomsVNACCS('${d.id}')" title="Xem chi tiết tờ khai">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+              <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.viewCustomsDoc('${d.id}')" title="Tải file đính kèm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </button>
               <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.editCustomsDeclaration('${d.id}')" title="Chỉnh sửa">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -559,6 +699,7 @@ function updateToolbarButtonStates() {
   const count = selectedIds.size;
   const btnEdit = document.getElementById('btnCustomsEdit');
   const btnDetail = document.getElementById('btnCustomsDetail');
+  const btnDownloadDoc = document.getElementById('btnCustomsDownloadDoc');
   const btnPrint = document.getElementById('btnCustomsPrint');
   const btnDelete = document.getElementById('btnCustomsDelete');
 
@@ -576,6 +717,7 @@ function updateToolbarButtonStates() {
 
   if (btnEdit) btnEdit.disabled = count !== 1;
   if (btnDetail) btnDetail.disabled = count !== 1;
+  if (btnDownloadDoc) btnDownloadDoc.disabled = count !== 1;
   if (btnPrint) btnPrint.disabled = count !== 1;
   if (btnDelete) btnDelete.disabled = count === 0;
 }
@@ -677,6 +819,7 @@ function setupFilterEvents() {
   const searchInput = document.getElementById('customsSearchInput');
   searchInput?.addEventListener('input', () => applyFilters());
 
+  document.getElementById('filterCustomsScope')?.addEventListener('change', () => applyFilters());
   document.getElementById('filterCustomsStatus')?.addEventListener('change', () => applyFilters());
   document.getElementById('filterCustomsType')?.addEventListener('change', () => applyFilters());
   document.getElementById('filterCustomsDateFrom')?.addEventListener('change', () => applyFilters());
@@ -696,9 +839,10 @@ function setupToolbarEvents() {
     toast('Đã nạp lại dữ liệu tờ khai mới nhất!', 'success');
   });
 
-  // Đồng bộ VNACCS
-  document.getElementById('btnCustomsSync')?.addEventListener('click', () => {
-    toast('Đã kết nối Token Chữ ký số và đồng bộ dữ liệu tờ khai VNACCS/VCIS thành công!', 'success');
+  // Tải file đính kèm
+  document.getElementById('btnCustomsDownloadDoc')?.addEventListener('click', () => {
+    const id = Array.from(selectedIds)[0];
+    if (id) window.viewCustomsDoc(id);
   });
 
   // Sửa
@@ -761,35 +905,64 @@ function exportCustomsExcel() {
     'STT': index + 1,
     'Số Tờ Khai': d.declarationNumber,
     'Phân Luồng': d.status === 1 ? 'Luồng Xanh' : (d.status === 2 ? 'Luồng Vàng' : (d.status === 3 ? 'Luồng Đỏ' : 'Chưa phân luồng')),
+    'Nguồn Gốc': d.isDomestic ? 'Trong nước (VNĐ)' : 'Nước ngoài (USD)',
     'Loại Hình': d.declarationType,
     'Mã Lô Hàng': d.shipmentCode,
     'Ngày Đăng Ký': d.declarationDate ? new Date(d.declarationDate).toLocaleDateString('vi-VN') : '',
     'Chi Cục Hải Quan': d.customsBranch,
     'Doanh Nghiệp / Đối Tác': d.partnerName,
-    'Trị Giá Tính Thuế (USD)': d.totalValue,
-    'Tiền Thuế (USD)': d.taxAmount,
+    'Trị Giá USD ($)': d.isDomestic ? '' : (d.valueUsd || ''),
+    'Tỷ Giá HQ': d.isDomestic ? '' : (d.exchangeRate || ''),
+    'Trị Giá Tính Thuế (VNĐ)': d.taxableValueVnd || '',
+    'Tiền Thuế (VNĐ)': d.totalTaxAmount || '',
+    'File Đính Kèm': d.docName || '',
     'Ghi Chú': d.notes
   }));
 
   const ws = XLSX.utils.json_to_sheet(exportData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "ToKhaiHaiQuan");
-  XLSX.writeFile(wb, `To_Khai_Hai_Quan_VNACCS_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  XLSX.writeFile(wb, `Danh_Sach_To_Khai_HQ_${new Date().toISOString().slice(0, 10)}.xlsx`);
   toast('Đã xuất file Excel tờ khai hải quan thành công!', 'success');
 }
 
-// ─── MODAL TẠO MỚI TỜ KHAI CHUẨN AMIS ──────────────────────────────────────────
+// ─── MODAL TẠO MỚI TỜ KHAI (TRANG TẠO TK CÁ NHÂN, RÕ RÀNG, DỄ DÙNG) ───────────
 export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = null) {
   const autoNum = `10${Math.floor(1000000000 + Math.random() * 9000000000)}`;
   const todayStr = new Date().toISOString().split('T')[0];
 
+  const defShp = defaultShipmentId ? allShipments.find(s => s.id === defaultShipmentId) : null;
+  const isDefDomestic = defShp?.currency === 'VND';
+  const defVal = defShp?.totalValue || 0;
+
   const modalHtml = `
     <form id="form-create-customs" style="padding: 4px 0;">
+      <!-- CHỌN NGUỒN GỐC TỜ KHAI -->
+      <div style="margin-bottom: 14px;">
+        <label class="form-label required" style="font-size:12px; font-weight:700;">Loại Hình Nhập Khẩu & Tiền Tệ</label>
+        <div class="customs-scope-picker">
+          <label class="customs-scope-option ${!isDefDomestic ? 'selected' : ''}" id="lblScopeForeign">
+            <input type="radio" name="cd-scope-radio" value="foreign" ${!isDefDomestic ? 'checked' : ''}>
+            <div>
+              <div style="font-weight:700; color:#1d4ed8; font-size:13px;">🌐 Nhập Khẩu Nước Ngoài (USD)</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">Trị giá nguyên tệ USD, quy đổi theo Tỷ giá Hải quan để tính thuế</div>
+            </div>
+          </label>
+          <label class="customs-scope-option ${isDefDomestic ? 'selected' : ''}" id="lblScopeDomestic">
+            <input type="radio" name="cd-scope-radio" value="domestic" ${isDefDomestic ? 'checked' : ''}>
+            <div>
+              <div style="font-weight:700; color:#15803d; font-size:13px;">🏠 Mua Bán Trong Nước (VNĐ)</div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">Giao dịch nội địa trực tiếp bằng VNĐ, không có USD/tỷ giá</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;">
         <div class="form-group">
           <label class="form-label required">Số Tờ Khai HQ (12 số)</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" id="cd-number" class="form-control" required value="${autoNum}" placeholder="VD: 105492817290" style="font-family:monospace; font-weight:700; color:var(--amis-blue);">
+            <input type="text" id="cd-number" class="form-control" required value="${autoNum}" placeholder="VD: 108584252930" style="font-family:monospace; font-weight:700; color:var(--amis-blue);">
             <button type="button" class="btn btn-secondary btn-sm" id="btnGenCustomsNum" title="Tự động sinh số tờ khai mới" style="padding:4px 8px;">
               🔄 Sinh số
             </button>
@@ -803,18 +976,18 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
             ${(allShipments || [])
               .filter(s => s.id === defaultShipmentId || (s.status !== 'Completed' && s.status !== 'Cancelled'))
               .map(s => `
-                <option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>
-                  ${escapeHtml(s.shipmentCode)} (${s.type === 'Export' ? 'Xuất' : 'Nhập'} - ${escapeHtml(s.supplierName || s.customerName || '---')})
+                <option value="${s.id}" data-currency="${s.currency || 'USD'}" data-val="${s.totalValue || 0}" ${s.id === defaultShipmentId ? 'selected' : ''}>
+                  ${escapeHtml(s.shipmentCode)} (${s.type === 'Export' ? 'Xuất' : 'Nhập'} - ${s.currency || 'USD'} - ${escapeHtml(s.supplierName || s.customerName || '---')})
                 </option>
               `).join('')}
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label required">Loại Hình Tờ Khai</label>
+          <label class="form-label required">Mã Loại Hình</label>
           <select id="cd-type" class="form-control" required>
-            <option value="A11" selected>A11 - Nhập kinh doanh tiêu dùng</option>
-            <option value="A12">A12 - Nhập kinh doanh sản xuất</option>
+            <option value="A11">A11 - Nhập kinh doanh tiêu dùng</option>
+            <option value="A12" selected>A12 - Nhập kinh doanh sản xuất</option>
             <option value="E21">E21 - Nhập nguyên liệu gia công</option>
             <option value="B11">B11 - Xuất kinh doanh</option>
             <option value="B13">B13 - Xuất đã nhập khẩu</option>
@@ -825,16 +998,16 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
         <div class="form-group">
           <label class="form-label required">Phân Luồng Hải Quan</label>
           <select id="cd-status" class="form-control">
-            <option value="1" selected>🟢 Luồng Xanh (1 - Miễn kiểm tra thực tế & hồ sơ)</option>
-            <option value="2">🟡 Luồng Vàng (2 - Kiểm tra hồ sơ chứng từ)</option>
-            <option value="3">🔴 Luồng Đỏ (3 - Kiểm tra thực tế hàng hóa)</option>
+            <option value="1" selected>🟢 Luồng Xanh (1 - Thông quan)</option>
+            <option value="2">🟡 Luồng Vàng (2 - Kiểm tra hồ sơ)</option>
+            <option value="3">🔴 Luồng Đỏ (3 - Kiểm hóa thực tế)</option>
             <option value="0">⚪ Chưa phân luồng</option>
           </select>
         </div>
 
-        <div class="form-group" style="grid-column: span 2;">
+        <div class="form-group">
           <label class="form-label">Chi Cục Hải Quan Đăng Ký</label>
-          <input type="text" id="cd-branch" class="form-control" list="customsBranchSuggestions" value="02CI - Chi cục HQ CK Cảng Sài Gòn KV1" placeholder="Nhập hoặc chọn chi cục hải quan">
+          <input type="text" id="cd-branch" class="form-control" list="customsBranchSuggestions" value="02CI - Chi cục HQ CK Cảng Sài Gòn KV1" placeholder="Nhập hoặc chọn chi cục">
           <datalist id="customsBranchSuggestions">
             <option value="02CI - Chi cục HQ CK Cảng Sài Gòn KV1">
             <option value="02IK - Chi cục HQ CK Cảng Cát Lái">
@@ -849,20 +1022,91 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
           <label class="form-label">Ngày Đăng Ký Tờ Khai</label>
           <input type="date" id="cd-date" class="form-control" value="${todayStr}">
         </div>
+      </div>
 
-        <div class="form-group">
-          <label class="form-label">Trị Giá Tính Thuế ($)</label>
-          <input type="number" step="0.01" id="cd-value" class="form-control" placeholder="Tự động lấy theo lô hàng">
+      <!-- KHỐI TÍNH TRỊ GIÁ & THUẾ HẢI QUAN -->
+      <div class="customs-tax-box" id="customsTaxBox">
+        <div class="customs-tax-box-title">
+          <span>Kê Khai Trị Giá Tính Thuế & Tiền Thuế</span>
+          <span id="taxBoxScopeNote" style="font-size:11px; font-weight:normal; text-transform:none; color:#0266b3;">
+            ${!isDefDomestic ? 'Quy đổi USD theo tỷ giá Hải quan để tính thuế' : 'Giao dịch trực tiếp bằng VNĐ'}
+          </span>
         </div>
 
+        <!-- PHẦN CHO HÀNG NƯỚC NGOÀI (USD) -->
+        <div id="sectionForeignTax" style="${!isDefDomestic ? 'display:block;' : 'display:none;'}">
+          <div style="display:grid; grid-template-columns: 1.2fr 1fr 1.3fr; gap:12px; margin-bottom:12px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label required">Trị Giá Nguyên Tệ ($ USD)</label>
+              <input type="number" step="0.01" id="cd-val-usd" class="form-control" placeholder="VD: 23109.61" value="${!isDefDomestic && defVal ? defVal : ''}">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label required">Tỷ Giá Hải Quan (VNĐ/USD)</label>
+              <input type="number" step="1" id="cd-exchange-rate" class="form-control" placeholder="VD: 25450 hoặc 25890" value="25450">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Trị Giá Tính Thuế Quy Đổi (VNĐ)</label>
+              <input type="text" id="cd-val-vnd-calculated" class="form-control" readonly style="background:#f1f5f9; font-weight:700; color:#15803d;" placeholder="Tự động tính: USD × Tỷ giá">
+            </div>
+          </div>
+          <div style="font-size:11px; color:#64748b; margin-bottom:12px;">
+            * Trị giá tính thuế (VNĐ) = Trị giá USD × Tỷ giá do Hải quan công bố tại thời điểm mở tờ khai.
+          </div>
+        </div>
+
+        <!-- PHẦN CHO HÀNG TRONG NƯỚC (VNĐ) -->
+        <div id="sectionDomesticTax" style="${isDefDomestic ? 'display:block;' : 'display:none;'}">
+          <div style="display:grid; grid-template-columns: 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label required">Trị Giá Hàng Hóa / Tính Thuế (VNĐ)</label>
+              <input type="number" step="1000" id="cd-val-vnd-direct" class="form-control" placeholder="VD: 500000000" value="${isDefDomestic && defVal ? defVal : ''}">
+            </div>
+          </div>
+          <div style="font-size:11px; color:#15803d; margin-bottom:12px; font-weight:600;">
+            ✓ Giao dịch nội địa sử dụng tiền tệ Việt Nam Đồng (VNĐ). Đô là đô, VNĐ là VNĐ, không sử dụng tỷ giá quy đổi.
+          </div>
+        </div>
+
+        <!-- THUẾ NHẬP KHẨU & VAT -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding-top:10px; border-top:1px dashed #cbd5e1;">
+          <div class="form-group" style="margin:0;" id="grpImportTax">
+            <label class="form-label">% Thuế Nhập Khẩu</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <input type="number" step="0.5" id="cd-tax-import-rate" class="form-control" value="0" style="width:80px;">
+              <span style="font-size:12px;">%</span>
+              <span id="txtImportTaxAmount" style="margin-left:auto; font-weight:600; color:#b45309; font-size:12px;">0 ₫</span>
+            </div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">% Thuế GTGT (VAT)</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <input type="number" step="1" id="cd-tax-vat-rate" class="form-control" value="8" style="width:80px;">
+              <span style="font-size:12px;">%</span>
+              <span id="txtVatTaxAmount" style="margin-left:auto; font-weight:600; color:#b45309; font-size:12px;">0 ₫</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TỔNG TIỀN THUẾ HQ -->
+        <div class="customs-tax-summary-bar">
+          <div style="font-weight:700; color:#334155; font-size:13px;">Tổng Tiền Thuế Phải Nộp (VNĐ):</div>
+          <div id="txtTotalTaxCustoms" style="font-size:16px; font-weight:800; color:#dc2626;">0 ₫</div>
+        </div>
+      </div>
+
+      <!-- TỆP ĐÍNH KÈM & GHI CHÚ -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;">
         <div class="form-group" style="grid-column: span 2;">
-          <label class="form-label">Tệp đính kèm (File tờ khai PDF / Excel / XML VNACCS)</label>
-          <input type="file" id="cd-file" class="form-control" accept=".pdf,.xlsx,.xls,.xml">
+          <label class="form-label">Tệp đính kèm tờ khai (File Excel .xlsx / PDF / XML)</label>
+          <input type="file" id="cd-file" class="form-control" accept=".xlsx,.xls,.pdf,.xml">
+          <div style="font-size:11px; color:#64748b; margin-top:3px;">
+            Đính kèm file tờ khai xuất từ phần mềm Hải quan (VD: ToKhaiHQ_...xlsx) để xem và tải về sau này.
+          </div>
         </div>
 
         <div class="form-group" style="grid-column: span 2;">
           <label class="form-label">Ghi Chú</label>
-          <textarea id="cd-notes" class="form-control" rows="2" placeholder="Nhập ghi chú hoặc yêu cầu kiểm dịch, kết quả soi chiếu..."></textarea>
+          <textarea id="cd-notes" class="form-control" rows="2" placeholder="Nhập ghi chú thêm nếu cần..."></textarea>
         </div>
       </div>
 
@@ -873,7 +1117,7 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
     </form>
   `;
 
-  openModal('Khai Báo Tờ Khai Hải Quan Mới (VNACCS)', modalHtml);
+  openModal('Khai Báo Tờ Khai Hải Quan', modalHtml);
 
   // Sinh số mới
   document.getElementById('btnGenCustomsNum')?.addEventListener('click', () => {
@@ -881,16 +1125,104 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
     document.getElementById('cd-number').value = num;
   });
 
-  // Tự động điền giá trị theo lô hàng đã chọn
+  // Chuyển đổi Nguồn gốc
+  function updateScopeUI(scope) {
+    const isDom = scope === 'domestic';
+    const secForeign = document.getElementById('sectionForeignTax');
+    const secDomestic = document.getElementById('sectionDomesticTax');
+    const grpImportTax = document.getElementById('grpImportTax');
+    const note = document.getElementById('taxBoxScopeNote');
+    const lblFor = document.getElementById('lblScopeForeign');
+    const lblDom = document.getElementById('lblScopeDomestic');
+
+    if (isDom) {
+      if (lblFor) lblFor.classList.remove('selected');
+      if (lblDom) lblDom.classList.add('selected');
+      if (secForeign) secForeign.style.display = 'none';
+      if (secDomestic) secDomestic.style.display = 'block';
+      if (grpImportTax) grpImportTax.style.display = 'none';
+      if (note) note.textContent = 'Giao dịch trực tiếp bằng VNĐ (Hàng trong nước)';
+    } else {
+      if (lblFor) lblFor.classList.add('selected');
+      if (lblDom) lblDom.classList.remove('selected');
+      if (secForeign) secForeign.style.display = 'block';
+      if (secDomestic) secDomestic.style.display = 'none';
+      if (grpImportTax) grpImportTax.style.display = 'block';
+      if (note) note.textContent = 'Quy đổi USD theo tỷ giá Hải quan để tính thuế';
+    }
+    recalculateCustomsTaxes();
+  }
+
+  document.querySelectorAll('input[name="cd-scope-radio"]').forEach(r => {
+    r.addEventListener('change', function () {
+      updateScopeUI(this.value);
+    });
+  });
+
+  // Tính toán tiền thuế và quy đổi
+  function recalculateCustomsTaxes() {
+    const isDom = document.querySelector('input[name="cd-scope-radio"]:checked')?.value === 'domestic';
+    let taxableVnd = 0;
+
+    if (isDom) {
+      taxableVnd = Number(document.getElementById('cd-val-vnd-direct')?.value || 0);
+    } else {
+      const valUsd = Number(document.getElementById('cd-val-usd')?.value || 0);
+      const rate = Number(document.getElementById('cd-exchange-rate')?.value || 0);
+      taxableVnd = Math.round(valUsd * rate);
+      const valVndCalc = document.getElementById('cd-val-vnd-calculated');
+      if (valVndCalc) valVndCalc.value = taxableVnd ? `${taxableVnd.toLocaleString('vi-VN')} ₫` : '';
+    }
+
+    const impRate = isDom ? 0 : Number(document.getElementById('cd-tax-import-rate')?.value || 0);
+    const vatRate = Number(document.getElementById('cd-tax-vat-rate')?.value || 0);
+
+    const impAmount = Math.round(taxableVnd * (impRate / 100));
+    const vatAmount = Math.round((taxableVnd + impAmount) * (vatRate / 100));
+    const totalTax = impAmount + vatAmount;
+
+    const txtImp = document.getElementById('txtImportTaxAmount');
+    const txtVat = document.getElementById('txtVatTaxAmount');
+    const txtTotal = document.getElementById('txtTotalTaxCustoms');
+
+    if (txtImp) txtImp.textContent = `${impAmount.toLocaleString('vi-VN')} ₫`;
+    if (txtVat) txtVat.textContent = `${vatAmount.toLocaleString('vi-VN')} ₫`;
+    if (txtTotal) txtTotal.textContent = `${totalTax.toLocaleString('vi-VN')} ₫`;
+  }
+
+  ['cd-val-usd', 'cd-exchange-rate', 'cd-val-vnd-direct', 'cd-tax-import-rate', 'cd-tax-vat-rate'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', recalculateCustomsTaxes);
+  });
+
+  // Tự động điền theo lô hàng đã chọn
   document.getElementById('cd-shipment')?.addEventListener('change', function () {
     const sid = this.value;
     const s = allShipments.find(x => x.id === sid);
     if (s) {
-      if (s.totalValue) document.getElementById('cd-value').value = s.totalValue;
+      const curr = (s.currency || 'USD').toUpperCase();
+      const isDom = curr === 'VND';
+      const rad = document.querySelector(`input[name="cd-scope-radio"][value="${isDom ? 'domestic' : 'foreign'}"]`);
+      if (rad) {
+        rad.checked = true;
+        updateScopeUI(isDom ? 'domestic' : 'foreign');
+      }
+
+      if (isDom) {
+        const dInput = document.getElementById('cd-val-vnd-direct');
+        if (dInput) dInput.value = s.totalValue || '';
+      } else {
+        const uInput = document.getElementById('cd-val-usd');
+        if (uInput) uInput.value = s.totalValue || '';
+      }
+
       if (s.type === 'Export') document.getElementById('cd-type').value = 'B11';
-      else document.getElementById('cd-type').value = 'A11';
+      else document.getElementById('cd-type').value = 'A12';
+
+      recalculateCustomsTaxes();
     }
   });
+
+  recalculateCustomsTaxes();
 
   // Submit save
   document.getElementById('btn-save-customs')?.addEventListener('click', async () => {
@@ -907,12 +1239,46 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
       return;
     }
 
+    const isDom = document.querySelector('input[name="cd-scope-radio"]:checked')?.value === 'domestic';
+    let valUsd = null;
+    let rate = null;
+    let taxableVnd = 0;
+
+    if (isDom) {
+      taxableVnd = Number(document.getElementById('cd-val-vnd-direct')?.value || 0);
+    } else {
+      valUsd = Number(document.getElementById('cd-val-usd')?.value || 0);
+      rate = Number(document.getElementById('cd-exchange-rate')?.value || 0);
+      taxableVnd = Math.round(valUsd * rate);
+    }
+
+    const impRate = isDom ? 0 : Number(document.getElementById('cd-tax-import-rate')?.value || 0);
+    const vatRate = Number(document.getElementById('cd-tax-vat-rate')?.value || 0);
+    const impAmount = Math.round(taxableVnd * (impRate / 100));
+    const vatAmount = Math.round((taxableVnd + impAmount) * (vatRate / 100));
+    const totalTax = impAmount + vatAmount;
+
+    const metaPayload = {
+      scope: isDom ? 'domestic' : 'foreign',
+      isDomestic: isDom,
+      currency: isDom ? 'VND' : 'USD',
+      valueUsd: valUsd,
+      exchangeRate: rate,
+      taxableValueVnd: taxableVnd,
+      importTaxRate: impRate,
+      importTaxAmount: impAmount,
+      vatRate: vatRate,
+      vatAmount: vatAmount,
+      totalTaxAmount: totalTax,
+      userNotes: document.getElementById('cd-notes').value.trim()
+    };
+
     const payload = {
       declarationNumber: num,
       declarationType: document.getElementById('cd-type').value,
       customsBranch: document.getElementById('cd-branch').value.trim(),
       shipmentId: sid,
-      notes: document.getElementById('cd-notes').value.trim(),
+      notes: JSON.stringify(metaPayload),
       declarationDate: document.getElementById('cd-date').value ? new Date(document.getElementById('cd-date').value).toISOString() : new Date().toISOString(),
       status: parseInt(document.getElementById('cd-status').value)
     };
@@ -950,9 +1316,33 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
     const res = await api.get(`/api/customsDeclarations/${id}`);
     const cd = res.data;
     const dateVal = cd.declarationDate ? cd.declarationDate.split('T')[0] : '';
+    const meta = parseCustomsMeta(cd.notes);
+
+    const isDom = meta.isDomestic;
 
     const modalHtml = `
       <form id="form-edit-customs" style="padding: 4px 0;">
+        <!-- CHỌN NGUỒN GỐC TỜ KHAI -->
+        <div style="margin-bottom: 14px;">
+          <label class="form-label required" style="font-size:12px; font-weight:700;">Loại Hình Nhập Khẩu & Tiền Tệ</label>
+          <div class="customs-scope-picker">
+            <label class="customs-scope-option ${!isDom ? 'selected' : ''}" id="lblScopeForeignEdit">
+              <input type="radio" name="cd-scope-radio-edit" value="foreign" ${!isDom ? 'checked' : ''}>
+              <div>
+                <div style="font-weight:700; color:#1d4ed8; font-size:13px;">🌐 Nhập Khẩu Nước Ngoài (USD)</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Trị giá nguyên tệ USD, quy đổi theo Tỷ giá Hải quan để tính thuế</div>
+              </div>
+            </label>
+            <label class="customs-scope-option ${isDom ? 'selected' : ''}" id="lblScopeDomesticEdit">
+              <input type="radio" name="cd-scope-radio-edit" value="domestic" ${isDom ? 'checked' : ''}>
+              <div>
+                <div style="font-weight:700; color:#15803d; font-size:13px;">🏠 Mua Bán Trong Nước (VNĐ)</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Giao dịch nội địa trực tiếp bằng VNĐ, không có USD/tỷ giá</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;">
           <div class="form-group">
             <label class="form-label required">Số Tờ Khai HQ</label>
@@ -967,7 +1357,7 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
           </div>
 
           <div class="form-group">
-            <label class="form-label required">Loại Hình</label>
+            <label class="form-label required">Mã Loại Hình</label>
             <select id="cd-type-edit" class="form-control" required>
               <option value="A11" ${cd.declarationType === 'A11' ? 'selected' : ''}>A11 - Nhập KD tiêu dùng</option>
               <option value="A12" ${cd.declarationType === 'A12' ? 'selected' : ''}>A12 - Nhập KD SX</option>
@@ -981,14 +1371,14 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
           <div class="form-group">
             <label class="form-label required">Phân Luồng</label>
             <select id="cd-status-edit" class="form-control">
-              <option value="1" ${cd.status === 1 ? 'selected' : ''}>🟢 Luồng Xanh (1 - Miễn kiểm tra)</option>
+              <option value="1" ${cd.status === 1 ? 'selected' : ''}>🟢 Luồng Xanh (1 - Thông quan)</option>
               <option value="2" ${cd.status === 2 ? 'selected' : ''}>🟡 Luồng Vàng (2 - Kiểm tra hồ sơ)</option>
               <option value="3" ${cd.status === 3 ? 'selected' : ''}>🔴 Luồng Đỏ (3 - Kiểm hóa thực tế)</option>
               <option value="0" ${cd.status === 0 ? 'selected' : ''}>⚪ Chưa phân luồng</option>
             </select>
           </div>
 
-          <div class="form-group" style="grid-column: span 2;">
+          <div class="form-group">
             <label class="form-label">Chi Cục Hải Quan</label>
             <input type="text" id="cd-branch-edit" class="form-control" value="${escapeHtml(cd.customsBranch || '')}">
           </div>
@@ -997,16 +1387,86 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
             <label class="form-label">Ngày Đăng Ký</label>
             <input type="date" id="cd-date-edit" class="form-control" value="${dateVal}">
           </div>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label">Đính Kèm Tệp Mới (Tùy chọn)</label>
-            <input type="file" id="cd-file-edit" class="form-control" accept=".pdf,.xlsx,.xls,.xml">
+        <!-- KHỐI TÍNH TRỊ GIÁ & THUẾ HẢI QUAN EDIT -->
+        <div class="customs-tax-box" id="customsTaxBoxEdit">
+          <div class="customs-tax-box-title">
+            <span>Kê Khai Trị Giá Tính Thuế & Tiền Thuế</span>
+            <span id="taxBoxScopeNoteEdit" style="font-size:11px; font-weight:normal; text-transform:none; color:#0266b3;">
+              ${!isDom ? 'Quy đổi USD theo tỷ giá Hải quan để tính thuế' : 'Giao dịch trực tiếp bằng VNĐ'}
+            </span>
           </div>
 
-          <div class="form-group" style="grid-column: span 2;">
-            <label class="form-label">Ghi Chú</label>
-            <textarea id="cd-notes-edit" class="form-control" rows="2">${escapeHtml(cd.notes || '')}</textarea>
+          <!-- PHẦN CHO HÀNG NƯỚC NGOÀI (USD) -->
+          <div id="sectionForeignTaxEdit" style="${!isDom ? 'display:block;' : 'display:none;'}">
+            <div style="display:grid; grid-template-columns: 1.2fr 1fr 1.3fr; gap:12px; margin-bottom:12px;">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label required">Trị Giá Nguyên Tệ ($ USD)</label>
+                <input type="number" step="0.01" id="cd-val-usd-edit" class="form-control" value="${meta.valueUsd || ''}" placeholder="VD: 23109.61">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label required">Tỷ Giá Hải Quan (VNĐ/USD)</label>
+                <input type="number" step="1" id="cd-exchange-rate-edit" class="form-control" value="${meta.exchangeRate || 25450}" placeholder="VD: 25450 hoặc 25890">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Trị Giá Tính Thuế Quy Đổi (VNĐ)</label>
+                <input type="text" id="cd-val-vnd-calculated-edit" class="form-control" readonly style="background:#f1f5f9; font-weight:700; color:#15803d;">
+              </div>
+            </div>
+            <div style="font-size:11px; color:#64748b; margin-bottom:12px;">
+              * Ngoại tệ USD được quy đổi theo tỷ giá Hải quan để tính thuế Nhập khẩu và VAT.
+            </div>
           </div>
+
+          <!-- PHẦN CHO HÀNG TRONG NƯỚC (VNĐ) -->
+          <div id="sectionDomesticTaxEdit" style="${isDom ? 'display:block;' : 'display:none;'}">
+            <div style="display:grid; grid-template-columns: 1fr; gap:12px; margin-bottom:12px;">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label required">Trị Giá Hàng Hóa / Tính Thuế (VNĐ)</label>
+                <input type="number" step="1000" id="cd-val-vnd-direct-edit" class="form-control" value="${meta.taxableValueVnd || ''}" placeholder="VD: 500000000">
+              </div>
+            </div>
+            <div style="font-size:11px; color:#15803d; margin-bottom:12px; font-weight:600;">
+              ✓ Giao dịch nội địa sử dụng tiền tệ Việt Nam Đồng (VNĐ). Đô là đô, VNĐ là VNĐ, không sử dụng tỷ giá quy đổi.
+            </div>
+          </div>
+
+          <!-- THUẾ NHẬP KHẨU & VAT -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding-top:10px; border-top:1px dashed #cbd5e1;">
+            <div class="form-group" style="margin:0;" id="grpImportTaxEdit">
+              <label class="form-label">% Thuế Nhập Khẩu</label>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input type="number" step="0.5" id="cd-tax-import-rate-edit" class="form-control" value="${meta.importTaxRate || 0}" style="width:80px;">
+                <span style="font-size:12px;">%</span>
+                <span id="txtImportTaxAmountEdit" style="margin-left:auto; font-weight:600; color:#b45309; font-size:12px;">0 ₫</span>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">% Thuế GTGT (VAT)</label>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input type="number" step="1" id="cd-tax-vat-rate-edit" class="form-control" value="${meta.vatRate !== undefined ? meta.vatRate : 8}" style="width:80px;">
+                <span style="font-size:12px;">%</span>
+                <span id="txtVatTaxAmountEdit" style="margin-left:auto; font-weight:600; color:#b45309; font-size:12px;">0 ₫</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TỔNG TIỀN THUẾ HQ -->
+          <div class="customs-tax-summary-bar">
+            <div style="font-weight:700; color:#334155; font-size:13px;">Tổng Tiền Thuế Phải Nộp (VNĐ):</div>
+            <div id="txtTotalTaxCustomsEdit" style="font-size:16px; font-weight:800; color:#dc2626;">0 ₫</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label class="form-label">Đính Kèm Tệp Mới (File Excel .xlsx / PDF)</label>
+          <input type="file" id="cd-file-edit" class="form-control" accept=".xlsx,.xls,.pdf,.xml">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label class="form-label">Ghi Chú</label>
+          <textarea id="cd-notes-edit" class="form-control" rows="2">${escapeHtml(meta.userNotes || '')}</textarea>
         </div>
 
         <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
@@ -1018,6 +1478,75 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
 
     openModal(`Chỉnh Sửa Tờ Khai: ${escapeHtml(cd.declarationNumber)}`, modalHtml);
 
+    function updateScopeUIEdit(scope) {
+      const isD = scope === 'domestic';
+      const secForeign = document.getElementById('sectionForeignTaxEdit');
+      const secDomestic = document.getElementById('sectionDomesticTaxEdit');
+      const grpImportTax = document.getElementById('grpImportTaxEdit');
+      const note = document.getElementById('taxBoxScopeNoteEdit');
+      const lblFor = document.getElementById('lblScopeForeignEdit');
+      const lblDom = document.getElementById('lblScopeDomesticEdit');
+
+      if (isD) {
+        if (lblFor) lblFor.classList.remove('selected');
+        if (lblDom) lblDom.classList.add('selected');
+        if (secForeign) secForeign.style.display = 'none';
+        if (secDomestic) secDomestic.style.display = 'block';
+        if (grpImportTax) grpImportTax.style.display = 'none';
+        if (note) note.textContent = 'Giao dịch trực tiếp bằng VNĐ (Hàng trong nước)';
+      } else {
+        if (lblFor) lblFor.classList.add('selected');
+        if (lblDom) lblDom.classList.remove('selected');
+        if (secForeign) secForeign.style.display = 'block';
+        if (secDomestic) secDomestic.style.display = 'none';
+        if (grpImportTax) grpImportTax.style.display = 'block';
+        if (note) note.textContent = 'Quy đổi USD theo tỷ giá Hải quan để tính thuế';
+      }
+      recalculateEditTaxes();
+    }
+
+    document.querySelectorAll('input[name="cd-scope-radio-edit"]').forEach(r => {
+      r.addEventListener('change', function () {
+        updateScopeUIEdit(this.value);
+      });
+    });
+
+    function recalculateEditTaxes() {
+      const isD = document.querySelector('input[name="cd-scope-radio-edit"]:checked')?.value === 'domestic';
+      let taxableVnd = 0;
+
+      if (isD) {
+        taxableVnd = Number(document.getElementById('cd-val-vnd-direct-edit')?.value || 0);
+      } else {
+        const valUsd = Number(document.getElementById('cd-val-usd-edit')?.value || 0);
+        const rate = Number(document.getElementById('cd-exchange-rate-edit')?.value || 0);
+        taxableVnd = Math.round(valUsd * rate);
+        const valVndCalc = document.getElementById('cd-val-vnd-calculated-edit');
+        if (valVndCalc) valVndCalc.value = taxableVnd ? `${taxableVnd.toLocaleString('vi-VN')} ₫` : '';
+      }
+
+      const impRate = isD ? 0 : Number(document.getElementById('cd-tax-import-rate-edit')?.value || 0);
+      const vatRate = Number(document.getElementById('cd-tax-vat-rate-edit')?.value || 0);
+
+      const impAmount = Math.round(taxableVnd * (impRate / 100));
+      const vatAmount = Math.round((taxableVnd + impAmount) * (vatRate / 100));
+      const totalTax = impAmount + vatAmount;
+
+      const txtImp = document.getElementById('txtImportTaxAmountEdit');
+      const txtVat = document.getElementById('txtVatTaxAmountEdit');
+      const txtTotal = document.getElementById('txtTotalTaxCustomsEdit');
+
+      if (txtImp) txtImp.textContent = `${impAmount.toLocaleString('vi-VN')} ₫`;
+      if (txtVat) txtVat.textContent = `${vatAmount.toLocaleString('vi-VN')} ₫`;
+      if (txtTotal) txtTotal.textContent = `${totalTax.toLocaleString('vi-VN')} ₫`;
+    }
+
+    ['cd-val-usd-edit', 'cd-exchange-rate-edit', 'cd-val-vnd-direct-edit', 'cd-tax-import-rate-edit', 'cd-tax-vat-rate-edit'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', recalculateEditTaxes);
+    });
+
+    recalculateEditTaxes();
+
     document.getElementById('btn-update-customs')?.addEventListener('click', async () => {
       const num = document.getElementById('cd-number-edit').value.trim();
       if (!num) {
@@ -1025,12 +1554,46 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
         return;
       }
 
+      const isD = document.querySelector('input[name="cd-scope-radio-edit"]:checked')?.value === 'domestic';
+      let valUsd = null;
+      let rate = null;
+      let taxableVnd = 0;
+
+      if (isD) {
+        taxableVnd = Number(document.getElementById('cd-val-vnd-direct-edit')?.value || 0);
+      } else {
+        valUsd = Number(document.getElementById('cd-val-usd-edit')?.value || 0);
+        rate = Number(document.getElementById('cd-exchange-rate-edit')?.value || 0);
+        taxableVnd = Math.round(valUsd * rate);
+      }
+
+      const impRate = isD ? 0 : Number(document.getElementById('cd-tax-import-rate-edit')?.value || 0);
+      const vatRate = Number(document.getElementById('cd-tax-vat-rate-edit')?.value || 0);
+      const impAmount = Math.round(taxableVnd * (impRate / 100));
+      const vatAmount = Math.round((taxableVnd + impAmount) * (vatRate / 100));
+      const totalTax = impAmount + vatAmount;
+
+      const metaPayload = {
+        scope: isD ? 'domestic' : 'foreign',
+        isDomestic: isD,
+        currency: isD ? 'VND' : 'USD',
+        valueUsd: valUsd,
+        exchangeRate: rate,
+        taxableValueVnd: taxableVnd,
+        importTaxRate: impRate,
+        importTaxAmount: impAmount,
+        vatRate: vatRate,
+        vatAmount: vatAmount,
+        totalTaxAmount: totalTax,
+        userNotes: document.getElementById('cd-notes-edit').value.trim()
+      };
+
       const payload = {
         declarationNumber: num,
         declarationType: document.getElementById('cd-type-edit').value,
         customsBranch: document.getElementById('cd-branch-edit').value.trim(),
         shipmentId: cd.shipmentId,
-        notes: document.getElementById('cd-notes-edit').value.trim(),
+        notes: JSON.stringify(metaPayload),
         declarationDate: document.getElementById('cd-date-edit').value ? new Date(document.getElementById('cd-date-edit').value).toISOString() : cd.declarationDate,
         status: parseInt(document.getElementById('cd-status-edit').value)
       };
@@ -1064,7 +1627,7 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
   }
 };
 
-// ─── XEM BẢN TỜ KHAI CHUẨN VNACCS / VCIS ──────────────────────────────────────
+// ─── XEM BẢN TỜ KHAI ─────────────────────────────────────────────────────────
 window.viewCustomsVNACCS = function (id) {
   const cd = allDeclarations.find(x => x.id === id);
   if (!cd) {
@@ -1097,6 +1660,7 @@ window.viewCustomsVNACCS = function (id) {
             <div>Số tờ khai: <strong style="color:#0266b3; font-size:13px; font-family:monospace;">${escapeHtml(cd.declarationNumber)}</strong></div>
             <div>Ngày đăng ký: <strong>${dDate}</strong></div>
             <div>Mã loại hình: <strong>${escapeHtml(cd.declarationType)}</strong></div>
+            <div>Nguồn gốc: <strong>${cd.isDomestic ? 'Trong nước (VNĐ)' : 'Nước ngoài (USD)'}</strong></div>
             <div style="color:${channelColor}; font-weight:800; margin-top:2px;">${channelLabel}</div>
           </div>
         </div>
@@ -1128,65 +1692,77 @@ window.viewCustomsVNACCS = function (id) {
             <div style="font-size:11px; color:#64748b;">MST: 0312345678 • Khu Công Nghiệp Tân Bình, TP. Hồ Chí Minh</div>
           </div>
           <div class="vnaccs-cell">
-            <div class="vnaccs-cell-label">Người xuất khẩu / Đối tác nước ngoài:</div>
+            <div class="vnaccs-cell-label">${cd.isDomestic ? 'Bên bán / Nhà cung cấp nội địa:' : 'Người xuất khẩu / Đối tác nước ngoài:'}</div>
             <div class="vnaccs-cell-val">${escapeHtml(cd.partnerName)}</div>
-            <div style="font-size:11px; color:#64748b;">Mã đối tác: VAR • Quốc gia: Taiwan / China</div>
+            <div style="font-size:11px; color:#64748b;">${cd.isDomestic ? 'Giao dịch nội địa (VNĐ)' : 'Quốc gia: Taiwan / China'}</div>
           </div>
         </div>
 
         <!-- 3. THÔNG TIN HÀNG HÓA & TRỊ GIÁ TÍNH THUẾ -->
         <div class="vnaccs-section-title">
-          <span>3. MẶT HÀNG KHAI BÁO & THUẾ SUẤT</span>
+          <span>3. TRỊ GIÁ TÍNH THUẾ & TIỀN THUẾ HẢI QUAN</span>
         </div>
         <table class="vnaccs-table">
           <thead>
             <tr>
               <th style="width:30px;">#</th>
               <th>Mã HS</th>
-              <th>Mô Tả Hàng Hóa Chi Tiết</th>
-              <th>Xuất Xứ</th>
+              <th>Mô Tả Hàng Hóa</th>
               <th>ĐVT</th>
-              <th style="text-align:right;">Lượng</th>
-              <th style="text-align:right;">Đơn Giá ($)</th>
-              <th style="text-align:right;">Trị Giá ($)</th>
-              <th style="text-align:center;">Thuế NK</th>
-              <th style="text-align:center;">VAT</th>
+              ${!cd.isDomestic ? '<th style="text-align:right;">Trị Giá ($ USD)</th>' : ''}
+              ${!cd.isDomestic ? '<th style="text-align:right;">Tỷ Giá HQ</th>' : ''}
+              <th style="text-align:right;">Trị Giá Tính Thuế (VNĐ)</th>
+              ${!cd.isDomestic ? '<th style="text-align:center;">Thuế NK</th>' : ''}
+              <th style="text-align:center;">Thuế GTGT</th>
+              <th style="text-align:right;">Tổng Thuế (VNĐ)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td style="text-align:center;">1</td>
               <td style="font-family:monospace; font-weight:700;">5402.47.00</td>
-              <td><strong>Sợi filament tổng hợp dạng dệt khác (Polyester DTY 50D/75D)</strong></td>
-              <td style="text-align:center;">Taiwan</td>
+              <td><strong>Sợi filament tổng hợp (Polyester DTY / FDY)</strong></td>
               <td style="text-align:center;">kg</td>
-              <td style="text-align:right; font-weight:600;">222</td>
-              <td style="text-align:right;">$4.00</td>
-              <td style="text-align:right; font-weight:700; color:#15803d;">$${Number(cd.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-              <td style="text-align:center; font-weight:600;">5%</td>
-              <td style="text-align:center; font-weight:600;">8%</td>
+              ${!cd.isDomestic ? `<td style="text-align:right; font-weight:700; color:#0369a1;">$${Number(cd.valueUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+              ${!cd.isDomestic ? `<td style="text-align:right; font-family:monospace;">${Number(cd.exchangeRate || 0).toLocaleString('vi-VN')}</td>` : ''}
+              <td style="text-align:right; font-weight:700; color:#15803d;">${Number(cd.taxableValueVnd || 0).toLocaleString('vi-VN')} ₫</td>
+              ${!cd.isDomestic ? `<td style="text-align:center;">${cd.importTaxRate || 0}%</td>` : ''}
+              <td style="text-align:center;">${cd.vatRate || 8}%</td>
+              <td style="text-align:right; font-weight:700; color:#b45309;">${Number(cd.totalTaxAmount || 0).toLocaleString('vi-VN')} ₫</td>
             </tr>
           </tbody>
           <tfoot>
             <tr style="background:#f8fafc; font-weight:700;">
-              <td colspan="7" style="text-align:right;">Tổng trị giá khai báo:</td>
-              <td style="text-align:right; color:#15803d; font-size:12.5px;">$${Number(cd.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-              <td colspan="2" style="text-align:center;">Quy đổi: ≈ ${(Number(cd.totalValue) * 25450).toLocaleString('vi-VN')} ₫</td>
+              <td colspan="${!cd.isDomestic ? '6' : '4'}" style="text-align:right;">Tổng trị giá tính thuế & Tổng thuế:</td>
+              <td style="text-align:right; color:#15803d; font-size:12.5px;">${Number(cd.taxableValueVnd || 0).toLocaleString('vi-VN')} ₫</td>
+              <td colspan="${!cd.isDomestic ? '2' : '1'}"></td>
+              <td style="text-align:right; color:#dc2626; font-size:12.5px;">${Number(cd.totalTaxAmount || 0).toLocaleString('vi-VN')} ₫</td>
             </tr>
           </tfoot>
         </table>
+
+        ${cd.docName ? `
+          <div style="margin-top:12px; padding:8px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <strong>Tệp đính kèm gốc:</strong> ${escapeHtml(cd.docName)}
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.viewCustomsDoc('${id}')">
+              📥 Tải File Gốc
+            </button>
+          </div>
+        ` : ''}
 
         <!-- CHỮ KÝ VÀ DẤU HẢI QUAN -->
         <div class="vnaccs-signatures">
           <div class="vnaccs-sig-block">
             <div class="vnaccs-sig-title">NGƯỜI KHAI HẢI QUAN</div>
-            <div class="vnaccs-sig-sub">(Ký điện tử bởi Token Doanh Nghiệp)</div>
-            <div style="color:#0369a1; font-weight:700; font-size:11.5px;">✔ CHỨNG THƯ SỐ VIETTEL-CA HỢP LỆ</div>
-            <div style="font-size:11px; color:#64748b;">Thời gian ký: ${dDate}</div>
+            <div class="vnaccs-sig-sub">(Đã xác nhận khai báo)</div>
+            <div style="color:#0369a1; font-weight:700; font-size:11.5px;">✔ XÁC NHẬN HỢP LỆ</div>
+            <div style="font-size:11px; color:#64748b;">Thời gian: ${dDate}</div>
           </div>
           <div class="vnaccs-sig-block">
-            <div class="vnaccs-sig-title">CÔNG CHỨC HẢI QUAN / HỆ THỐNG VNACCS</div>
-            <div class="vnaccs-sig-sub">(Xác nhận thông quan tự động)</div>
+            <div class="vnaccs-sig-title">CÔNG CHỨC HẢI QUAN</div>
+            <div class="vnaccs-sig-sub">(Xác nhận thông quan)</div>
             <div class="vnaccs-stamp-box">HẢI QUAN VIỆT NAM<br>ĐÃ THÔNG QUAN</div>
           </div>
         </div>
@@ -1194,6 +1770,7 @@ window.viewCustomsVNACCS = function (id) {
 
       <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Đóng</button>
+        ${cd.docName ? `<button type="button" class="btn btn-secondary" onclick="window.viewCustomsDoc('${id}')">📥 Tải File Đính Kèm (${escapeHtml(cd.docName)})</button>` : ''}
         <button type="button" class="btn btn-primary" onclick="window.printCustomsVNACCS('${id}')">
           🖨️ In Tờ Khai (A4)
         </button>
@@ -1201,7 +1778,7 @@ window.viewCustomsVNACCS = function (id) {
     </div>
   `;
 
-  openModal(`Tờ Khai Hải Quan Điện Tử: ${escapeHtml(cd.declarationNumber)}`, contentHtml);
+  openModal(`Tờ Khai Hải Quan: ${escapeHtml(cd.declarationNumber)}`, contentHtml);
 };
 
 // ─── IN TỜ KHAI CHUẨN A4 ──────────────────────────────────────────────────────
@@ -1246,7 +1823,7 @@ window.printCustomsVNACCS = function (id) {
     <body onload="window.print(); window.close();">
       <div class="sheet">
         <div class="header">
-          <div><strong>TỔNG CỤC HẢI QUAN</strong><br>HẢI QUAN VIỆT NAM<br><small>HỆ THỐNG VNACCS/VCIS</small></div>
+          <div><strong>TỔNG CỤC HẢI QUAN</strong><br>HẢI QUAN VIỆT NAM</div>
           <div class="emblem">
             <div><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></div>
             <div style="font-size:11px; font-style:italic;">Độc lập - Tự do - Hạnh phúc</div>
@@ -1256,6 +1833,7 @@ window.printCustomsVNACCS = function (id) {
             Số: <strong>${escapeHtml(cd.declarationNumber)}</strong><br>
             Ngày: <strong>${dDate}</strong><br>
             Mã LH: <strong>${escapeHtml(cd.declarationType)}</strong><br>
+            Nguồn gốc: <strong>${cd.isDomestic ? 'Trong nước (VNĐ)' : 'Nước ngoài (USD)'}</strong><br>
             <span style="color:${channelColor}; font-weight:bold;">${channelLabel}</span>
           </div>
         </div>
@@ -1268,25 +1846,27 @@ window.printCustomsVNACCS = function (id) {
 
         <div class="sec-title">2. DOANH NGHIỆP XUẤT NHẬP KHẨU</div>
         <div class="grid">
-          <div class="cell">Người nhập khẩu: <strong>CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU IMEX VIỆT NAM</strong><br>MST: 0312345678</div>
-          <div class="cell">Người xuất khẩu: <strong>${escapeHtml(cd.partnerName)}</strong><br>Quốc gia: Taiwan / China</div>
+          <div class="cell">Người khai HQ: <strong>CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU IMEX VIỆT NAM</strong><br>MST: 0312345678</div>
+          <div class="cell">${cd.isDomestic ? 'Bên bán nội địa:' : 'Đối tác nước ngoài:'} <strong>${escapeHtml(cd.partnerName)}</strong></div>
         </div>
 
         <div class="sec-title">3. HÀNG HÓA & TRỊ GIÁ TÍNH THUẾ</div>
         <table>
           <thead>
-            <tr><th>#</th><th>Mã HS</th><th>Tên Hàng Hóa</th><th>Xuất xứ</th><th>ĐVT</th><th>Lượng</th><th>Đơn Giá ($)</th><th>Trị Giá ($)</th></tr>
+            <tr>
+              <th>#</th><th>Tên Hàng Hóa</th><th>ĐVT</th>
+              ${!cd.isDomestic ? '<th>Trị Giá ($ USD)</th><th>Tỷ Giá HQ</th>' : ''}
+              <th>Trị Giá Tính Thuế (VNĐ)</th><th>Tiền Thuế (VNĐ)</th>
+            </tr>
           </thead>
           <tbody>
             <tr>
               <td align="center">1</td>
-              <td align="center"><strong>5402.47.00</strong></td>
-              <td>Sợi filament tổng hợp dạng dệt khác (Polyester DTY)</td>
-              <td align="center">Taiwan</td>
+              <td>Sợi filament tổng hợp dạng dệt khác (Polyester DTY / FDY)</td>
               <td align="center">kg</td>
-              <td align="right">222</td>
-              <td align="right">$4.00</td>
-              <td align="right"><strong>$${Number(cd.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></td>
+              ${!cd.isDomestic ? `<td align="right"><strong>$${Number(cd.valueUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></td><td align="right">${Number(cd.exchangeRate || 0).toLocaleString('vi-VN')}</td>` : ''}
+              <td align="right"><strong>${Number(cd.taxableValueVnd || 0).toLocaleString('vi-VN')} ₫</strong></td>
+              <td align="right"><strong>${Number(cd.totalTaxAmount || 0).toLocaleString('vi-VN')} ₫</strong></td>
             </tr>
           </tbody>
         </table>
@@ -1294,8 +1874,8 @@ window.printCustomsVNACCS = function (id) {
         <div class="sig">
           <div>
             <strong>NGƯỜI KHAI HẢI QUAN</strong><br>
-            <em>(Ký số điện tử)</em><br><br>
-            <span style="color:#0369a1; font-weight:bold;">ĐÃ KÝ ĐIỆN TỬ</span>
+            <em>(Xác nhận khai báo)</em><br><br>
+            <span style="color:#0369a1; font-weight:bold;">ĐÃ KHAI BÁO</span>
           </div>
           <div>
             <strong>HẢI QUAN VIỆT NAM</strong><br>
@@ -1310,39 +1890,51 @@ window.printCustomsVNACCS = function (id) {
   printWin.document.close();
 };
 
-// ─── TẢI / XEM FILE ĐÍNH KÈM TỜ KHAI ─────────────────────────────────────────
+// ─── TẢI / XEM FILE ĐÍNH KÈM TỜ KHAI (.XLSX / .PDF) ─────────────────────────
 window.viewCustomsDoc = async function (declarationId) {
   try {
-    const res = await api.get(`/api/documents?entityType=CustomsDeclaration&entityId=${declarationId}`);
-    const docs = res.data?.items || res.data || [];
-    if (docs.length === 0) {
-      toast('Không có file nào được đính kèm cho tờ khai này', 'info');
+    const cd = allDeclarations.find(x => x.id === declarationId);
+    
+    // Tìm tài liệu theo entityId hoặc shipmentId
+    let doc = null;
+    const res = await api.get(`/api/documents?category=Customs`);
+    const allDocs = res.data?.items || res.data || [];
+    
+    doc = allDocs.find(d => 
+      (d.entityId && d.entityId.toLowerCase() === declarationId.toLowerCase()) ||
+      (cd && cd.declarationNumber && d.fileName && d.fileName.toLowerCase().includes(cd.declarationNumber.toLowerCase())) ||
+      (cd && cd.declarationNumber && d.originalFileName && d.originalFileName.toLowerCase().includes(cd.declarationNumber.toLowerCase())) ||
+      (cd && cd.shipmentId && d.shipmentId && d.shipmentId.toLowerCase() === cd.shipmentId.toLowerCase())
+    );
+
+    if (!doc) {
+      toast('Tờ khai này chưa được đính kèm file', 'info');
       return;
     }
-    const doc = docs[0];
 
     const token = getToken();
     const downloadRes = await fetch(`${API_BASE}/api/documents/${doc.id}/download`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (!downloadRes.ok) throw new Error('Không thể tải file');
+    if (!downloadRes.ok) throw new Error('Không thể tải file từ máy chủ');
 
     const blob = await downloadRes.blob();
     const url = window.URL.createObjectURL(blob);
+    const fileName = doc.originalFileName || doc.fileName || `ToKhai_${cd?.declarationNumber || 'HQ'}.xlsx`;
 
-    if (blob.type === 'application/pdf' || doc.fileName?.endsWith('.pdf')) {
+    if (blob.type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
       window.open(url, '_blank');
       toast('Đã mở file PDF trong tab mới', 'success');
     } else {
       const a = document.createElement('a');
       a.href = url;
-      a.download = doc.originalFileName || doc.fileName || 'Customs_File';
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast('Đã tải file thành công!', 'success');
+      toast(`Đã tải file "${fileName}" thành công!`, 'success');
     }
   } catch (err) {
     toast(`Lỗi khi mở file: ${err.message}`, 'error');

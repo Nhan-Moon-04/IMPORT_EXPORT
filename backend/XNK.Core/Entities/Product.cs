@@ -13,7 +13,7 @@ public class Product : BaseEntity
     [MaxLength(200)]
     public string? NameEn { get; set; }
 
-    [MaxLength(200)]
+    [MaxLength(1000)]
     public string? NameVi { get; set; }
 
     [MaxLength(100)]

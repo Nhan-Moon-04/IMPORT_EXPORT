@@ -3,7 +3,7 @@ import { api, toast, openModal, closeModal, showConfirm, API_BASE, getToken } fr
 import { openShipmentForm } from '../shipments/shipments.js';
 import { openUploadDocumentModal } from '../documents/documents.js';
 import { openCreateInvoiceModal } from '../invoices/invoices.js';
-import { openCreateCustomsModal } from '../customs/customs.js';
+import { openCreateCustomsModal, parseCustomsMeta } from '../customs/customs.js';
 import { openBLModal, deleteBL, viewBLDetail } from '../billOfLading/billOfLading.js';
 
 // ─── Download Invoice Document Helper ────────────────────────────────────────
@@ -277,7 +277,7 @@ export async function renderShipmentDetail(container, shipmentId) {
     // Parse B/L items
     const blList = blInvoices.map(inv => {
       let meta = {};
-      try { if (inv.notes && inv.notes.startsWith('{')) meta = JSON.parse(inv.notes); } catch (e) {}
+      try { if (inv.notes && inv.notes.startsWith('{')) meta = JSON.parse(inv.notes); } catch (e) { }
 
       const doc = combinedDocs.find(d =>
         (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase()) ||
@@ -353,9 +353,16 @@ export async function renderShipmentDetail(container, shipmentId) {
     const typeLabel = shipment.type === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu';
     const typeClass = shipment.type === 'Export' ? 'chip chip-purple' : 'chip chip-blue';
 
-    const exchangeRate = 25450;
-    const currency = shipment.currency || 'USD';
-    const totalVnd = totalVal * exchangeRate;
+    const currency = (shipment.currency || 'USD').toUpperCase();
+    const isVnd = currency === 'VND';
+    const isUsd = currency === 'USD';
+
+    // Metadata từ tờ khai hải quan liên kết
+    const primaryCD = customs[0];
+    const primaryMeta = primaryCD ? parseCustomsMeta(primaryCD.notes) : null;
+    const customsExchangeRate = primaryMeta?.exchangeRate || null;
+    const customsTaxableVal = primaryMeta?.taxableValueVnd || (isVnd ? totalVal : (customsExchangeRate ? Math.round(totalVal * customsExchangeRate) : null));
+    const customsTaxAmount = primaryMeta?.totalTaxAmount || null;
 
     // Contact person display logic
     let contactPersonDisplay = '---';
@@ -453,8 +460,8 @@ export async function renderShipmentDetail(container, shipmentId) {
         <td style="text-align:center;">${it.unit}</td>
         <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
         <td style="text-align:right;font-weight:600;color:#0266b3;">${pk ? `${pk.toLocaleString()} kiện` : '---'}</td>
-        <td style="text-align:right;">$${p.toFixed(2)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right;">${isVnd ? `${Number(p).toLocaleString('vi-VN')} ₫` : `$${p.toFixed(2)}`}</td>
+        <td style="text-align:right;font-weight:700;color:var(--amis-green);">${isVnd ? `${Number(rowTotal).toLocaleString('vi-VN')} ₫` : `$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
         <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
         <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
       </tr>
@@ -476,8 +483,8 @@ export async function renderShipmentDetail(container, shipmentId) {
         <td style="text-align:center;">${it.unit}</td>
         <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
         <td style="text-align:right;font-weight:600;color:#0266b3;">${pk ? `${pk.toLocaleString()} kiện` : '---'}</td>
-        <td style="text-align:right;">$${p.toFixed(2)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right;">${isVnd ? `${Number(p).toLocaleString('vi-VN')} ₫` : `$${p.toFixed(2)}`}</td>
+        <td style="text-align:right;font-weight:700;color:var(--amis-green);">${isVnd ? `${Number(rowTotal).toLocaleString('vi-VN')} ₫` : `$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
         <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
         <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
         <td style="text-align:center;">
@@ -487,35 +494,87 @@ export async function renderShipmentDetail(container, shipmentId) {
       `;
     }).join('') : `<tr><td colspan="13" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
 
-
-
-    // ── Build customs rows ──────────────────────────────────────────────
-    const customsHtml = customs.length === 0 ? `<div class="sd-card"><div class="sd-card-body" style="text-align:center;color:#64748b;padding:24px;">Chưa có tờ khai hải quan nào.</div></div>` : customs.map(cd => {
+    // ── Build customs rows (MISA AMIS & Thông tin thuế chi tiết) ─────────
+    const customsHtml = customs.length === 0 ? `<div class="sd-card"><div class="sd-card-body" style="text-align:center;color:#64748b;padding:24px;">Chưa có tờ khai hải quan nào. Nhấn "+ Thêm tờ khai HQ" bên trên để mở tờ khai.</div></div>` : customs.map(cd => {
       const d = cd.declarationDate ? new Date(cd.declarationDate).toLocaleDateString('vi-VN') : '---';
-      const st = cd.status === 1 ? '<span class="chip chip-green">LUỒNG XANH</span>'
-        : cd.status === 2 ? '<span class="chip chip-orange">LUỒNG VÀNG</span>'
-          : cd.status === 3 ? '<span class="chip chip-red">LUỒNG ĐỎ</span>'
-            : '<span class="chip chip-slate">CHƯA PHÂN LUỒNG</span>';
+      const st = cd.status === 1 ? '<span class="chip chip-green">🟢 LUỒNG XANH (THÔNG QUAN)</span>'
+        : cd.status === 2 ? '<span class="chip chip-orange">🟡 LUỒNG VÀNG (KIỂM TRA HỒ SƠ)</span>'
+          : cd.status === 3 ? '<span class="chip chip-red">🔴 LUỒNG ĐỎ (KIỂM HÓA)</span>'
+            : '<span class="chip chip-slate">⚪ CHƯA PHÂN LUỒNG</span>';
+
+      const meta = parseCustomsMeta(cd.notes);
+      const isCdDomestic = meta.isDomestic || isVnd;
 
       return `
-        <div class="sd-card" style="margin-bottom:12px;">
-          <div class="sd-card-header">
-            <div class="sd-card-header-left">
-              📋 Tờ khai hải quan
+        <div class="sd-customs-card" style="margin-bottom:14px;">
+          <div class="sd-customs-card-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:700; color:#0f172a; font-size:13.5px;">📋 Tờ Khai Hải Quan Điện Tử (VNACCS)</span>
               ${st}
+              ${isCdDomestic ? '<span class="customs-scope-badge domestic">🏠 Trong nước (VNĐ)</span>' : '<span class="customs-scope-badge foreign">🌐 Nước ngoài (USD)</span>'}
             </div>
             <div style="display:flex;gap:6px;">
-              <button class="sd-btn-sm btn-secondary" onclick="window.viewCustomsDoc('${cd.id}')">Xem/Tải File</button>
+              <button class="sd-btn-sm btn-secondary" onclick="window.viewCustomsVNACCS('${cd.id}')" title="Xem tờ khai chuẩn A4 VNACCS">Bản VNACCS</button>
+              <button class="sd-btn-sm btn-secondary" onclick="window.viewCustomsDoc('${cd.id}')" title="Xem hoặc tải file đính kèm tờ khai (.xlsx / PDF)">📥 File Đính Kèm</button>
               <button class="sd-btn-sm btn-primary" onclick="window.editCustomsDeclaration('${cd.id}', () => { document.getElementById('sd-back-link').click(); setTimeout(() => window.appNavigateTo('shipment-detail?id=${shipmentId}'), 100); })">Sửa</button>
               <button class="sd-btn-sm btn-danger" onclick="window.deleteCustomsDeclaration('${cd.id}', () => { document.getElementById('sd-back-link').click(); setTimeout(() => window.appNavigateTo('shipment-detail?id=${shipmentId}'), 100); })">Xóa</button>
             </div>
           </div>
-          <div class="sd-card-body" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:12px;">
-            <div class="sd-field"><div class="sd-field-label">Số tờ khai HQ</div><div class="sd-field-value" style="color:#b45309;font-weight:600;">${cd.declarationNumber || '---'}</div></div>
-            <div class="sd-field"><div class="sd-field-label">Ngày đăng ký</div><div class="sd-field-value">${d}</div></div>
-            <div class="sd-field"><div class="sd-field-label">Chi cục Hải quan</div><div class="sd-field-value" style="font-size:11px;">${cd.customsBranch || '---'}</div></div>
-            <div class="sd-field"><div class="sd-field-label">Loại hình</div><div class="sd-field-value">${cd.declarationType || '---'}</div></div>
-            <div class="sd-field" style="grid-column: span 4;"><div class="sd-field-label">Ghi chú</div><div class="sd-field-value">${cd.notes || '---'}</div></div>
+          <div class="sd-customs-card-body">
+            <div class="sd-customs-meta-grid">
+              <div class="sd-field">
+                <div class="sd-field-label">Số Tờ Khai HQ</div>
+                <div class="sd-field-value" style="color:#0266b3; font-family:monospace; font-weight:700; font-size:13.5px;">${cd.declarationNumber || '---'}</div>
+              </div>
+              <div class="sd-field">
+                <div class="sd-field-label">Ngày Đăng Ký</div>
+                <div class="sd-field-value">${d}</div>
+              </div>
+              <div class="sd-field">
+                <div class="sd-field-label">Loại Hình Tờ Khai</div>
+                <div class="sd-field-value"><span class="customs-type-badge">${cd.declarationType || 'A11'}</span></div>
+              </div>
+              <div class="sd-field">
+                <div class="sd-field-label">Chi Cục Hải Quan</div>
+                <div class="sd-field-value" style="font-size:11.5px; color:#334155;">${cd.customsBranch || '---'}</div>
+              </div>
+
+              <!-- THÔNG TIN TÀI CHÍNH & TÍNH THUẾ -->
+              ${!isCdDomestic ? `
+                <div class="sd-field">
+                  <div class="sd-field-label">Trị Giá Nguyên Tệ ($ USD)</div>
+                  <div class="sd-field-value" style="color:#0369a1; font-weight:700;">$${Number(meta.valueUsd !== null ? meta.valueUsd : totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                </div>
+                <div class="sd-field">
+                  <div class="sd-field-label">Tỷ Giá Hải Quan (VNĐ/USD)</div>
+                  <div class="sd-field-value" style="font-family:monospace; font-weight:700; color:#475569;">${meta.exchangeRate ? Number(meta.exchangeRate).toLocaleString('vi-VN') : '<span style="color:#94a3b8; font-weight:normal;">Chưa khai</span>'}</div>
+                </div>
+                <div class="sd-field">
+                  <div class="sd-field-label">Trị Giá Tính Thuế (VNĐ)</div>
+                  <div class="sd-field-value" style="color:#15803d; font-weight:700;">${meta.taxableValueVnd ? `${Number(meta.taxableValueVnd).toLocaleString('vi-VN')} ₫` : '---'}</div>
+                </div>
+                <div class="sd-field">
+                  <div class="sd-field-label">Tổng Thuế HQ Phải Nộp</div>
+                  <div class="sd-field-value" style="color:#dc2626; font-weight:800;">${meta.totalTaxAmount ? `${Number(meta.totalTaxAmount).toLocaleString('vi-VN')} ₫` : '0 ₫'}</div>
+                </div>
+              ` : `
+                <div class="sd-field" style="grid-column: span 2;">
+                  <div class="sd-field-label">Trị Giá Tính Thuế (VNĐ - Nội Địa)</div>
+                  <div class="sd-field-value" style="color:#15803d; font-weight:700; font-size:14px;">${meta.taxableValueVnd ? `${Number(meta.taxableValueVnd).toLocaleString('vi-VN')} ₫` : `${Number(totalVal).toLocaleString('vi-VN')} ₫`}</div>
+                </div>
+                <div class="sd-field" style="grid-column: span 2;">
+                  <div class="sd-field-label">Tiền Thuế GTGT (VAT)</div>
+                  <div class="sd-field-value" style="color:#dc2626; font-weight:800; font-size:14px;">${meta.totalTaxAmount ? `${Number(meta.totalTaxAmount).toLocaleString('vi-VN')} ₫` : '0 ₫'}</div>
+                </div>
+              `}
+
+              ${meta.userNotes ? `
+                <div class="sd-field" style="grid-column: span 4; border-top:1px dashed #e2e8f0; padding-top:6px; margin-top:2px;">
+                  <div class="sd-field-label">Ghi Chú Hải Quan</div>
+                  <div class="sd-field-value" style="color:#64748b;">${escapeHtml(meta.userNotes)}</div>
+                </div>
+              ` : ''}
+            </div>
           </div>
         </div>
       `;
@@ -680,12 +739,24 @@ export async function renderShipmentDetail(container, shipmentId) {
             <div class="sd-kpi-card kpi-blue">
               <div class="sd-kpi-label">
                 <span>Tổng Giá Trị Lô Hàng</span>
-                <span>💵</span>
+                <span>${isVnd ? '💰' : '💵'}</span>
               </div>
-              <div class="sd-kpi-value" style="color:#0369a1;">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              <div class="sd-kpi-value" style="color:#0369a1;">
+                ${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              </div>
               <div class="sd-kpi-sub">
-                <span>≈ ${Number(totalVnd).toLocaleString('vi-VN')} ₫</span>
-                <span style="color:#94a3b8;">(Tỷ giá: 25.450)</span>
+                ${isVnd ? (
+        customsTaxableVal ? `
+                    <span>Trị giá tính thuế HQ: <strong>${Number(customsTaxableVal).toLocaleString('vi-VN')} ₫</strong></span>
+                    ${customsTaxAmount ? `<span> • Thuế HQ: <strong>${Number(customsTaxAmount).toLocaleString('vi-VN')} ₫</strong></span>` : ''}
+                  ` : `<span>Tiền tệ: <strong>VND</strong> (Hàng giao dịch nội địa)</span>`
+      ) : (
+        customsExchangeRate && customsTaxableVal ? `
+                    <span>HQ quy đổi: <strong>${Number(customsTaxableVal).toLocaleString('vi-VN')} ₫</strong></span>
+                    <span style="color:#0266b3; font-weight:600;">(Tỷ giá HQ: ${Number(customsExchangeRate).toLocaleString('vi-VN')})</span>
+                    ${customsTaxAmount ? `<span style="color:#b45309;"> • Thuế: <strong>${Number(customsTaxAmount).toLocaleString('vi-VN')} ₫</strong></span>` : ''}
+                  ` : `<span>Tiền tệ: <strong>USD</strong> (Chưa khai báo tỷ giá HQ)</span>`
+      )}
               </div>
             </div>
 
@@ -976,8 +1047,8 @@ export async function renderShipmentDetail(container, shipmentId) {
                           <th style="text-align:center;">ĐVT</th>
                           <th style="text-align:right;">Số lượng (NW)</th>
                           <th style="text-align:right;">Số kiện</th>
-                          <th style="text-align:right;">Đơn giá (USD)</th>
-                          <th style="text-align:right;">Thành tiền (USD)</th>
+                          <th style="text-align:right;">Đơn giá (${isVnd ? '₫' : 'USD'})</th>
+                          <th style="text-align:right;">Thành tiền (${isVnd ? '₫' : 'USD'})</th>
                           <th style="text-align:right;">Net Weight</th>
                           <th style="text-align:right;">Gross Weight</th>
                         </tr>
@@ -989,7 +1060,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           <td style="text-align:right;color:var(--amis-blue);">${Number(totalQty).toLocaleString()} kg</td>
                           <td style="text-align:right;color:var(--amis-blue);font-weight:700;">${totalPackages.toLocaleString()} kiện</td>
                           <td></td>
-                          <td style="text-align:right;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td style="text-align:right;color:var(--amis-green);">${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
                           <td style="text-align:right;">${totalNetWeight} kg</td>
                           <td style="text-align:right;">${totalGrossWeight} kg</td>
                         </tr>
@@ -1053,8 +1124,8 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <th style="text-align:center;">ĐVT</th>
                         <th style="text-align:right;">Số lượng</th>
                         <th style="text-align:right;">Số kiện</th>
-                        <th style="text-align:right;">Đơn giá ($)</th>
-                        <th style="text-align:right;">Thành tiền ($)</th>
+                        <th style="text-align:right;">Đơn giá (${isVnd ? '₫' : '$'})</th>
+                        <th style="text-align:right;">Thành tiền (${isVnd ? '₫' : '$'})</th>
                         <th style="text-align:right;">Net Weight</th>
                         <th style="text-align:right;">Gross Weight</th>
                         <th style="text-align:center;">Thao tác</th>
@@ -1067,10 +1138,10 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <td style="text-align:right;color:var(--amis-blue);">${Number(totalQty).toLocaleString()} kg</td>
                         <td style="text-align:right;color:var(--amis-blue);font-weight:700;">${totalPackages.toLocaleString()} kiện</td>
                         <td></td>
-                        <td style="text-align:right;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;color:var(--amis-green);">${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
                         <td style="text-align:right;">${totalNetWeight} kg</td>
                         <td style="text-align:right;">${totalGrossWeight} kg</td>
-                        <td style="text-align:center;color:#64748b;font-size:11px;">Tổng kiện: <strong>${totalPackages}</strong> | Tỷ giá: 25,450</td>
+                        <td style="text-align:center;color:#64748b;font-size:11px;">Tổng kiện: <strong>${totalPackages}</strong>${customsExchangeRate && !isVnd ? ` | Tỷ giá HQ: <strong>${Number(customsExchangeRate).toLocaleString('vi-VN')}</strong>` : ''}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1096,18 +1167,18 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </tr></thead>
                     <tbody>
                       ${salesContracts.length ? salesContracts.map((c, i) => {
-      const cDate = c.invoiceDate || c.issueDate || c.createdAt;
-      const cDateStr = cDate ? new Date(cDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
-      const cVal = Number(c.totalValue ?? c.totalAmount ?? 0);
+        const cDate = c.invoiceDate || c.issueDate || c.createdAt;
+        const cDateStr = cDate ? new Date(cDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+        const cVal = Number(c.totalValue ?? c.totalAmount ?? 0);
 
-      const cDoc = combinedDocs.find(d =>
-        (d.entityId && String(d.entityId).toLowerCase() === String(c.id).toLowerCase())
-        || (d.fileName && c.invoiceNumber && d.fileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
-        || (d.originalFileName && c.invoiceNumber && d.originalFileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
-      );
-      const hasFile = !!cDoc;
+        const cDoc = combinedDocs.find(d =>
+          (d.entityId && String(d.entityId).toLowerCase() === String(c.id).toLowerCase())
+          || (d.fileName && c.invoiceNumber && d.fileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
+          || (d.originalFileName && c.invoiceNumber && d.originalFileName.toLowerCase().includes(c.invoiceNumber.toLowerCase()))
+        );
+        const hasFile = !!cDoc;
 
-      return `
+        return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:#15803d;">${c.invoiceNumber || '---'}</td>
@@ -1134,7 +1205,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           </td>
                         </tr>
                         `;
-    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -1157,20 +1228,20 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </tr></thead>
                     <tbody>
                       ${trueInvoices.length ? trueInvoices.map((inv, i) => {
-      const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : (inv.type || 'Commercial');
-      const typeClass = inv.type === 'ProformaInvoice' ? 'chip chip-purple' : inv.type === 'CommercialInvoice' ? 'chip chip-blue' : inv.type === 'TaxInvoice' ? 'chip chip-green' : 'chip chip-slate';
-      const invDate = inv.invoiceDate || inv.issueDate || inv.createdAt;
-      const invDateStr = invDate ? new Date(invDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
-      const totalVal = Number(inv.totalValue ?? inv.totalAmount ?? 0);
+        const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : (inv.type || 'Commercial');
+        const typeClass = inv.type === 'ProformaInvoice' ? 'chip chip-purple' : inv.type === 'CommercialInvoice' ? 'chip chip-blue' : inv.type === 'TaxInvoice' ? 'chip chip-green' : 'chip chip-slate';
+        const invDate = inv.invoiceDate || inv.issueDate || inv.createdAt;
+        const invDateStr = invDate ? new Date(invDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+        const totalVal = Number(inv.totalValue ?? inv.totalAmount ?? 0);
 
-      const invDoc = combinedDocs.find(d =>
-        (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase())
-        || (d.fileName && inv.invoiceNumber && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
-        || (d.originalFileName && inv.invoiceNumber && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
-      );
-      const hasFile = !!invDoc;
+        const invDoc = combinedDocs.find(d =>
+          (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase())
+          || (d.fileName && inv.invoiceNumber && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+          || (d.originalFileName && inv.invoiceNumber && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+        );
+        const hasFile = !!invDoc;
 
-      return `
+        return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:var(--amis-blue);">${inv.invoiceNumber || '---'}</td>
@@ -1197,7 +1268,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           </td>
                         </tr>
                         `;
-    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -1221,17 +1292,17 @@ export async function renderShipmentDetail(container, shipmentId) {
                     </tr></thead>
                     <tbody>
                       ${packingLists.length ? packingLists.map((p, i) => {
-      const pDate = p.invoiceDate || p.packingListDate || p.issueDate || p.createdAt;
-      const pDateStr = pDate ? new Date(pDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
+        const pDate = p.invoiceDate || p.packingListDate || p.issueDate || p.createdAt;
+        const pDateStr = pDate ? new Date(pDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
 
-      const pDoc = combinedDocs.find(d =>
-        (d.entityId && String(d.entityId).toLowerCase() === String(p.id).toLowerCase())
-        || (d.fileName && p.invoiceNumber && d.fileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
-        || (d.originalFileName && p.invoiceNumber && d.originalFileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
-      );
-      const hasFile = !!pDoc;
+        const pDoc = combinedDocs.find(d =>
+          (d.entityId && String(d.entityId).toLowerCase() === String(p.id).toLowerCase())
+          || (d.fileName && p.invoiceNumber && d.fileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
+          || (d.originalFileName && p.invoiceNumber && d.originalFileName.toLowerCase().includes(p.invoiceNumber.toLowerCase()))
+        );
+        const hasFile = !!pDoc;
 
-      return `
+        return `
                         <tr>
                           <td>${i + 1}</td>
                           <td style="font-weight:700;color:var(--amis-blue);">${p.invoiceNumber || '---'}</td>
@@ -1258,7 +1329,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                           </td>
                         </tr>
                         `;
-    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
+      }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có dữ liệu</td></tr>`}
                     </tbody>
                   </table>
                   <div class="sd-table-toolbar">
@@ -1362,35 +1433,54 @@ export async function renderShipmentDetail(container, shipmentId) {
                   <table class="sd-table">
                     <thead><tr>
                       <th>Khoản mục chi phí</th><th>Bên thu phí</th>
-                      <th style="text-align:right;">Ngoại tệ ($)</th>
-                      <th style="text-align:right;">VNĐ</th>
+                      ${!isVnd ? '<th style="text-align:right;">Ngoại tệ ($)</th>' : ''}
+                      <th style="text-align:right;">Số tiền (VNĐ) ${customsExchangeRate && !isVnd ? `<span style="font-size:11px;font-weight:normal;color:#64748b;">(Tỷ giá HQ: ${Number(customsExchangeRate).toLocaleString('vi-VN')})</span>` : ''}</th>
                       <th>Cách phân bổ</th>
                     </tr></thead>
                     <tbody>
-                      <tr><td><strong>Tiền hàng</strong></td><td>${supplierTitle}</td>
-                        <td style="text-align:right;font-weight:700;">$${Number(totalVal).toFixed(2)}</td>
-                        <td style="text-align:right;">${Number(totalVal * 25450).toLocaleString('vi-VN')}₫</td>
-                        <td>Trực tiếp theo SP</td></tr>
-                      <tr><td><strong>Cước biển (Ocean Freight)</strong></td><td>COSCO SHIPPING</td>
-                        <td style="text-align:right;">$250.00</td>
-                        <td style="text-align:right;">${(250 * 25450).toLocaleString('vi-VN')}₫</td>
-                        <td>Theo GW</td></tr>
-                      <tr><td><strong>Phí THC</strong></td><td>Tân Cảng Sài Gòn</td>
-                        <td style="text-align:right;">$120.00</td>
-                        <td style="text-align:right;">${(120 * 25450).toLocaleString('vi-VN')}₫</td>
-                        <td>Theo container</td></tr>
-                      <tr><td><strong>Bảo hiểm</strong></td><td>Bảo Minh Insurance</td>
-                        <td style="text-align:right;">$25.00</td>
-                        <td style="text-align:right;">${(25 * 25450).toLocaleString('vi-VN')}₫</td>
-                        <td>Theo giá trị hàng</td></tr>
-                      <tr><td><strong>Phí lưu bãi</strong></td><td>Cảng Cát Lái</td>
-                        <td style="text-align:right;">$35.00</td>
-                        <td style="text-align:right;">${(35 * 25450).toLocaleString('vi-VN')}₫</td>
-                        <td>Theo ngày</td></tr>
+                      <tr>
+                        <td><strong>Tiền hàng</strong></td>
+                        <td>${supplierTitle}</td>
+                        ${!isVnd ? `<td style="text-align:right;font-weight:700;">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+                        <td style="text-align:right;font-weight:700;color:var(--amis-green);">
+                          ${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : (customsTaxableVal ? `${Number(customsTaxableVal).toLocaleString('vi-VN')} ₫` : '---')}
+                        </td>
+                        <td>Trực tiếp theo SP</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Cước biển (Ocean Freight)</strong></td>
+                        <td>COSCO SHIPPING</td>
+                        ${!isVnd ? `<td style="text-align:right;">$250.00</td>` : ''}
+                        <td style="text-align:right;">${((250 * (customsExchangeRate || 25450))).toLocaleString('vi-VN')} ₫</td>
+                        <td>Theo GW</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Phí THC</strong></td>
+                        <td>Tân Cảng Sài Gòn</td>
+                        ${!isVnd ? `<td style="text-align:right;">$120.00</td>` : ''}
+                        <td style="text-align:right;">${((120 * (customsExchangeRate || 25450))).toLocaleString('vi-VN')} ₫</td>
+                        <td>Theo container</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Bảo hiểm</strong></td>
+                        <td>Bảo Minh Insurance</td>
+                        ${!isVnd ? `<td style="text-align:right;">$25.00</td>` : ''}
+                        <td style="text-align:right;">${((25 * (customsExchangeRate || 25450))).toLocaleString('vi-VN')} ₫</td>
+                        <td>Theo giá trị hàng</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Phí lưu bãi</strong></td>
+                        <td>Cảng Cát Lái</td>
+                        ${!isVnd ? `<td style="text-align:right;">$35.00</td>` : ''}
+                        <td style="text-align:right;">${((35 * (customsExchangeRate || 25450))).toLocaleString('vi-VN')} ₫</td>
+                        <td>Theo ngày</td>
+                      </tr>
                       <tr class="sd-total-row">
-                        <td colspan="2" style="text-align:right;">Tổng Landed Cost:</td>
-                        <td style="text-align:right;color:var(--amis-green);">$${(totalVal + 430).toFixed(2)}</td>
-                        <td style="text-align:right;color:var(--amis-green);">${((totalVal + 430) * 25450).toLocaleString('vi-VN')}₫</td>
+                        <td colspan="2" style="text-align:right;">Tổng Landed Cost ước tính:</td>
+                        ${!isVnd ? `<td style="text-align:right;color:var(--amis-green);font-weight:700;">$${(totalVal + 430).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+                        <td style="text-align:right;color:var(--amis-green);font-weight:700;">
+                          ${isVnd ? `${(totalVal + 10943500).toLocaleString('vi-VN')} ₫` : (customsTaxableVal ? `${(customsTaxableVal + (430 * (customsExchangeRate || 25450))).toLocaleString('vi-VN')} ₫` : '---')}
+                        </td>
                         <td></td>
                       </tr>
                     </tbody>

@@ -13,7 +13,7 @@ public class CustomsDeclaration : BaseEntity
     public string? CustomsBranch { get; set; }
     public int? Status { get; set; } // 1: Passed, 2: Pending, etc.
 
-    [MaxLength(500)]
+    [MaxLength(4000)]
     public string? Notes { get; set; }
 
     public Guid ShipmentId { get; set; }

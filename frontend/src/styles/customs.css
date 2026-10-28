@@ -207,3 +207,159 @@
   transform: rotate(-3deg);
   border-radius: 4px;
 }
+
+/* ─── NGUỒN GỐC TỜ KHAI (NGOẠI THƯƠNG vs NỘI ĐỊA) ─── */
+.customs-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.customs-scope-badge.foreign {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.customs-scope-badge.domestic {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* ─── TABS HEADER TRANG HẢI QUAN ─── */
+.customs-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+.customs-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.customs-nav-tab:hover {
+  color: var(--amis-blue, #0266b3);
+}
+.customs-nav-tab.active {
+  color: var(--amis-blue, #0266b3);
+  border-bottom-color: var(--amis-blue, #0266b3);
+}
+
+/* ─── SCOPE SELECTOR MODAL ─── */
+.customs-scope-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.customs-scope-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+.customs-scope-option:hover {
+  border-color: var(--amis-blue, #0266b3);
+  background: #f8fafc;
+}
+.customs-scope-option.selected {
+  border-color: var(--amis-blue, #0266b3);
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px var(--amis-blue, #0266b3);
+}
+.customs-scope-option input[type="radio"] {
+  accent-color: var(--amis-blue, #0266b3);
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── TAX & VALUATION BOX MODAL ─── */
+.customs-tax-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+.customs-tax-box-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #334155;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.customs-tax-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 10px;
+}
+
+/* ─── SHIPMENT DETAIL CUSTOMS CARDS ─── */
+.sd-customs-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.sd-customs-card-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sd-customs-card-body {
+  padding: 14px 16px;
+}
+.sd-customs-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  font-size: 12.5px;
+}
+.sd-customs-tax-banner {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

@@ -15,6 +15,7 @@ let sortDir        = 'asc'; // 'asc' | 'desc'
 const ALL_COLUMNS = [
   { key: 'sku',          label: 'Mã SKU',            visible: true,  sortable: true  },
   { key: 'name',         label: 'Tên Hàng Hóa',      visible: true,  sortable: true  },
+  { key: 'nameVi',       label: 'Tên HH TK',         visible: true,  sortable: true  },
   { key: 'spec',         label: 'Quy Cách Sợi',       visible: true,  sortable: false },
   { key: 'productGroup', label: 'Nhóm Hàng',          visible: true,  sortable: true  },
   { key: 'hsCode',       label: 'Mã HS Code',         visible: true,  sortable: true  },
@@ -132,6 +133,7 @@ function applyFilterAndSort() {
   filteredList = productsList.filter(p =>
     (p.sku?.toLowerCase().includes(q)) ||
     (p.name?.toLowerCase().includes(q)) ||
+    (p.nameVi?.toLowerCase().includes(q)) ||
     (p.hsCode?.toLowerCase().includes(q)) ||
     (p.productGroup?.toLowerCase().includes(q))
   );
@@ -159,6 +161,7 @@ function getCellValue(p, colKey) {
   switch (colKey) {
     case 'sku':             return p.sku || '';
     case 'name':            return p.name || '';
+    case 'nameVi':          return p.nameVi || '';
     case 'spec':            return `${s.yarnType || ''} ${s.denierCount || ''}`;
     case 'productGroup':    return p.productGroup || '';
     case 'hsCode':          return p.hsCode || '';
@@ -232,6 +235,16 @@ function getSortSVG(col) {
   return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19l7-7H5z" fill="currentColor" stroke="none"/></svg>`;
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ─── Render table body ────────────────────────────────────────────────────────
 function renderTable() {
   const tbody = document.getElementById("productsTbody");
@@ -255,15 +268,16 @@ function renderTable() {
 
     const cells = visibleCols.map(col => {
       switch (col.key) {
-        case 'sku':          return `<td><strong class="amis-sku-badge">${p.sku}</strong></td>`;
-        case 'name':         return `<td class="amis-td-name">${p.name}</td>`;
+        case 'sku':          return `<td><strong class="amis-sku-badge">${escapeHtml(p.sku || '')}</strong></td>`;
+        case 'name':         return `<td class="amis-td-name">${escapeHtml(p.name || '')}</td>`;
+        case 'nameVi':       return `<td class="amis-td-name-tk" title="${escapeHtml(p.nameVi || '')}">${p.nameVi ? `<div class="amis-td-name-tk-inner">${escapeHtml(p.nameVi)}</div>` : '<span class="amis-td-muted">—</span>'}</td>`;
         case 'spec':         return `<td><span class="amis-spec-text">${specStr}</span></td>`;
-        case 'productGroup': return `<td>${p.productGroup ? `<span class="amis-group-tag">${p.productGroup}</span>` : '<span class="amis-td-muted">—</span>'}</td>`;
-        case 'hsCode':       return `<td><code class="amis-code">${p.hsCode || '—'}</code></td>`;
-        case 'unit':         return `<td>${p.unit || 'kg'}</td>`;
-        case 'countryOfOrigin': return `<td>${p.countryOfOrigin || '<span class="amis-td-muted">—</span>'}</td>`;
-        case 'manufacturer': return `<td>${p.manufacturer || '<span class="amis-td-muted">—</span>'}</td>`;
-        case 'notes':        return `<td class="amis-td-notes">${p.notes || ''}</td>`;
+        case 'productGroup': return `<td>${p.productGroup ? `<span class="amis-group-tag">${escapeHtml(p.productGroup)}</span>` : '<span class="amis-td-muted">—</span>'}</td>`;
+        case 'hsCode':       return `<td><code class="amis-code">${escapeHtml(p.hsCode || '—')}</code></td>`;
+        case 'unit':         return `<td>${escapeHtml(p.unit || 'kg')}</td>`;
+        case 'countryOfOrigin': return `<td>${escapeHtml(p.countryOfOrigin || '<span class="amis-td-muted">—</span>')}</td>`;
+        case 'manufacturer': return `<td>${escapeHtml(p.manufacturer || '<span class="amis-td-muted">—</span>')}</td>`;
+        case 'notes':        return `<td class="amis-td-notes">${escapeHtml(p.notes || '')}</td>`;
         default:             return `<td></td>`;
       }
     }).join('');
@@ -510,45 +524,52 @@ async function openProductForm(id) {
         <div class="form-row-2">
           <div class="form-group">
             <label class="form-label required">Mã SKU / Mã Sản Phẩm</label>
-            <input type="text" id="pSku" class="form-input" required value="${p?.sku || ''}" placeholder="VD: YARN-FDY-10036">
+            <input type="text" id="pSku" class="form-input" required value="${escapeHtml(p?.sku || '')}" placeholder="VD: YARN-FDY-10036">
           </div>
           <div class="form-group">
             <label class="form-label required">Tên Hàng Hóa</label>
-            <input type="text" id="pName" class="form-input" required value="${p?.name || ''}" placeholder="VD: Sợi Polyester FDY 100D/36F Semi Dull">
+            <input type="text" id="pName" class="form-input" required value="${escapeHtml(p?.name || '')}" placeholder="VD: Sợi Polyester FDY 100D/36F Semi Dull">
           </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Tên Hàng Hóa Trên Tờ Khai (Tên HH TK - Tiếng Việt)</span>
+            <small style="font-weight:normal; color:var(--text-muted); font-size:11.5px;">Khai báo hải quan chi tiết</small>
+          </label>
+          <textarea id="pNameVi" class="form-input" rows="2" style="resize:vertical; min-height:54px; line-height:1.4; font-size:12.5px;" placeholder="VD: Sợi filament tổng hợp từ polyeste (chưa tạo chun, chưa gia công độ săn), dạng dệt dập nếp DTY 75D/36F Semi Dull, chưa xoắn, chất lượng loại 1, mới 100%">${escapeHtml(p?.nameVi || '')}</textarea>
         </div>
         <div class="form-row-2">
           <div class="form-group">
             <label class="form-label">Tên Tiếng Anh</label>
-            <input type="text" id="pNameEn" class="form-input" value="${p?.nameEn || ''}" placeholder="Polyester Fully Drawn Yarn 100D/36F">
+            <input type="text" id="pNameEn" class="form-input" value="${escapeHtml(p?.nameEn || '')}" placeholder="Polyester Fully Drawn Yarn 100D/36F">
           </div>
           <div class="form-group">
             <label class="form-label">Nhóm Hàng Hóa</label>
-            <input type="text" id="pGroup" class="form-input" value="${p?.productGroup || ''}" placeholder="VD: Sợi dệt thoi">
+            <input type="text" id="pGroup" class="form-input" value="${escapeHtml(p?.productGroup || '')}" placeholder="VD: Sợi dệt thoi">
           </div>
         </div>
         <div class="form-row-3">
           <div class="form-group">
             <label class="form-label">Mã HS Code</label>
-            <input type="text" id="pHsCode" class="form-input" value="${p?.hsCode || '5402.47.00'}">
+            <input type="text" id="pHsCode" class="form-input" value="${escapeHtml(p?.hsCode || '5402.47.00')}">
           </div>
           <div class="form-group">
             <label class="form-label required">Đơn Vị Tính</label>
-            <input type="text" id="pUnit" class="form-input" required value="${p?.unit || 'kg'}">
+            <input type="text" id="pUnit" class="form-input" required value="${escapeHtml(p?.unit || 'kg')}">
           </div>
           <div class="form-group">
             <label class="form-label">Nước Xuất Xứ</label>
-            <input type="text" id="pOrigin" class="form-input" value="${p?.countryOfOrigin || 'Taiwan'}">
+            <input type="text" id="pOrigin" class="form-input" value="${escapeHtml(p?.countryOfOrigin || 'Taiwan')}">
           </div>
         </div>
         <div class="form-row-2">
           <div class="form-group">
             <label class="form-label">Nhà Sản Xuất</label>
-            <input type="text" id="pManufacturer" class="form-input" value="${p?.manufacturer || ''}">
+            <input type="text" id="pManufacturer" class="form-input" value="${escapeHtml(p?.manufacturer || '')}">
           </div>
           <div class="form-group">
             <label class="form-label">Ghi Chú</label>
-            <input type="text" id="pNotes" class="form-input" value="${p?.notes || ''}">
+            <input type="text" id="pNotes" class="form-input" value="${escapeHtml(p?.notes || '')}">
           </div>
         </div>
       </div>
@@ -634,14 +655,15 @@ async function openProductForm(id) {
   };
 
   document.getElementById("btnSaveProduct").onclick = async () => {
-    const sku  = document.getElementById("pSku").value.trim();
-    const name = document.getElementById("pName").value.trim();
+    const sku    = document.getElementById("pSku").value.trim();
+    const name   = document.getElementById("pName").value.trim();
+    const nameVi = document.getElementById("pNameVi")?.value.trim() || null;
     if (!sku || !name) { showToast("Vui lòng điền SKU và Tên hàng hóa", "error"); return; }
 
     const payload = {
       sku, name,
       nameEn:           document.getElementById("pNameEn").value.trim()      || null,
-      nameVi:           name,
+      nameVi:           nameVi || name,
       productGroup:     document.getElementById("pGroup").value.trim()        || null,
       hsCode:           document.getElementById("pHsCode").value.trim()       || null,
       unit:             document.getElementById("pUnit").value.trim()         || "kg",
