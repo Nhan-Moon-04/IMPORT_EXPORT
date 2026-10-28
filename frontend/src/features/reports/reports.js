@@ -194,32 +194,23 @@ export async function renderReports(container, subTab = 'import') {
         </div>
       </div>
 
-      <!-- 3. Advanced Multi-Filter Box -->
+      <!-- 3. Advanced Multi-Filter Box (Compact & Sleek MISA Style) -->
       <div class="reports-filter-card">
-        <!-- Row 1: Search, Multi-select Supplier, Date Range, Product -->
-        <div class="filter-grid-main">
+        <!-- Row 1: Primary Toolbar (All on 1 single slim line) -->
+        <div class="filter-primary-row">
           <!-- Keyword Free Search (e.g. DTy) -->
-          <div class="filter-group">
-            <label class="filter-label" for="reportSearchInput">
-              <span>🔍 Tìm kiếm nhanh (nhập từ khóa: DTy, SKU, Invoice, v.v.)</span>
-            </label>
-            <div class="filter-input-wrap">
-              <span class="input-prefix">${ICONS.search}</span>
-              <input type="text" id="reportSearchInput" class="filter-control" 
-                placeholder="Nhập DTy, mã hàng, invoice, tờ khai, ghi chú..." 
-                value="${filterState.keyword}">
-            </div>
+          <div class="filter-item-search">
+            <span class="input-prefix">${ICONS.search}</span>
+            <input type="text" id="reportSearchInput" class="filter-control-compact" 
+              placeholder="Tìm kiếm (gõ DTy, mã sợi, invoice, tờ khai...)" 
+              value="${filterState.keyword}">
           </div>
 
           <!-- Multi-select Supplier Dropdown -->
-          <div class="filter-group">
-            <label class="filter-label">
-              <span>🏢 Nhà cung cấp (${shipmentTypeMode === 'Import' ? 'NCC' : 'Khách'})</span>
-              <span id="supplierCountLabel" style="font-size:11px; color:#0266b3; font-weight:700;">Tất cả</span>
-            </label>
+          <div class="filter-item-supplier">
             <div class="supplier-dropdown-wrapper" id="supplierDropdownWrapper">
-              <div class="supplier-dropdown-trigger" id="supplierDropdownTrigger">
-                <span class="supplier-trigger-text" id="supplierTriggerText">-- Tất cả nhà cung cấp --</span>
+              <div class="supplier-dropdown-trigger" id="supplierDropdownTrigger" title="Chọn một hoặc nhiều nhà cung cấp">
+                <span class="supplier-trigger-text" id="supplierTriggerText">🏢 Tất cả nhà cung cấp</span>
                 <span id="supplierTriggerBadgeContainer"></span>
                 <span>${ICONS.chevronDown}</span>
               </div>
@@ -240,12 +231,9 @@ export async function renderReports(container, subTab = 'import') {
           </div>
 
           <!-- Time Presets -->
-          <div class="filter-group">
-            <label class="filter-label" for="reportDatePreset">
-              <span>📅 Kỳ báo cáo</span>
-            </label>
-            <select id="reportDatePreset" class="filter-control">
-              <option value="all">Toàn bộ thời gian</option>
+          <div class="filter-item-preset">
+            <select id="reportDatePreset" class="filter-control-compact" title="Chọn kỳ báo cáo">
+              <option value="all">📅 Toàn bộ thời gian</option>
               <option value="today">Hôm nay</option>
               <option value="last7days">7 ngày qua</option>
               <option value="last30days">30 ngày qua</option>
@@ -253,62 +241,62 @@ export async function renderReports(container, subTab = 'import') {
               <option value="lastMonth">Tháng trước</option>
               <option value="thisQuarter">Quý này</option>
               <option value="thisYear">Năm 2026</option>
-              <option value="custom">Tùy chọn...</option>
+              <option value="custom">Tùy chọn ngày...</option>
             </select>
           </div>
 
           <!-- Product / SKU Filter -->
-          <div class="filter-group">
-            <label class="filter-label" for="reportProductSelect">
-              <span>🧵 Mặt hàng / Mã sợi</span>
-            </label>
-            <select id="reportProductSelect" class="filter-control">
-              <option value="">-- Tất cả mặt hàng --</option>
+          <div class="filter-item-product">
+            <select id="reportProductSelect" class="filter-control-compact" title="Chọn mặt hàng / mã sợi">
+              <option value="">🧵 Tất cả mặt hàng</option>
             </select>
           </div>
+
+          <!-- Toggle Advanced Filter Button -->
+          <button class="btn btn-secondary btn-compact" id="btnToggleAdvancedFilter" title="Mở rộng lọc: Khoảng ngày, Số lượng, Số tiền">
+            ${ICONS.filter} <span>Lọc thêm</span> <span id="advFilterBadge" class="filter-active-dot" style="display:none;"></span> ${ICONS.chevronDown}
+          </button>
+
+          <!-- Reset Button -->
+          <button class="btn-reset-filters" id="btnResetFilters" title="Khôi phục toàn bộ điều kiện lọc về mặc định">
+            ${ICONS.reset} <span>Đặt lại</span>
+          </button>
         </div>
 
-        <!-- Row 2: Date From/To, Min/Max Qty, Min/Max Amount, Reset & Apply -->
-        <div class="filter-secondary-section">
-          <!-- Date From / To -->
-          <div class="filter-group">
-            <label class="filter-label"><span>Khoảng ngày (Từ - Đến)</span></label>
-            <div class="range-inputs">
-              <input type="date" id="reportDateFrom" class="filter-control" value="${filterState.dateFrom}">
-              <span class="range-separator">-</span>
-              <input type="date" id="reportDateTo" class="filter-control" value="${filterState.dateTo}">
-            </div>
+        <!-- Row 2: Secondary / Advanced Filters (Collapsible on 1 single slim line) -->
+        <div class="filter-secondary-row" id="filterSecondaryRow" style="display:none;">
+          <!-- Date Range (From - To) -->
+          <div class="filter-inline-group">
+            <span class="inline-label">Từ ngày:</span>
+            <input type="date" id="reportDateFrom" class="filter-control-compact date-input" value="${filterState.dateFrom}">
+            <span class="inline-label">Đến:</span>
+            <input type="date" id="reportDateTo" class="filter-control-compact date-input" value="${filterState.dateTo}">
           </div>
 
-          <!-- Quantity Range -->
-          <div class="filter-group">
-            <label class="filter-label"><span>Số lượng nhập (kg)</span></label>
-            <div class="range-inputs">
-              <input type="number" id="reportMinQty" class="filter-control" placeholder="Từ kg" min="0" value="${filterState.minQuantity || ''}">
-              <span class="range-separator">-</span>
-              <input type="number" id="reportMaxQty" class="filter-control" placeholder="Đến kg" min="0" value="${filterState.maxQuantity || ''}">
-            </div>
+          <div class="filter-inline-divider"></div>
+
+          <!-- Quantity Range (min - max kg) -->
+          <div class="filter-inline-group">
+            <span class="inline-label">SL (kg):</span>
+            <input type="number" id="reportMinQty" class="filter-control-compact num-input" placeholder="Từ" min="0" value="${filterState.minQuantity || ''}">
+            <span class="range-dash">-</span>
+            <input type="number" id="reportMaxQty" class="filter-control-compact num-input" placeholder="Đến" min="0" value="${filterState.maxQuantity || ''}">
           </div>
 
-          <!-- Amount Range (USD) -->
-          <div class="filter-group">
-            <label class="filter-label"><span>Số tiền ($ USD)</span></label>
-            <div class="range-inputs">
-              <input type="number" id="reportMinAmount" class="filter-control" placeholder="Từ $" min="0" value="${filterState.minAmount || ''}">
-              <span class="range-separator">-</span>
-              <input type="number" id="reportMaxAmount" class="filter-control" placeholder="Đến $" min="0" value="${filterState.maxAmount || ''}">
-            </div>
+          <div class="filter-inline-divider"></div>
+
+          <!-- Amount Range (min - max USD) -->
+          <div class="filter-inline-group">
+            <span class="inline-label">Tiền ($):</span>
+            <input type="number" id="reportMinAmount" class="filter-control-compact num-input" placeholder="Từ" min="0" value="${filterState.minAmount || ''}">
+            <span class="range-dash">-</span>
+            <input type="number" id="reportMaxAmount" class="filter-control-compact num-input" placeholder="Đến" min="0" value="${filterState.maxAmount || ''}">
           </div>
 
-          <!-- Action Buttons -->
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button class="btn-reset-filters" id="btnResetFilters" title="Khôi phục toàn bộ điều kiện lọc về mặc định">
-              ${ICONS.reset} <span>Đặt lại</span>
-            </button>
-            <button class="btn-apply-filters" id="btnApplyFilters">
-              ${ICONS.filter} <span>Lọc dữ liệu</span>
-            </button>
-          </div>
+          <!-- Apply Filter Button -->
+          <button class="btn btn-primary btn-compact" id="btnApplyFilters" style="margin-left:auto;">
+            ${ICONS.check} <span>Áp dụng</span>
+          </button>
         </div>
 
         <!-- Active Badges Strip -->
@@ -668,6 +656,9 @@ function applyFiltersAndRender() {
   // 3. Update Tab Badges Count
   updateTabCounts(filtered);
 
+  // 4. Update Advanced Filter Active Dot Indicator
+  updateAdvFilterBadge();
+
   // 4. Render Table according to active view
   if (activeReportTab === 'detailed') {
     renderDetailedTable(filtered);
@@ -727,6 +718,17 @@ function updateTabCounts(filtered) {
   if (metaResult) {
     metaResult.innerHTML = `Tìm thấy <b>${filtered.length}</b> bản ghi phù hợp điều kiện lọc`;
   }
+}
+
+function updateAdvFilterBadge() {
+  const dot = document.getElementById('advFilterBadge');
+  if (!dot) return;
+  const isAdvActive = Boolean(
+    (filterState.datePreset === 'custom' && (filterState.dateFrom || filterState.dateTo)) ||
+    filterState.minQuantity || filterState.maxQuantity ||
+    filterState.minAmount || filterState.maxAmount
+  );
+  dot.style.display = isAdvActive ? 'inline-block' : 'none';
 }
 
 // ─── Active Badges Strip ─────────────────────────────────────────────────────
@@ -1554,6 +1556,11 @@ function resetAllFilters() {
     cb.checked = false;
   });
 
+  // Collapse advanced filters row on reset
+  const secRow = document.getElementById('filterSecondaryRow');
+  if (secRow) secRow.style.display = 'none';
+  document.getElementById('btnToggleAdvancedFilter')?.classList.remove('active');
+
   updateSupplierTriggerUI();
   applyFiltersAndRender();
   toast('Đã đặt lại toàn bộ điều kiện lọc về mặc định', 'info');
@@ -1853,6 +1860,11 @@ function setupReportEvents() {
       if (val === 'all') {
         filterState.dateFrom = '';
         filterState.dateTo = '';
+      } else if (val === 'custom') {
+        const secRow = document.getElementById('filterSecondaryRow');
+        const btnToggleAdv = document.getElementById('btnToggleAdvancedFilter');
+        if (secRow) secRow.style.display = 'flex';
+        btnToggleAdv?.classList.add('active');
       } else if (val === 'today') {
         const dStr = formatDate(today);
         filterState.dateFrom = dStr;
@@ -1934,6 +1946,26 @@ function setupReportEvents() {
   });
   document.getElementById('reportMaxAmount')?.addEventListener('input', (e) => {
     filterState.maxAmount = e.target.value;
+  });
+
+  // Toggle Advanced Filter Row
+  const btnToggleAdv = document.getElementById('btnToggleAdvancedFilter');
+  const secRow = document.getElementById('filterSecondaryRow');
+  if (btnToggleAdv && secRow) {
+    btnToggleAdv.addEventListener('click', () => {
+      const isHidden = secRow.style.display === 'none';
+      secRow.style.display = isHidden ? 'flex' : 'none';
+      btnToggleAdv.classList.toggle('active', isHidden);
+    });
+  }
+
+  ['reportMinQty', 'reportMaxQty', 'reportMinAmount', 'reportMaxAmount'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        paginationState.page = 1;
+        applyFiltersAndRender();
+      }
+    });
   });
 
   // Apply Button
