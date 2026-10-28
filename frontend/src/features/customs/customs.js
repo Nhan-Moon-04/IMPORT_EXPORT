@@ -13,6 +13,7 @@ import { api, toast, openModal, closeModal, showConfirm, API_BASE, getToken } fr
 let allDeclarations = [];
 let filteredDeclarations = [];
 let allShipments = [];
+let allProducts = [];
 let customsDocs = [];
 let selectedIds = new Set();
 let currentPage = 1;
@@ -69,7 +70,8 @@ export function parseCustomsMeta(notes) {
     importTaxAmount: 0,
     vatRate: 8,
     vatAmount: 0,
-    totalTaxAmount: 0
+    totalTaxAmount: 0,
+    items: []
   };
   if (!notes) return def;
   if (typeof notes === 'object') return { ...def, ...notes };
@@ -89,7 +91,8 @@ export function parseCustomsMeta(notes) {
         importTaxAmount: Number(parsed.importTaxAmount || 0),
         vatRate: Number(parsed.vatRate !== undefined ? parsed.vatRate : 8),
         vatAmount: Number(parsed.vatAmount || 0),
-        totalTaxAmount: Number(parsed.totalTaxAmount || parsed.taxAmount || 0)
+        totalTaxAmount: Number(parsed.totalTaxAmount || parsed.taxAmount || 0),
+        items: Array.isArray(parsed.items) ? parsed.items : []
       };
     }
   } catch (e) {}
@@ -111,6 +114,11 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Thêm Tờ Khai HQ
           </button>
+          <button id="btnCustomsImportExcel" class="amis-btn" style="background:#0266b3; color:#fff;" title="Tự động đọc thông tin từ file Excel tờ khai điện tử (VNACCS/ECUS)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Nhập Từ File Tờ Khai (.xlsx)
+          </button>
+          <input type="file" id="inputCustomsQuickExcel" accept=".xlsx,.xls" style="display:none;">
           <button id="btnCustomsEdit" class="amis-btn amis-btn-ghost" disabled title="Chỉnh sửa tờ khai đã chọn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             Sửa
@@ -263,14 +271,16 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
 // ─── FETCH DỮ LIỆU & ENRICH ──────────────────────────────────────────────────
 async function fetchAllData() {
   try {
-    const [cdRes, shpRes, docRes] = await Promise.all([
+    const [cdRes, shpRes, docRes, prodRes] = await Promise.all([
       api.get('/api/customsDeclarations?pageSize=500'),
       api.get('/api/shipments?pageSize=200'),
-      api.get('/api/documents?category=Customs')
+      api.get('/api/documents?category=Customs'),
+      api.get('/api/products?pageSize=500')
     ]);
 
     allShipments = shpRes.data?.items || shpRes.data || [];
     customsDocs = docRes.data?.items || docRes.data || [];
+    allProducts = prodRes.data?.items || prodRes.data || [];
     const rawDeclarations = cdRes.data?.items || cdRes.data || [];
 
     // Map & Enrich
@@ -347,6 +357,7 @@ async function fetchAllData() {
         partnerName: shp?.supplierName || shp?.customerName || (shp?.type === 'Export' ? 'CÔNG TY CP XUẤT NHẬP KHẨU IMEX' : 'LONG CHENG WU TEXTILE CO., LTD'),
         docId: doc?.id,
         docName: doc?.originalFileName || doc?.fileName,
+        items: meta.items || [],
         createdAt: cd.createdAt
       };
     });
@@ -833,6 +844,21 @@ function setupToolbarEvents() {
     openCreateCustomsModal(null, () => fetchAllData());
   });
 
+  // Nhập từ file Excel tờ khai (Quick upload from toolbar)
+  const btnImportExcel = document.getElementById('btnCustomsImportExcel');
+  const inputQuickExcel = document.getElementById('inputCustomsQuickExcel');
+
+  btnImportExcel?.addEventListener('click', () => {
+    inputQuickExcel?.click();
+  });
+
+  inputQuickExcel?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    openCreateCustomsModal(null, () => fetchAllData(), file);
+    e.target.value = '';
+  });
+
   // Nạp lại
   document.getElementById('btnCustomsRefresh')?.addEventListener('click', async () => {
     await fetchAllData();
@@ -926,8 +952,433 @@ function exportCustomsExcel() {
   toast('Đã xuất file Excel tờ khai hải quan thành công!', 'success');
 }
 
-// ─── MODAL TẠO MỚI TỜ KHAI (TRANG TẠO TK CÁ NHÂN, RÕ RÀNG, DỄ DÙNG) ───────────
-export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = null) {
+// ─── TỰ ĐỘNG PHÂN TÍCH TỜ KHAI HẢI QUAN TỪ FILE EXCEL (VNACCS/ECUS) ───────────
+export function parseCustomsDeclarationExcel(workbook) {
+  let targetSheet = null;
+  if (workbook.Sheets['TKN']) {
+    targetSheet = workbook.Sheets['TKN'];
+  } else {
+    for (const sName of workbook.SheetNames) {
+      const s = workbook.Sheets[sName];
+      const txt = JSON.stringify(s);
+      if (txt.includes('Số tờ khai') || txt.includes('<IMP>') || txt.includes('Tờ khai')) {
+        targetSheet = s;
+        break;
+      }
+    }
+    if (!targetSheet) targetSheet = workbook.Sheets[workbook.SheetNames[0]];
+  }
+
+  const rows = window.XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: '' });
+
+  const result = {
+    declarationNumber: '',
+    declarationType: 'A12',
+    channel: '1',
+    customsBranch: '',
+    registeredAt: '',
+    invoiceNumber: '',
+    exporterName: '',
+    importerName: '',
+    billOfLading: '',
+    currency: 'USD',
+    valueUsd: null,
+    taxableValueVnd: null,
+    exchangeRate: null,
+    totalTaxAmount: null,
+    importTaxAmount: null,
+    vatAmount: null,
+    importTaxRate: 0,
+    vatRate: 8,
+    notes: '',
+    items: []
+  };
+
+  // Pass 1: Header scan
+  for (let rIdx = 0; rIdx < Math.min(rows.length, 140); rIdx++) {
+    const row = rows[rIdx];
+    for (let cIdx = 0; cIdx < row.length; cIdx++) {
+      const val = String(row[cIdx] || '').trim();
+
+      // Số tờ khai (12 chữ số)
+      if (val.includes('Số tờ khai') && !result.declarationNumber) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 10, row.length); k++) {
+          const m = String(row[k]).match(/\b(10\d{10})\b/);
+          if (m) { result.declarationNumber = m[1]; break; }
+        }
+      }
+
+      // Mã loại hình
+      if (val.includes('Mã loại hình') && !result.declarationType) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 8, row.length); k++) {
+          const m = String(row[k]).match(/\b([A-Z]\d{2})\b/);
+          if (m) { result.declarationType = m[1]; break; }
+        }
+      }
+
+      // Mã phân loại kiểm tra
+      if (val.includes('Mã phân loại kiểm tra') && !result.channel) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 8, row.length); k++) {
+          const s = String(row[k]).trim();
+          if (['1', '2', '3'].includes(s)) { result.channel = s; break; }
+        }
+      }
+
+      // Tên cơ quan Hải quan
+      if (val.includes('cơ quan Hải quan tiếp nhận') && !result.customsBranch) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 12, row.length); k++) {
+          const s = String(row[k]).trim();
+          if (s && !s.includes('Mã bộ phận')) { result.customsBranch = s; break; }
+        }
+      }
+
+      // Ngày đăng ký
+      if (val.includes('Ngày đăng ký') && !result.registeredAt) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 8, row.length); k++) {
+          const m = String(row[k]).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          if (m) { result.registeredAt = `${m[3]}-${m[2]}-${m[1]}`; break; }
+        }
+      }
+
+      // Người xuất khẩu
+      if (val.includes('Người xuất khẩu') && !result.exporterName) {
+        for (let nextR = rIdx + 1; nextR < Math.min(rIdx + 5, rows.length); nextR++) {
+          for (let nextC = 0; nextC < rows[nextR].length; nextC++) {
+            if (String(rows[nextR][nextC]).includes('Tên')) {
+              for (let vC = nextC + 1; vC < Math.min(nextC + 10, rows[nextR].length); vC++) {
+                const s = String(rows[nextR][vC] || '').trim();
+                if (s.length > 2) { result.exporterName = s; break; }
+              }
+              break;
+            }
+          }
+          if (result.exporterName) break;
+        }
+      }
+
+      // Người nhập khẩu
+      if (val.includes('Người nhập khẩu') && !result.importerName) {
+        for (let nextR = rIdx + 1; nextR < Math.min(rIdx + 5, rows.length); nextR++) {
+          for (let nextC = 0; nextC < rows[nextR].length; nextC++) {
+            if (String(rows[nextR][nextC]).includes('Tên')) {
+              for (let vC = nextC + 1; vC < Math.min(nextC + 10, rows[nextR].length); vC++) {
+                const s = String(rows[nextR][vC] || '').trim();
+                if (s.length > 2) { result.importerName = s; break; }
+              }
+              break;
+            }
+          }
+          if (result.importerName) break;
+        }
+      }
+
+      // Số hóa đơn
+      if (val.includes('Số hóa đơn') && !result.invoiceNumber) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 10, row.length); k++) {
+          const s = String(row[k] || '').trim();
+          if (s) {
+            result.invoiceNumber = s.replace(/^[A-Z]\s*-\s*/, '').trim();
+            break;
+          }
+        }
+      }
+
+      // Số vận đơn
+      if (val.includes('Số vận đơn') && !result.billOfLading) {
+        for (let nextR = rIdx; nextR < Math.min(rIdx + 3, rows.length); nextR++) {
+          for (let nextC = 0; nextC < rows[nextR].length; nextC++) {
+            const vStr = String(rows[nextR][nextC] || '').trim();
+            if (vStr.length > 6 && /[A-Z0-9]{8,}/.test(vStr) && !['Địa điểm', 'TONG CTY', 'CANG', 'Phương tiện'].some(w => vStr.includes(w))) {
+              result.billOfLading = vStr;
+              break;
+            }
+          }
+          if (result.billOfLading) break;
+        }
+      }
+
+      // Tổng trị giá hóa đơn ($ USD)
+      if (val.includes('Tổng trị giá hóa đơn') && result.valueUsd === null) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 15, row.length); k++) {
+          const s = String(row[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+          const num = parseFloat(s);
+          if (!isNaN(num) && num > 0) { result.valueUsd = num; break; }
+        }
+      }
+
+      // Tổng trị giá tính thuế (VND)
+      if (val.includes('Tổng trị giá tính thuế') && result.taxableValueVnd === null) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 15, row.length); k++) {
+          const s = String(row[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+          const num = parseFloat(s);
+          if (!isNaN(num) && num > 0) { result.taxableValueVnd = Math.round(num); break; }
+        }
+      }
+
+      // Tỷ giá tính thuế
+      if (val.includes('Tỷ giá tính thuế') && result.exchangeRate === null) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 15, row.length); k++) {
+          const s = String(row[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+          const num = parseFloat(s);
+          if (!isNaN(num) && num >= 10000 && num <= 50000) { result.exchangeRate = Math.round(num); break; }
+        }
+      }
+
+      // Tổng tiền thuế phải nộp
+      if (val.includes('Tổng tiền thuế phải nộp') && result.totalTaxAmount === null) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 15, row.length); k++) {
+          const s = String(row[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+          const num = parseFloat(s);
+          if (!isNaN(num) && num > 0) { result.totalTaxAmount = Math.round(num); break; }
+        }
+      }
+
+      // Thuế NK
+      if (val.includes('Thuế NK') && result.importTaxAmount === null) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 10, row.length); k++) {
+          const s = String(row[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+          const num = parseFloat(s);
+          if (!isNaN(num) && num > 0) { result.importTaxAmount = Math.round(num); break; }
+        }
+      }
+
+      // Thuế GTGT
+      if (val.includes('Thuế GTGT') && result.vatAmount === null) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 10, row.length); k++) {
+          const s = String(row[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+          const num = parseFloat(s);
+          if (!isNaN(num) && num > 0) { result.vatAmount = Math.round(num); break; }
+        }
+      }
+
+      // Phần ghi chú
+      if (val.includes('Phần ghi chú') && !result.notes) {
+        for (let k = cIdx + 1; k < Math.min(cIdx + 10, row.length); k++) {
+          const s = String(row[k] || '').trim();
+          if (s) { result.notes = s; break; }
+        }
+      }
+    }
+  }
+
+  // Tỷ lệ % thuế
+  if (result.importTaxAmount && result.taxableValueVnd) {
+    result.importTaxRate = Math.round((result.importTaxAmount / result.taxableValueVnd) * 100 * 10) / 10;
+  }
+  if (result.vatAmount && result.taxableValueVnd) {
+    const base = result.taxableValueVnd + (result.importTaxAmount || 0);
+    result.vatRate = Math.round((result.vatAmount / base) * 100);
+  }
+
+  // Pass 2: Trích xuất danh sách dòng hàng (<01>, <02>, ...)
+  const itemStarts = [];
+  for (let rIdx = 0; rIdx < rows.length; rIdx++) {
+    const row = rows[rIdx];
+    for (let cIdx = 0; cIdx < Math.min(5, row.length); cIdx++) {
+      const m = String(row[cIdx] || '').trim().match(/^<0*(\d+)>$/);
+      if (m) {
+        itemStarts.push({ num: parseInt(m[1]), rIdx });
+        break;
+      }
+    }
+  }
+
+  for (let idx = 0; idx < itemStarts.length; idx++) {
+    const { num, rIdx: startR } = itemStarts[idx];
+    const endR = idx + 1 < itemStarts.length ? itemStarts[idx + 1].rIdx : Math.min(startR + 70, rows.length);
+    const itemRows = rows.slice(startR, endR);
+
+    const item = {
+      index: num,
+      hsCode: '',
+      customsName: '',
+      quantity: 0,
+      unit: 'kg',
+      unitPrice: 0,
+      totalPrice: 0,
+      importTaxRate: result.importTaxRate || 0,
+      vatRate: result.vatRate || 8
+    };
+
+    for (const r of itemRows) {
+      for (let c = 0; c < r.length; c++) {
+        const cell = String(r[c] || '').trim();
+
+        // Mã số hàng hóa (HS code)
+        if (cell.includes('Mã số hàng hóa') && !item.hsCode) {
+          for (let k = c + 1; k < Math.min(c + 8, r.length); k++) {
+            const raw = String(r[k] || '').replace(/\D/g, '');
+            if (raw.length >= 6) {
+              if (raw.length === 8) {
+                item.hsCode = `${raw.slice(0, 4)}.${raw.slice(4, 6)}.${raw.slice(6, 8)}`;
+              } else {
+                item.hsCode = raw;
+              }
+              break;
+            }
+          }
+        }
+
+        // Mô tả hàng hóa
+        if (cell.includes('Mô tả hàng hóa') && !item.customsName) {
+          for (let k = c + 1; k < Math.min(c + 8, r.length); k++) {
+            const s = String(r[k] || '').trim();
+            if (s.length > 5) {
+              item.customsName = s;
+              break;
+            }
+          }
+        }
+
+        // Số lượng (1)
+        if (cell.includes('Số lượng (1)') && item.quantity === 0) {
+          for (let k = c + 1; k < Math.min(c + 15, r.length); k++) {
+            const s = String(r[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+            const numVal = parseFloat(s);
+            if (!isNaN(numVal) && numVal > 0) {
+              item.quantity = numVal;
+              for (let uk = k + 1; uk < Math.min(k + 12, r.length); uk++) {
+                const u = String(r[uk] || '').trim().toUpperCase();
+                if (['KGM', 'KG', 'PCS', 'CONE', 'MTR', 'ROLL'].includes(u)) {
+                  item.unit = u === 'KGM' ? 'kg' : u.toLowerCase();
+                  break;
+                }
+              }
+              break;
+            }
+          }
+        }
+
+        // Đơn giá hóa đơn
+        if (cell.includes('Đơn giá hóa đơn') && item.unitPrice === 0) {
+          for (let k = c + 1; k < Math.min(c + 10, r.length); k++) {
+            const s = String(r[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+            const numVal = parseFloat(s);
+            if (!isNaN(numVal) && numVal > 0) {
+              item.unitPrice = numVal;
+              break;
+            }
+          }
+        }
+
+        // Trị giá hóa đơn
+        if (cell.includes('Trị giá hóa đơn') && item.totalPrice === 0) {
+          for (let k = c + 1; k < Math.min(c + 10, r.length); k++) {
+            const s = String(r[k] || '').trim().replace(/\./g, '').replace(/,/g, '.');
+            const numVal = parseFloat(s);
+            if (!isNaN(numVal) && numVal > 0) {
+              item.totalPrice = numVal;
+              break;
+            }
+          }
+        }
+
+        // Thuế suất
+        if (cell.includes('Thuế suất')) {
+          const mPct = cell.match(/(\d+(?:\.\d+)?)%/);
+          if (mPct) item.importTaxRate = parseFloat(mPct[1]);
+          else {
+            for (let k = c + 1; k < Math.min(c + 8, r.length); k++) {
+              const mp = String(r[k] || '').match(/(\d+(?:\.\d+)?)%/);
+              if (mp) { item.importTaxRate = parseFloat(mp[1]); break; }
+            }
+          }
+        }
+      }
+    }
+
+    result.items.push(item);
+  }
+
+  // Fallback: nếu không có định dạng <01>, tìm bảng hàng hóa thông thường
+  if (result.items.length === 0 && rows.length > 2) {
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const desc = String(row[1] || row[2] || '').trim();
+      const hs = String(row[0] || '').replace(/\D/g, '');
+      const q = parseFloat(String(row[3] || '').replace(/\./g, '').replace(/,/g, '.'));
+      if (desc && desc.length > 4 && !isNaN(q) && q > 0) {
+        result.items.push({
+          index: result.items.length + 1,
+          hsCode: hs || '5402.47.00',
+          customsName: desc,
+          quantity: q,
+          unit: 'kg',
+          unitPrice: parseFloat(String(row[4] || 0)) || 0,
+          totalPrice: parseFloat(String(row[5] || 0)) || 0,
+          importTaxRate: 0,
+          vatRate: 8
+        });
+      }
+    }
+  }
+
+  return result;
+}
+
+// ─── THUẬT TOÁN TỰ ĐỘNG KHỚP SẢN PHẨM HỆ THỐNG VỚI DÒNG HÀNG TỜ KHAI ────────
+export function findBestMatchingProduct(item, products) {
+  if (!products || !products.length) return null;
+  const rawText = `${item.customsName || ''} ${item.hsCode || ''}`.toUpperCase();
+
+  let bestProd = null;
+  let maxScore = 0;
+
+  for (const p of products) {
+    let score = 0;
+    const sku = (p.sku || '').toUpperCase();
+    const name = (p.name || '').toUpperCase();
+    const spec = p.specification || {};
+    const yarnType = (spec.yarnType || '').toUpperCase();
+    const denier = (spec.denierCount || '').toUpperCase().replace('D', '');
+    const filament = spec.filamentCount ? `${spec.filamentCount}` : '';
+
+    // Khớp SKU trực tiếp
+    if (sku && rawText.includes(sku)) score += 6;
+
+    // Khớp loại sợi (FDY, DTY, POY)
+    if (yarnType && rawText.includes(yarnType)) score += 3;
+
+    // Khớp chỉ số Denier (75D, 90D, 100D, 150D...)
+    if (denier) {
+      if (rawText.includes(`${denier}D`) || rawText.includes(`${denier}/`) || rawText.includes(` ${denier} `)) {
+        score += 4;
+      }
+    }
+
+    // Khớp số filament (36F, 48F, 72F...)
+    if (filament) {
+      if (rawText.includes(`${filament}F`) || rawText.includes(`/${filament}`) || rawText.includes(`${filament} F`)) {
+        score += 3;
+      }
+    }
+
+    // Khớp HS Code
+    if (p.hsCode && item.hsCode) {
+      const cleanP = p.hsCode.replace(/\D/g, '').slice(0, 4);
+      const cleanI = item.hsCode.replace(/\D/g, '').slice(0, 4);
+      if (cleanP && cleanP === cleanI) score += 2;
+    }
+
+    if (score > maxScore && score >= 5) {
+      maxScore = score;
+      bestProd = p;
+    }
+  }
+
+  return bestProd;
+}
+
+// ─── MODAL TẠO MỚI TỜ KHAI (HỖ TRỢ UPLOAD & TỰ ĐỘNG ĐIỀN TOÀN DIỆN) ───────────
+export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess = null, initialFile = null) {
+  // Đảm bảo danh mục sản phẩm đã được nạp để map mã SKU
+  if (!allProducts || allProducts.length === 0) {
+    try {
+      const prodRes = await api.get('/api/products?pageSize=500');
+      allProducts = prodRes.data?.items || prodRes.data || [];
+    } catch (_) {}
+  }
+
   const autoNum = `10${Math.floor(1000000000 + Math.random() * 9000000000)}`;
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -935,8 +1386,30 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
   const isDefDomestic = defShp?.currency === 'VND';
   const defVal = defShp?.totalValue || 0;
 
+  let currentExtractedItems = [];
+  let uploadedCustomsFile = initialFile || null;
+
   const modalHtml = `
     <form id="form-create-customs" style="padding: 4px 0;">
+      <!-- BANNER UPLOAD & AUTO-PARSE FILE EXCEL TỜ KHAI -->
+      <div class="customs-upload-dropzone" id="cdUploadDropzone" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1.5px dashed #0284c7; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size: 26px; line-height: 1;">⚡</div>
+          <div>
+            <div style="font-weight: 700; font-size: 13px; color: #0369a1;">Tự động điền từ file Tờ khai Hải quan điện tử (.xlsx / VNACCS)</div>
+            <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">Tải lên file tờ khai (.xlsx) để hệ thống tự trích xuất Số tờ khai, Ngày ĐK, Chi cục, Tỷ giá, Trị giá & Danh sách dòng hàng.</div>
+          </div>
+        </div>
+        <div>
+          <label class="amis-btn" style="background:#0284c7; color:#fff; cursor:pointer; margin:0; font-size:12px; padding:6px 14px; box-shadow:0 1px 2px rgba(0,0,0,0.08); display:inline-flex; align-items:center; gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Tải file Excel lên</span>
+            <input type="file" id="cdFileAutoParse" accept=".xlsx,.xls" style="display:none;">
+          </label>
+        </div>
+      </div>
+      <div id="cdAutoParseAlert" style="display:none; margin-bottom:14px; padding:10px 14px; border-radius:6px; font-size:12.5px; line-height:1.45;"></div>
+
       <!-- CHỌN NGUỒN GỐC TỜ KHAI -->
       <div style="margin-bottom: 14px;">
         <label class="form-label required" style="font-size:12px; font-weight:700;">Loại Hình Nhập Khẩu & Tiền Tệ</label>
@@ -1094,13 +1567,41 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
         </div>
       </div>
 
+      <!-- PREVIEW & MAP DÒNG HÀNG TRÍCH XUẤT TỪ FILE TỜ KHAI -->
+      <div id="cdItemsSection" style="display:none; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+        <div style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <strong style="color: #0f172a; font-size: 13px;">📦 Dòng Hàng Trích Xuất Từ Tờ Khai (<span id="cdItemsCount">0</span> dòng)</strong>
+            <div style="font-size: 11.5px; color: #64748b; margin-top: 1px;">Kiểm tra mô tả chi tiết trên tờ khai và chọn Mã Sản Phẩm (SKU) tương ứng trong hệ thống</div>
+          </div>
+          <span style="font-size: 11.5px; color: #16a34a; font-weight: 600;" id="cdItemsMatchedNote"></span>
+        </div>
+        <div style="max-height: 280px; overflow-y: auto;">
+          <table class="amis-data-table" style="font-size: 12px; width:100%;" id="tblCdExtractedItems">
+            <thead>
+              <tr style="background:#f1f5f9; position:sticky; top:0; z-index:2;">
+                <th style="width:36px; text-align:center;">#</th>
+                <th style="min-width:260px;">Tên Hàng Hóa Trên Tờ Khai (Mô tả Hải quan)</th>
+                <th style="width:90px;">Mã HS</th>
+                <th style="width:100px; text-align:right;">Số Lượng</th>
+                <th style="width:85px; text-align:right;">Đơn Giá ($)</th>
+                <th style="width:105px; text-align:right;">Trị Giá ($)</th>
+                <th style="min-width:230px;">Mã SKU Trong Hệ Thống (Map sản phẩm)</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyCdExtractedItems">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- TỆP ĐÍNH KÈM & GHI CHÚ -->
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;">
         <div class="form-group" style="grid-column: span 2;">
           <label class="form-label">Tệp đính kèm tờ khai (File Excel .xlsx / PDF / XML)</label>
           <input type="file" id="cd-file" class="form-control" accept=".xlsx,.xls,.pdf,.xml">
-          <div style="font-size:11px; color:#64748b; margin-top:3px;">
-            Đính kèm file tờ khai xuất từ phần mềm Hải quan (VD: ToKhaiHQ_...xlsx) để xem và tải về sau này.
+          <div style="font-size:11px; color:#64748b; margin-top:3px;" id="cdFileHelpText">
+            File đính kèm gốc sẽ được tự động lưu trữ và cho phép xem/tải lại sau này.
           </div>
         </div>
 
@@ -1118,6 +1619,10 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
   `;
 
   openModal('Khai Báo Tờ Khai Hải Quan', modalHtml);
+
+  // Mở rộng modal cho bảng preview dòng hàng thoải mái hiển thị
+  const mContainer = document.getElementById('modalContainer');
+  if (mContainer) mContainer.style.maxWidth = '980px';
 
   // Sinh số mới
   document.getElementById('btnGenCustomsNum')?.addEventListener('click', () => {
@@ -1222,6 +1727,256 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
     }
   });
 
+  // HÀM XỬ LÝ PHÂN TÍCH FILE EXCEL VÀ AUTO-FILL TOÀN DIỆN
+  async function handleAutoParseFile(file) {
+    if (!file) return;
+    uploadedCustomsFile = file;
+
+    const alertEl = document.getElementById('cdAutoParseAlert');
+    if (alertEl) {
+      alertEl.style.display = 'block';
+      alertEl.style.background = '#e0f2fe';
+      alertEl.style.border = '1px solid #7dd3fc';
+      alertEl.style.color = '#0369a1';
+      alertEl.innerHTML = `<strong>⏳ Đang đọc và phân tích cấu trúc file tờ khai ${escapeHtml(file.name)}...</strong>`;
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      if (!window.XLSX) {
+        throw new Error('Thư viện đọc Excel chưa sẵn sàng. Vui lòng thử lại sau vài giây.');
+      }
+      const workbook = window.XLSX.read(arrayBuffer, { type: 'array' });
+      const extracted = parseCustomsDeclarationExcel(workbook);
+
+      // 1. Điền Số tờ khai
+      if (extracted.declarationNumber) {
+        document.getElementById('cd-number').value = extracted.declarationNumber;
+      }
+
+      // 2. Điền Loại hình
+      if (extracted.declarationType) {
+        const typeSel = document.getElementById('cd-type');
+        let opt = Array.from(typeSel.options).find(o => o.value === extracted.declarationType);
+        if (!opt) {
+          opt = new Option(`${extracted.declarationType} - Tờ khai ${extracted.declarationType}`, extracted.declarationType);
+          typeSel.add(opt);
+        }
+        typeSel.value = extracted.declarationType;
+      }
+
+      // 3. Điền Phân luồng
+      if (extracted.channel) {
+        const statusSel = document.getElementById('cd-status');
+        if (statusSel) statusSel.value = extracted.channel;
+      }
+
+      // 4. Điền Chi cục Hải quan
+      if (extracted.customsBranch) {
+        document.getElementById('cd-branch').value = extracted.customsBranch;
+      }
+
+      // 5. Điền Ngày đăng ký
+      if (extracted.registeredAt) {
+        document.getElementById('cd-date').value = extracted.registeredAt;
+      }
+
+      // 6. Điền Trị giá & Tỷ giá
+      const isDom = extracted.currency === 'VND';
+      const rScope = document.querySelector(`input[name="cd-scope-radio"][value="${isDom ? 'domestic' : 'foreign'}"]`);
+      if (rScope) {
+        rScope.checked = true;
+        updateScopeUI(isDom ? 'domestic' : 'foreign');
+      }
+
+      if (!isDom) {
+        if (extracted.valueUsd) document.getElementById('cd-val-usd').value = extracted.valueUsd;
+        if (extracted.exchangeRate) document.getElementById('cd-exchange-rate').value = extracted.exchangeRate;
+      } else {
+        if (extracted.taxableValueVnd) document.getElementById('cd-val-vnd-direct').value = extracted.taxableValueVnd;
+      }
+
+      if (extracted.importTaxRate !== undefined) document.getElementById('cd-tax-import-rate').value = extracted.importTaxRate;
+      if (extracted.vatRate !== undefined) document.getElementById('cd-tax-vat-rate').value = extracted.vatRate;
+
+      // 7. Điền Ghi chú
+      const notesEl = document.getElementById('cd-notes');
+      if (notesEl) {
+        const noteParts = [];
+        if (extracted.invoiceNumber) noteParts.push(`Số HĐ: ${extracted.invoiceNumber}`);
+        if (extracted.billOfLading) noteParts.push(`Vận đơn: ${extracted.billOfLading}`);
+        if (extracted.exporterName) noteParts.push(`Đối tác: ${extracted.exporterName}`);
+        if (extracted.notes) noteParts.push(extracted.notes);
+        notesEl.value = noteParts.join(' | ');
+      }
+
+      recalculateCustomsTaxes();
+
+      // 8. Tự động tìm Lô hàng phù hợp
+      let matchedShipment = null;
+      if (!defaultShipmentId && allShipments && allShipments.length) {
+        if (extracted.invoiceNumber) {
+          const invLower = extracted.invoiceNumber.toLowerCase();
+          matchedShipment = allShipments.find(s =>
+            (s.invoiceNumber && s.invoiceNumber.toLowerCase().includes(invLower)) ||
+            (s.notes && s.notes.toLowerCase().includes(invLower)) ||
+            (s.shipmentCode && s.shipmentCode.toLowerCase().includes(invLower))
+          );
+        }
+        if (!matchedShipment && extracted.billOfLading) {
+          const blLower = extracted.billOfLading.toLowerCase();
+          matchedShipment = allShipments.find(s =>
+            (s.blNumber && blLower.includes(s.blNumber.toLowerCase())) ||
+            (s.notes && blLower.includes(s.notes.toLowerCase()))
+          );
+        }
+        if (!matchedShipment && extracted.exporterName) {
+          const expLower = extracted.exporterName.toLowerCase();
+          matchedShipment = allShipments.find(s =>
+            (s.supplierName && expLower.includes(s.supplierName.toLowerCase())) ||
+            (s.partnerName && expLower.includes(s.partnerName.toLowerCase()))
+          );
+        }
+        if (matchedShipment) {
+          document.getElementById('cd-shipment').value = matchedShipment.id;
+        }
+      }
+
+      // 9. Hiển thị thông báo trạng thái
+      if (alertEl) {
+        alertEl.style.display = 'block';
+        alertEl.style.background = '#f0fdf4';
+        alertEl.style.border = '1px solid #bbf7d0';
+        alertEl.style.color = '#166534';
+        alertEl.innerHTML = `
+          <div style="font-weight:700; font-size:13px; margin-bottom:2px;">
+            🎉 Đã đọc thành công Tờ khai Hải quan: <strong>${escapeHtml(extracted.declarationNumber || file.name)}</strong>
+          </div>
+          <div>
+            Trích xuất <strong>${extracted.items.length} dòng hàng</strong>, Trị giá: <strong>$${Number(extracted.valueUsd || 0).toLocaleString()}</strong>, Tỷ giá: <strong>${Number(extracted.exchangeRate || 0).toLocaleString()}</strong>.
+            ${matchedShipment ? `<br>👉 Tự động khớp với Lô hàng: <strong style="color:#0369a1;">${escapeHtml(matchedShipment.shipmentCode)}</strong> (${escapeHtml(matchedShipment.supplierName || matchedShipment.customerName || '')})` : '<br>👉 <em>Vui lòng chọn Lô hàng liên kết và kiểm tra Mã sản phẩm (SKU) bên dưới.</em>'}
+          </div>
+        `;
+      }
+
+      // 10. Render Bảng Preview & Map Mã Sản Phẩm
+      const itemsSection = document.getElementById('cdItemsSection');
+      const tbody = document.getElementById('tbodyCdExtractedItems');
+      const countEl = document.getElementById('cdItemsCount');
+      const noteEl = document.getElementById('cdItemsMatchedNote');
+
+      if (extracted.items && extracted.items.length > 0) {
+        currentExtractedItems = extracted.items;
+        countEl.textContent = extracted.items.length;
+        let matchCount = 0;
+
+        tbody.innerHTML = extracted.items.map((it, idx) => {
+          const bestProd = findBestMatchingProduct(it, allProducts);
+          if (bestProd) matchCount++;
+
+          return `
+            <tr>
+              <td style="text-align:center; font-weight:700; color:#64748b;">${it.index || idx + 1}</td>
+              <td>
+                <div class="cd-item-name-cell" title="${escapeHtml(it.customsName)}">
+                  ${escapeHtml(it.customsName || '—')}
+                </div>
+              </td>
+              <td>
+                <code style="font-size:11px; font-weight:700; color:#0f172a;">${it.hsCode || '—'}</code>
+              </td>
+              <td style="text-align:right;">
+                <strong>${Number(it.quantity || 0).toLocaleString()}</strong>
+                <span style="font-size:11px; color:#64748b;">${it.unit || 'kg'}</span>
+              </td>
+              <td style="text-align:right; font-family:monospace;">
+                ${it.unitPrice ? `$${Number(it.unitPrice).toFixed(2)}` : '—'}
+              </td>
+              <td style="text-align:right; font-weight:700; color:#0369a1;">
+                ${it.totalPrice ? `$${Number(it.totalPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'}
+              </td>
+              <td>
+                <select class="form-control cd-item-sku-select" style="font-size:11.5px; height:30px; font-weight:600; color:#0369a1; padding:2px 6px;" data-idx="${idx}">
+                  <option value="">-- Chưa liên kết mã SP --</option>
+                  ${allProducts.map(p => `
+                    <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" ${bestProd?.id === p.id ? 'selected' : ''}>
+                      [${escapeHtml(p.sku)}] ${escapeHtml(p.name)}
+                    </option>
+                  `).join('')}
+                </select>
+                ${bestProd ? `<div style="font-size:10.5px; color:#15803d; font-weight:600; margin-top:2px;">✓ Tự động khớp với SKU: ${escapeHtml(bestProd.sku)}</div>` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (noteEl) {
+          noteEl.textContent = matchCount > 0 ? `✓ Tự động khớp ${matchCount}/${extracted.items.length} mặt hàng` : '';
+        }
+        itemsSection.style.display = 'block';
+      } else {
+        itemsSection.style.display = 'none';
+      }
+
+      // Đồng bộ tên file lên ô trợ giúp
+      const helpText = document.getElementById('cdFileHelpText');
+      if (helpText) {
+        helpText.innerHTML = `✓ Đã sẵn sàng lưu file gốc: <strong style="color:#0284c7;">${escapeHtml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+
+    } catch (err) {
+      console.error('Lỗi phân tích file tờ khai:', err);
+      if (alertEl) {
+        alertEl.style.display = 'block';
+        alertEl.style.background = '#fef2f2';
+        alertEl.style.border = '1px solid #fecaca';
+        alertEl.style.color = '#b91c1c';
+        alertEl.innerHTML = `<strong>⚠️ Không thể đọc file tờ khai:</strong> ${escapeHtml(err.message)}`;
+      }
+    }
+  }
+
+  // Lắng nghe sự kiện chọn file từ Banner
+  document.getElementById('cdFileAutoParse')?.addEventListener('change', function () {
+    const file = this.files?.[0];
+    if (file) handleAutoParseFile(file);
+  });
+
+  // Lắng nghe sự kiện chọn file ở ô đính kèm
+  document.getElementById('cd-file')?.addEventListener('change', function () {
+    const file = this.files?.[0];
+    if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+      handleAutoParseFile(file);
+    }
+  });
+
+  // Kéo thả file vào Dropzone
+  const dropzone = document.getElementById('cdUploadDropzone');
+  if (dropzone) {
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.style.background = '#bae6fd';
+      dropzone.style.borderColor = '#0266b3';
+    });
+    dropzone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropzone.style.background = 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)';
+      dropzone.style.borderColor = '#0284c7';
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.background = 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)';
+      dropzone.style.borderColor = '#0284c7';
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleAutoParseFile(file);
+    });
+  }
+
+  // Nếu mở modal từ Toolbar với file đã chọn trước
+  if (initialFile) {
+    handleAutoParseFile(initialFile);
+  }
+
   recalculateCustomsTaxes();
 
   // Submit save
@@ -1258,6 +2013,19 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
     const vatAmount = Math.round((taxableVnd + impAmount) * (vatRate / 100));
     const totalTax = impAmount + vatAmount;
 
+    // Thu thập danh sách dòng hàng đã được map mã SKU
+    const finalItems = currentExtractedItems.map((it, idx) => {
+      const selectEl = document.querySelector(`.cd-item-sku-select[data-idx="${idx}"]`);
+      const productId = selectEl?.value || null;
+      const opt = selectEl?.selectedOptions?.[0];
+      const productSku = opt?.dataset?.sku || null;
+      return {
+        ...it,
+        productId,
+        productSku
+      };
+    });
+
     const metaPayload = {
       scope: isDom ? 'domestic' : 'foreign',
       isDomestic: isDom,
@@ -1270,7 +2038,8 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
       vatRate: vatRate,
       vatAmount: vatAmount,
       totalTaxAmount: totalTax,
-      userNotes: document.getElementById('cd-notes').value.trim()
+      userNotes: document.getElementById('cd-notes').value.trim(),
+      items: finalItems
     };
 
     const payload = {
@@ -1287,20 +2056,42 @@ export function openCreateCustomsModal(defaultShipmentId = null, onSuccess = nul
       const createRes = await api.post('/api/customsDeclarations', payload);
       const declarationId = createRes?.data?.id;
 
-      // Upload file nếu có
+      // 1. Upload file nếu có
       const fileInput = document.getElementById('cd-file');
-      if (fileInput && fileInput.files.length > 0 && declarationId) {
-        const formData = new FormData();
-        formData.append("File", fileInput.files[0]);
-        formData.append("Category", "Customs");
-        formData.append("EntityType", "CustomsDeclaration");
-        formData.append("EntityId", declarationId);
-        if (payload.shipmentId) formData.append("ShipmentId", payload.shipmentId);
+      const fileToUpload = (fileInput && fileInput.files && fileInput.files[0]) || uploadedCustomsFile;
 
-        await api.upload('/api/documents/upload', formData);
+      if (fileToUpload && declarationId) {
+        try {
+          const formData = new FormData();
+          formData.append("File", fileToUpload);
+          formData.append("Category", "Customs");
+          formData.append("EntityType", "CustomsDeclaration");
+          formData.append("EntityId", declarationId);
+          if (payload.shipmentId) formData.append("ShipmentId", payload.shipmentId);
+
+          await api.upload('/api/documents/upload', formData);
+        } catch (uploadErr) {
+          console.warn('Không thể upload file đính kèm:', uploadErr);
+        }
       }
 
-      toast('Tạo tờ khai hải quan thành công!', 'success');
+      // 2. Đồng bộ các dòng hàng đã map sản phẩm vào Lô hàng (ShipmentItems)
+      const validShipmentItems = finalItems.filter(it => it.productId).map(it => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        notes: it.customsName
+      }));
+
+      if (validShipmentItems.length > 0 && sid) {
+        try {
+          await api.post(`/api/shipments/${sid}/items`, { items: validShipmentItems });
+        } catch (errItems) {
+          console.warn('Không thể đồng bộ vào dòng hàng lô hàng:', errItems);
+        }
+      }
+
+      toast('Tạo tờ khai hải quan thành công! Đã tự động đọc và lưu trữ dòng hàng.', 'success');
       closeModal();
       if (onSuccess) onSuccess();
       else fetchAllData();
@@ -1718,18 +2509,36 @@ window.viewCustomsVNACCS = function (id) {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style="text-align:center;">1</td>
-              <td style="font-family:monospace; font-weight:700;">5402.47.00</td>
-              <td><strong>Sợi filament tổng hợp (Polyester DTY / FDY)</strong></td>
-              <td style="text-align:center;">kg</td>
-              ${!cd.isDomestic ? `<td style="text-align:right; font-weight:700; color:#0369a1;">$${Number(cd.valueUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
-              ${!cd.isDomestic ? `<td style="text-align:right; font-family:monospace;">${Number(cd.exchangeRate || 0).toLocaleString('vi-VN')}</td>` : ''}
-              <td style="text-align:right; font-weight:700; color:#15803d;">${Number(cd.taxableValueVnd || 0).toLocaleString('vi-VN')} ₫</td>
-              ${!cd.isDomestic ? `<td style="text-align:center;">${cd.importTaxRate || 0}%</td>` : ''}
-              <td style="text-align:center;">${cd.vatRate || 8}%</td>
-              <td style="text-align:right; font-weight:700; color:#b45309;">${Number(cd.totalTaxAmount || 0).toLocaleString('vi-VN')} ₫</td>
-            </tr>
+            ${(cd.items && cd.items.length > 0) ? cd.items.map((it, idx) => `
+              <tr>
+                <td style="text-align:center;">${it.index || idx + 1}</td>
+                <td style="font-family:monospace; font-weight:700;">${escapeHtml(it.hsCode || '5402.47.00')}</td>
+                <td>
+                  <strong>${escapeHtml(it.customsName || '---')}</strong>
+                  ${it.productSku ? `<div style="font-size:11px; color:#0369a1; font-weight:700; margin-top:2px;">[SKU: ${escapeHtml(it.productSku)}]</div>` : ''}
+                </td>
+                <td style="text-align:center;">${escapeHtml(it.unit || 'kg')}</td>
+                ${!cd.isDomestic ? `<td style="text-align:right; font-weight:700; color:#0369a1;">$${Number(it.totalPrice || (it.quantity * it.unitPrice) || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+                ${!cd.isDomestic ? `<td style="text-align:right; font-family:monospace;">${Number(cd.exchangeRate || 0).toLocaleString('vi-VN')}</td>` : ''}
+                <td style="text-align:right; font-weight:700; color:#15803d;">${Number(it.taxableValueVnd || Math.round((it.totalPrice || (it.quantity * it.unitPrice) || 0) * (cd.exchangeRate || 1))).toLocaleString('vi-VN')} ₫</td>
+                ${!cd.isDomestic ? `<td style="text-align:center;">${it.importTaxRate !== undefined ? it.importTaxRate : (cd.importTaxRate || 0)}%</td>` : ''}
+                <td style="text-align:center;">${it.vatRate !== undefined ? it.vatRate : (cd.vatRate || 8)}%</td>
+                <td style="text-align:right; font-weight:700; color:#b45309;">${Number(it.totalTax || Math.round((it.taxableValueVnd || ((it.totalPrice || 0) * (cd.exchangeRate || 1))) * (1 + ((it.importTaxRate || 0)/100)) * ((it.vatRate || 8)/100))).toLocaleString('vi-VN')} ₫</td>
+              </tr>
+            `).join('') : `
+              <tr>
+                <td style="text-align:center;">1</td>
+                <td style="font-family:monospace; font-weight:700;">5402.47.00</td>
+                <td><strong>Sợi filament tổng hợp (Polyester DTY / FDY)</strong></td>
+                <td style="text-align:center;">kg</td>
+                ${!cd.isDomestic ? `<td style="text-align:right; font-weight:700; color:#0369a1;">$${Number(cd.valueUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>` : ''}
+                ${!cd.isDomestic ? `<td style="text-align:right; font-family:monospace;">${Number(cd.exchangeRate || 0).toLocaleString('vi-VN')}</td>` : ''}
+                <td style="text-align:right; font-weight:700; color:#15803d;">${Number(cd.taxableValueVnd || 0).toLocaleString('vi-VN')} ₫</td>
+                ${!cd.isDomestic ? `<td style="text-align:center;">${cd.importTaxRate || 0}%</td>` : ''}
+                <td style="text-align:center;">${cd.vatRate || 8}%</td>
+                <td style="text-align:right; font-weight:700; color:#b45309;">${Number(cd.totalTaxAmount || 0).toLocaleString('vi-VN')} ₫</td>
+              </tr>
+            `}
           </tbody>
           <tfoot>
             <tr style="background:#f8fafc; font-weight:700;">

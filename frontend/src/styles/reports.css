@@ -741,6 +741,22 @@
   border: 1px solid #cbd5e1;
 }
 
+.badge-status.status-usd {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.badge-status.status-vnd {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  font-weight: 700;
+  font-size: 11px;
+}
+
 /* Number formats */
 .num-val {
   font-family: 'SFMono-Regular', Consolas, monospace;

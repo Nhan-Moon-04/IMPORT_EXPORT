@@ -16,16 +16,15 @@ const REPORT_COLUMNS = [
   { id: 'productName',       label: 'Tên Mặt Hàng / Quy Cách', default: true, align: 'left', sortable: true },
   { id: 'unit',              label: 'ĐVT',               default: true,  align: 'center', sortable: false },
   { id: 'quantity',          label: 'Số Lượng (kg)',     default: true,  align: 'right',  sortable: true },
-  { id: 'unitPrice',         label: 'Đơn Giá ($)',       default: true,  align: 'right',  sortable: true },
-  { id: 'totalAmount',       label: 'Thành Tiền ($ USD)', default: true, align: 'right',  sortable: true },
+  { id: 'currency',          label: 'Loại Tiền',         default: true,  align: 'center', sortable: true },
+  { id: 'unitPrice',         label: 'Đơn Giá',           default: true,  align: 'right',  sortable: true },
+  { id: 'totalAmountUsd',    label: 'Thành Tiền (USD)',  default: true,  align: 'right',  sortable: true },
   { id: 'totalAmountVnd',    label: 'Thành Tiền (VNĐ)',  default: true,  align: 'right',  sortable: true },
   { id: 'deliveryTerm',      label: 'Điều Kiện (Inco)',  default: false, align: 'center', sortable: false },
   { id: 'portOfDischarge',   label: 'Cảng Dỡ Hàng',      default: false, align: 'left',   sortable: false },
   { id: 'status',            label: 'Trạng Thái',        default: true,  align: 'center', sortable: false },
   { id: 'notes',             label: 'Ghi Chú',           default: false, align: 'left',   sortable: false }
 ];
-
-const USD_TO_VND_RATE = 25400;
 
 // ─── SVG Icons Helper ────────────────────────────────────────────────────────
 const ICONS = {
@@ -84,7 +83,7 @@ let expandedGroupKeys = new Set();
 // ─── Column Visibility Storage ───────────────────────────────────────────────
 function getStoredColumns() {
   try {
-    const saved = localStorage.getItem('xnk_report_import_columns');
+    const saved = localStorage.getItem('xnk_report_import_columns_v3');
     if (saved) {
       const parsed = JSON.parse(saved);
       return REPORT_COLUMNS.map(col => ({
@@ -101,7 +100,7 @@ function getStoredColumns() {
 function saveStoredColumns(cols) {
   const map = {};
   cols.forEach(c => map[c.id] = c.visible);
-  localStorage.setItem('xnk_report_import_columns', JSON.stringify(map));
+  localStorage.setItem('xnk_report_import_columns_v3', JSON.stringify(map));
 }
 
 let activeColumns = getStoredColumns();
@@ -178,9 +177,9 @@ export async function renderReports(container, subTab = 'import') {
         <div class="kpi-card kpi-indigo">
           <div class="kpi-icon">${ICONS.dollar}</div>
           <div class="kpi-body">
-            <div class="kpi-label">Trị Giá Quy Đổi (VNĐ)</div>
+            <div class="kpi-label">Tổng Tiền (VNĐ)</div>
             <div class="kpi-value" id="kpiTotalValueVnd">0 ₫</div>
-            <div class="kpi-sub" id="kpiExchangeRateNote">Tỷ giá tham chiếu: 25,400 ₫</div>
+            <div class="kpi-sub" id="kpiExchangeRateNote">0 dòng hàng VNĐ (nội địa)</div>
           </div>
         </div>
 
@@ -405,13 +404,26 @@ async function loadReportData() {
       const parentShipment = shipmentLookup[it.shipmentId] || shipmentLookup[it.shipmentCode] || {};
       const invNum = it.invoiceNumber || (parentShipment.invoiceNumbers ? parentShipment.invoiceNumbers.join(', ') : '');
       const declNum = it.declarationNumber || (parentShipment.declarationNumbers ? parentShipment.declarationNumbers.join(', ') : '');
-      const suppName = it.partnerName || parentShipment.supplierName || 'Chưa định danh';
+      const suppName = it.partnerName || parentShipment.supplierName || (parentShipment.supplier ? parentShipment.supplier.companyName : '') || 'Chưa định danh';
       const suppCountry = it.partnerCountry || (parentShipment.supplier ? parentShipment.supplier.country : '') || '';
       
+      const curr = String(it.currency || parentShipment.currency || 'USD').toUpperCase().trim();
+      const isVnd = curr === 'VND' || curr === 'VNĐ';
       const qty = Number(it.quantity || 0);
       const price = Number(it.unitPrice || 0);
-      const totalUsd = Number(it.totalAmount || (qty * price) || 0);
-      const totalVnd = totalUsd * USD_TO_VND_RATE;
+      const totalAmt = Number(it.totalAmount || (qty * price) || 0);
+
+      // Đô là đô, VNĐ là VNĐ — Tuyệt đối không tự ý nhân tỷ giá quy đổi!
+      const totalUsd = isVnd ? null : totalAmt;
+      const totalVnd = isVnd ? totalAmt : null;
+
+      // Chuẩn hóa tên sản phẩm tiếng Việt nếu bị lỗi font ?
+      let pName = it.productName || '';
+      if (!pName || pName.includes('?')) {
+        const foundProd = allProducts.find(p => p.id === it.productId || p.sku === it.sku);
+        if (foundProd) pName = foundProd.name || foundProd.nameVi || 'Sợi dệt Polyester';
+        else pName = (pName || 'Sợi dệt Polyester').replace(/S\?i/g, 'Sợi');
+      }
 
       return {
         id: it.id || `item_${idx}_${it.shipmentId || ''}`,
@@ -426,18 +438,19 @@ async function loadReportData() {
         partnerCountry: suppCountry,
         productId: it.productId,
         sku: it.sku || '',
-        productName: it.productName || 'Sợi dệt Polyester',
+        productName: pName,
         unit: it.unit || 'kg',
         quantity: qty,
+        currency: isVnd ? 'VNĐ' : 'USD',
         unitPrice: price,
-        totalAmount: totalUsd,
+        totalAmount: totalAmt,
+        totalAmountUsd: totalUsd,
         totalAmountVnd: totalVnd,
-        currency: it.currency || parentShipment.currency || 'USD',
         deliveryTerm: parentShipment.deliveryTerm || 'CIF',
         portOfLoading: parentShipment.portOfLoading || '',
         portOfDischarge: parentShipment.portOfDischarge || 'Cảng Cát Lái',
         status: it.status || parentShipment.status || 'Hoàn tất',
-        notes: parentShipment.notes || ''
+        notes: (parentShipment.notes || it.notes || '').replace(/S\?i/g, 'Sợi')
       };
     });
 
@@ -675,9 +688,16 @@ function applyFiltersAndRender() {
 // ─── KPI Update ──────────────────────────────────────────────────────────────
 function updateKpiCards(data) {
   const totalQty = data.reduce((sum, it) => sum + (it.quantity || 0), 0);
-  const totalValUsd = data.reduce((sum, it) => sum + (it.totalAmount || 0), 0);
-  const totalValVnd = totalValUsd * USD_TO_VND_RATE;
-  const avgPrice = totalQty > 0 ? (totalValUsd / totalQty) : 0;
+
+  // Giao dịch USD
+  const usdItems = data.filter(it => it.currency === 'USD');
+  const totalValUsd = usdItems.reduce((sum, it) => sum + (it.totalAmount || 0), 0);
+  const usdQty = usdItems.reduce((sum, it) => sum + (it.quantity || 0), 0);
+  const avgUsdPrice = usdQty > 0 ? (totalValUsd / usdQty) : 0;
+
+  // Giao dịch VNĐ (nội địa / tiền đồng) — Không tự ý quy đổi tỷ giá
+  const vndItems = data.filter(it => it.currency !== 'USD');
+  const totalValVnd = vndItems.reduce((sum, it) => sum + (it.totalAmount || 0), 0);
 
   const distinctShipments = new Set(data.map(it => it.shipmentCode || it.shipmentId)).size;
   const distinctSuppliers = new Set(data.map(it => it.partnerName)).size;
@@ -688,14 +708,23 @@ function updateKpiCards(data) {
   const elUsd = document.getElementById('kpiTotalValueUsd');
   const elAvg = document.getElementById('kpiAvgUnitPrice');
   const elVnd = document.getElementById('kpiTotalValueVnd');
+  const elVndSub = document.getElementById('kpiExchangeRateNote');
   const elShip = document.getElementById('kpiTotalShipments');
   const elPart = document.getElementById('kpiPartnersCount');
 
   if (elQty) elQty.textContent = `${totalQty.toLocaleString('vi-VN')} kg`;
   if (elQtySub) elQtySub.textContent = `≈ ${(totalQty / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tấn hàng`;
+  
   if (elUsd) elUsd.textContent = `$${totalValUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  if (elAvg) elAvg.textContent = `Đơn giá TB: $${avgPrice.toFixed(2)} / kg`;
+  if (elAvg) elAvg.textContent = `${usdItems.length} dòng USD • ĐTB: $${avgUsdPrice.toFixed(2)}/kg`;
+
   if (elVnd) elVnd.textContent = `${Math.round(totalValVnd).toLocaleString('vi-VN')} ₫`;
+  if (elVndSub) {
+    elVndSub.textContent = vndItems.length > 0
+      ? `${vndItems.length} dòng VNĐ (hàng nội địa / tiền đồng)`
+      : `0 dòng hàng VNĐ`;
+  }
+
   if (elShip) elShip.textContent = `${distinctShipments} lô hàng (${data.length} dòng)`;
   if (elPart) elPart.textContent = `${distinctSuppliers} ${shipmentTypeMode === 'Import' ? 'NCC' : 'khách'} • ${distinctProducts} mã hàng`;
 }
@@ -888,9 +917,10 @@ function renderDetailedTable(data) {
 
   // Compute Total Summary Row
   const totalQty = data.reduce((s, x) => s + (x.quantity || 0), 0);
-  const totalUsd = data.reduce((s, x) => s + (x.totalAmount || 0), 0);
-  const totalVnd = totalUsd * USD_TO_VND_RATE;
-  const avgPrice = totalQty > 0 ? (totalUsd / totalQty) : 0;
+  const usdItems = data.filter(x => x.currency === 'USD');
+  const totalUsd = usdItems.reduce((s, x) => s + (x.totalAmount || 0), 0);
+  const vndItems = data.filter(x => x.currency !== 'USD');
+  const totalVnd = vndItems.reduce((s, x) => s + (x.totalAmount || 0), 0);
 
   const visibleCols = activeColumns.filter(c => c.visible);
 
@@ -943,9 +973,9 @@ function renderDetailedTable(data) {
   visibleCols.slice(1).forEach(col => {
     if (col.id === 'quantity') {
       html += `<td class="align-right num-val qty" style="font-weight:800; color:#0266b3;">${totalQty.toLocaleString('vi-VN')} kg</td>`;
-    } else if (col.id === 'unitPrice') {
-      html += `<td class="align-right num-val" style="font-weight:800;">$${avgPrice.toFixed(2)}</td>`;
-    } else if (col.id === 'totalAmount') {
+    } else if (col.id === 'currency' || col.id === 'unitPrice') {
+      html += `<td class="align-center" style="color:#94a3b8; font-weight:700;">-</td>`;
+    } else if (col.id === 'totalAmountUsd') {
       html += `<td class="align-right num-val money-usd" style="font-size:13px; font-weight:800;">$${totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
     } else if (col.id === 'totalAmountVnd') {
       html += `<td class="align-right num-val money-vnd" style="font-size:13px; font-weight:800;">${Math.round(totalVnd).toLocaleString('vi-VN')} ₫</td>`;
@@ -1010,12 +1040,26 @@ function renderDetailedCell(colId, item) {
       return `<td class="align-center"><span style="color:#64748b;">${item.unit || 'kg'}</span></td>`;
     case 'quantity':
       return `<td class="align-right num-val qty">${(item.quantity || 0).toLocaleString('vi-VN')}</td>`;
+    case 'currency':
+      return `<td class="align-center"><span class="badge-status ${item.currency === 'USD' ? 'status-usd' : 'status-vnd'}">${item.currency}</span></td>`;
     case 'unitPrice':
-      return `<td class="align-right num-val">$${(item.unitPrice || 0).toFixed(2)}</td>`;
-    case 'totalAmount':
-      return `<td class="align-right num-val money-usd">$${(item.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+      if (item.currency === 'USD') {
+        return `<td class="align-right num-val">$${(item.unitPrice || 0).toFixed(2)}</td>`;
+      } else {
+        return `<td class="align-right num-val">${(item.unitPrice || 0).toLocaleString('vi-VN')} ₫</td>`;
+      }
+    case 'totalAmountUsd':
+      if (item.currency === 'USD' && item.totalAmountUsd !== null) {
+        return `<td class="align-right num-val money-usd">$${item.totalAmountUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+      } else {
+        return `<td class="align-right num-val" style="color:#cbd5e1;">-</td>`;
+      }
     case 'totalAmountVnd':
-      return `<td class="align-right num-val money-vnd">${Math.round(item.totalAmountVnd || 0).toLocaleString('vi-VN')} ₫</td>`;
+      if (item.currency !== 'USD' && item.totalAmountVnd !== null) {
+        return `<td class="align-right num-val money-vnd">${Math.round(item.totalAmountVnd).toLocaleString('vi-VN')} ₫</td>`;
+      } else {
+        return `<td class="align-right num-val" style="color:#cbd5e1;">-</td>`;
+      }
     case 'deliveryTerm':
       return `<td class="align-center"><span class="badge-status status-draft">${item.deliveryTerm || 'CIF'}</span></td>`;
     case 'portOfDischarge':
@@ -1042,8 +1086,9 @@ function groupDataBySupplier(data) {
         shipments: new Set(),
         itemsCount: 0,
         totalQuantity: 0,
-        totalAmount: 0,
-        productsMap: new Map() // sku -> { sku, name, quantity, totalAmount, count, latestDate }
+        totalAmountUsd: 0,
+        totalAmountVnd: 0,
+        productsMap: new Map() // sku_curr -> { sku, name, unit, currency, quantity, totalAmount, count, latestDate }
       });
     }
 
@@ -1051,15 +1096,21 @@ function groupDataBySupplier(data) {
     g.shipments.add(item.shipmentCode || item.shipmentId);
     g.itemsCount += 1;
     g.totalQuantity += (item.quantity || 0);
-    g.totalAmount += (item.totalAmount || 0);
+
+    if (item.currency === 'USD') {
+      g.totalAmountUsd += (item.totalAmount || 0);
+    } else {
+      g.totalAmountVnd += (item.totalAmount || 0);
+    }
 
     // Track product details inside supplier
-    const pKey = item.sku || item.productName;
+    const pKey = `${item.sku || item.productName}_${item.currency}`;
     if (!g.productsMap.has(pKey)) {
       g.productsMap.set(pKey, {
         sku: item.sku || '',
         productName: item.productName || '',
         unit: item.unit || 'kg',
+        currency: item.currency,
         quantity: 0,
         totalAmount: 0,
         count: 0,
@@ -1087,11 +1138,12 @@ function renderSupplierSummaryTable(data) {
     return;
   }
 
-  // Sort groups by totalAmount desc
-  groups.sort((a, b) => b.totalAmount - a.totalAmount);
+  // Sort groups by totalAmountUsd + totalAmountVnd
+  groups.sort((a, b) => (b.totalAmountUsd + b.totalAmountVnd) - (a.totalAmountUsd + a.totalAmountVnd));
 
   const grandTotalQty = groups.reduce((s, g) => s + g.totalQuantity, 0);
-  const grandTotalUsd = groups.reduce((s, g) => s + g.totalAmount, 0);
+  const grandTotalUsd = groups.reduce((s, g) => s + g.totalAmountUsd, 0);
+  const grandTotalVnd = groups.reduce((s, g) => s + g.totalAmountVnd, 0);
 
   let html = `
     <table class="misa-report-table" id="supplierSummaryTable">
@@ -1104,9 +1156,8 @@ function renderSupplierSummaryTable(data) {
           <th class="align-center">Số Lô Hàng</th>
           <th class="align-center">Số Mặt Hàng</th>
           <th class="align-right">Tổng Sản Lượng (kg)</th>
-          <th class="align-right">Đơn Giá TB ($/kg)</th>
-          <th class="align-right">Tổng Kim Ngạch ($ USD)</th>
-          <th class="align-right">Trị Giá Quy Đổi (VNĐ)</th>
+          <th class="align-right">Kim Ngạch ($ USD)</th>
+          <th class="align-right">Tổng Tiền (VNĐ)</th>
           <th class="align-right">Tỷ Trọng (%)</th>
         </tr>
       </thead>
@@ -1115,9 +1166,9 @@ function renderSupplierSummaryTable(data) {
 
   groups.forEach((g, idx) => {
     const rowNum = idx + 1;
-    const avgPrice = g.totalQuantity > 0 ? (g.totalAmount / g.totalQuantity) : 0;
-    const totalVnd = g.totalAmount * USD_TO_VND_RATE;
-    const sharePct = grandTotalUsd > 0 ? ((g.totalAmount / grandTotalUsd) * 100).toFixed(1) : '0.0';
+    const sharePct = grandTotalUsd > 0 && g.totalAmountUsd > 0
+      ? ((g.totalAmountUsd / grandTotalUsd) * 100).toFixed(1)
+      : (grandTotalVnd > 0 && g.totalAmountVnd > 0 ? ((g.totalAmountVnd / grandTotalVnd) * 100).toFixed(1) : '0.0');
     const isExpanded = expandedGroupKeys.has(`supp_${g.supplierName}`);
 
     html += `
@@ -1133,15 +1184,14 @@ function renderSupplierSummaryTable(data) {
         <td class="align-center"><span class="badge-code">${g.shipments.size} lô</span></td>
         <td class="align-center"><span style="font-weight:600;">${g.productsMap.size} loại</span></td>
         <td class="align-right num-val qty" style="font-weight:700;">${g.totalQuantity.toLocaleString('vi-VN')} kg</td>
-        <td class="align-right num-val">$${avgPrice.toFixed(2)}</td>
-        <td class="align-right num-val money-usd" style="font-weight:700;">$${g.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="align-right num-val money-vnd">${Math.round(totalVnd).toLocaleString('vi-VN')} ₫</td>
+        <td class="align-right num-val money-usd" style="font-weight:700;">${g.totalAmountUsd > 0 ? '$' + g.totalAmountUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '<span style="color:#cbd5e1;">-</span>'}</td>
+        <td class="align-right num-val money-vnd" style="font-weight:700;">${g.totalAmountVnd > 0 ? Math.round(g.totalAmountVnd).toLocaleString('vi-VN') + ' ₫' : '<span style="color:#cbd5e1;">-</span>'}</td>
         <td class="align-right num-val" style="font-weight:700; color:#0266b3;">${sharePct}%</td>
       </tr>
       
       <!-- Nested Detailed Products Accordion Row -->
       <tr class="nested-detail-row" id="nested_supp_${encodeURIComponent(g.supplierName)}" style="display: ${isExpanded ? 'table-row' : 'none'};">
-        <td colspan="11">
+        <td colspan="10">
           <div style="padding: 4px 10px;">
             <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">
               📦 Chi tiết các mặt hàng đã nhập từ <span style="color:#0266b3;">${g.supplierName}</span> trong kỳ:
@@ -1152,10 +1202,10 @@ function renderSupplierSummaryTable(data) {
                   <th style="width: 30px; text-align: center;">#</th>
                   <th>Mã SKU</th>
                   <th>Tên Mặt Hàng / Quy Cách</th>
+                  <th style="text-align: center;">Loại Tiền</th>
                   <th style="text-align: right;">Sản Lượng (kg)</th>
-                  <th style="text-align: right;">Đơn Giá TB ($)</th>
-                  <th style="text-align: right;">Tổng Tiền ($ USD)</th>
-                  <th style="text-align: right;">Quy Đổi (VNĐ)</th>
+                  <th style="text-align: right;">Đơn Giá TB</th>
+                  <th style="text-align: right;">Thành Tiền</th>
                   <th style="text-align: center;">Số Lần Nhập</th>
                   <th style="text-align: center;">Ngày Nhập Gần Nhất</th>
                 </tr>
@@ -1166,16 +1216,16 @@ function renderSupplierSummaryTable(data) {
     const pList = Array.from(g.productsMap.values()).sort((a, b) => b.totalAmount - a.totalAmount);
     pList.forEach((p, pIdx) => {
       const pAvg = p.quantity > 0 ? (p.totalAmount / p.quantity) : 0;
-      const pVnd = p.totalAmount * USD_TO_VND_RATE;
+      const isUsd = p.currency === 'USD';
       html += `
         <tr>
           <td style="text-align: center; color: #94a3b8;">${pIdx + 1}</td>
           <td><span class="badge-code" style="color:#0266b3;">${p.sku || '-'}</span></td>
           <td style="font-weight: 600; color: #1e293b;">${p.productName}</td>
+          <td style="text-align: center;"><span class="badge-status ${isUsd ? 'status-usd' : 'status-vnd'}">${p.currency}</span></td>
           <td style="text-align: right; font-weight: 700;" class="num-val">${p.quantity.toLocaleString('vi-VN')} kg</td>
-          <td style="text-align: right;" class="num-val">$${pAvg.toFixed(2)}</td>
-          <td style="text-align: right; font-weight: 700;" class="num-val money-usd">$${p.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td style="text-align: right;" class="num-val money-vnd">${Math.round(pVnd).toLocaleString('vi-VN')} ₫</td>
+          <td style="text-align: right;" class="num-val">${isUsd ? '$' + pAvg.toFixed(2) : Math.round(pAvg).toLocaleString('vi-VN') + ' ₫'}</td>
+          <td style="text-align: right; font-weight: 700;" class="num-val ${isUsd ? 'money-usd' : 'money-vnd'}">${isUsd ? '$' + p.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(p.totalAmount).toLocaleString('vi-VN') + ' ₫'}</td>
           <td style="text-align: center;"><span class="badge-status status-draft">${p.count} lần</span></td>
           <td style="text-align: center; color: #64748b;">${p.latestDate || '-'}</td>
         </tr>
@@ -1199,9 +1249,8 @@ function renderSupplierSummaryTable(data) {
           <td class="align-center" style="font-weight:800;">-</td>
           <td class="align-center" style="font-weight:800;">-</td>
           <td class="align-right num-val qty" style="font-weight:800;">${grandTotalQty.toLocaleString('vi-VN')} kg</td>
-          <td class="align-right num-val" style="font-weight:800;">$${grandTotalQty > 0 ? (grandTotalUsd / grandTotalQty).toFixed(2) : '0.00'}</td>
           <td class="align-right num-val money-usd" style="font-size:13px; font-weight:800;">$${grandTotalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td class="align-right num-val money-vnd" style="font-size:13px; font-weight:800;">${Math.round(grandTotalUsd * USD_TO_VND_RATE).toLocaleString('vi-VN')} ₫</td>
+          <td class="align-right num-val money-vnd" style="font-size:13px; font-weight:800;">${Math.round(grandTotalVnd).toLocaleString('vi-VN')} ₫</td>
           <td class="align-right num-val" style="font-weight:800; color:#0266b3;">100%</td>
         </tr>
       </tfoot>
@@ -1247,23 +1296,35 @@ function groupDataByProduct(data) {
         unit: item.unit || 'kg',
         shipments: new Set(),
         totalQuantity: 0,
-        totalAmount: 0,
-        prices: [],
-        suppliersMap: new Map() // supplierName -> { quantity, totalAmount, count }
+        totalAmountUsd: 0,
+        totalAmountVnd: 0,
+        suppliersMap: new Map() // supp_curr -> { supplierName, country, currency, quantity, totalAmount, count }
       });
     }
 
     const g = groups.get(key);
     g.shipments.add(item.shipmentCode || item.shipmentId);
     g.totalQuantity += (item.quantity || 0);
-    g.totalAmount += (item.totalAmount || 0);
-    if (item.unitPrice) g.prices.push(item.unitPrice);
+
+    if (item.currency === 'USD') {
+      g.totalAmountUsd += (item.totalAmount || 0);
+    } else {
+      g.totalAmountVnd += (item.totalAmount || 0);
+    }
 
     const supp = item.partnerName || 'Chưa định danh';
-    if (!g.suppliersMap.has(supp)) {
-      g.suppliersMap.set(supp, { supplierName: supp, country: item.partnerCountry || '', quantity: 0, totalAmount: 0, count: 0 });
+    const suppKey = `${supp}_${item.currency}`;
+    if (!g.suppliersMap.has(suppKey)) {
+      g.suppliersMap.set(suppKey, {
+        supplierName: supp,
+        country: item.partnerCountry || '',
+        currency: item.currency,
+        quantity: 0,
+        totalAmount: 0,
+        count: 0
+      });
     }
-    const s = g.suppliersMap.get(supp);
+    const s = g.suppliersMap.get(suppKey);
     s.quantity += (item.quantity || 0);
     s.totalAmount += (item.totalAmount || 0);
     s.count += 1;
@@ -1283,11 +1344,12 @@ function renderProductSummaryTable(data) {
     return;
   }
 
-  // Sort groups by totalAmount desc
-  groups.sort((a, b) => b.totalAmount - a.totalAmount);
+  // Sort groups by totalAmountUsd + totalAmountVnd desc
+  groups.sort((a, b) => (b.totalAmountUsd + b.totalAmountVnd) - (a.totalAmountUsd + a.totalAmountVnd));
 
   const grandTotalQty = groups.reduce((s, g) => s + g.totalQuantity, 0);
-  const grandTotalUsd = groups.reduce((s, g) => s + g.totalAmount, 0);
+  const grandTotalUsd = groups.reduce((s, g) => s + g.totalAmountUsd, 0);
+  const grandTotalVnd = groups.reduce((s, g) => s + g.totalAmountVnd, 0);
 
   let html = `
     <table class="misa-report-table" id="productSummaryTable">
@@ -1301,9 +1363,8 @@ function renderProductSummaryTable(data) {
           <th class="align-center">Số Lô Hàng</th>
           <th>Nhà Cung Cấp</th>
           <th class="align-right">Tổng Sản Lượng (kg)</th>
-          <th class="align-right">Đơn Giá TB ($/kg)</th>
           <th class="align-right">Kim Ngạch ($ USD)</th>
-          <th class="align-right">Trị Giá (VNĐ)</th>
+          <th class="align-right">Tổng Tiền (VNĐ)</th>
           <th class="align-right">Tỷ Trọng (%)</th>
         </tr>
       </thead>
@@ -1312,14 +1373,15 @@ function renderProductSummaryTable(data) {
 
   groups.forEach((g, idx) => {
     const rowNum = idx + 1;
-    const avgPrice = g.totalQuantity > 0 ? (g.totalAmount / g.totalQuantity) : 0;
-    const totalVnd = g.totalAmount * USD_TO_VND_RATE;
-    const sharePct = grandTotalUsd > 0 ? ((g.totalAmount / grandTotalUsd) * 100).toFixed(1) : '0.0';
+    const sharePct = grandTotalUsd > 0 && g.totalAmountUsd > 0
+      ? ((g.totalAmountUsd / grandTotalUsd) * 100).toFixed(1)
+      : (grandTotalVnd > 0 && g.totalAmountVnd > 0 ? ((g.totalAmountVnd / grandTotalVnd) * 100).toFixed(1) : '0.0');
     const isExpanded = expandedGroupKeys.has(`prod_${g.sku || g.productName}`);
 
     // Build suppliers badges
     const suppList = Array.from(g.suppliersMap.values());
-    const suppDisplay = suppList.map(s => `<span class="badge-status status-draft" style="font-size:11px;">${s.supplierName}</span>`).join(' ');
+    const distinctSuppNames = [...new Set(suppList.map(s => s.supplierName))];
+    const suppDisplay = distinctSuppNames.map(name => `<span class="badge-status status-draft" style="font-size:11px;">${name}</span>`).join(' ');
 
     html += `
       <tr class="group-parent-row" data-group-key="prod_${g.sku || g.productName}">
@@ -1333,15 +1395,14 @@ function renderProductSummaryTable(data) {
         <td class="align-center"><span class="badge-code">${g.shipments.size} lô</span></td>
         <td>${suppDisplay}</td>
         <td class="align-right num-val qty" style="font-weight:700;">${g.totalQuantity.toLocaleString('vi-VN')}</td>
-        <td class="align-right num-val">$${avgPrice.toFixed(2)}</td>
-        <td class="align-right num-val money-usd" style="font-weight:700;">$${g.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="align-right num-val money-vnd">${Math.round(totalVnd).toLocaleString('vi-VN')} ₫</td>
+        <td class="align-right num-val money-usd" style="font-weight:700;">${g.totalAmountUsd > 0 ? '$' + g.totalAmountUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '<span style="color:#cbd5e1;">-</span>'}</td>
+        <td class="align-right num-val money-vnd" style="font-weight:700;">${g.totalAmountVnd > 0 ? Math.round(g.totalAmountVnd).toLocaleString('vi-VN') + ' ₫' : '<span style="color:#cbd5e1;">-</span>'}</td>
         <td class="align-right num-val" style="font-weight:700; color:#0266b3;">${sharePct}%</td>
       </tr>
 
       <!-- Nested Suppliers Breakdown Row -->
       <tr class="nested-detail-row" id="nested_prod_${encodeURIComponent(g.sku || g.productName)}" style="display: ${isExpanded ? 'table-row' : 'none'};">
-        <td colspan="12">
+        <td colspan="11">
           <div style="padding: 4px 10px;">
             <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">
               🏢 Các nhà cung cấp đã cung ứng mặt hàng <span style="color:#0266b3;">${g.productName} (${g.sku})</span>:
@@ -1352,9 +1413,10 @@ function renderProductSummaryTable(data) {
                   <th style="width: 30px; text-align: center;">#</th>
                   <th>Tên Nhà Cung Cấp</th>
                   <th>Quốc Gia</th>
+                  <th style="text-align: center;">Loại Tiền</th>
                   <th style="text-align: right;">Sản Lượng (kg)</th>
-                  <th style="text-align: right;">Đơn Giá TB ($)</th>
-                  <th style="text-align: right;">Thành Tiền ($ USD)</th>
+                  <th style="text-align: right;">Đơn Giá TB</th>
+                  <th style="text-align: right;">Thành Tiền</th>
                   <th style="text-align: center;">Số Lần Giao</th>
                 </tr>
               </thead>
@@ -1363,14 +1425,16 @@ function renderProductSummaryTable(data) {
 
     suppList.forEach((s, sIdx) => {
       const sAvg = s.quantity > 0 ? (s.totalAmount / s.quantity) : 0;
+      const isUsd = s.currency === 'USD';
       html += `
         <tr>
           <td style="text-align: center; color: #94a3b8;">${sIdx + 1}</td>
           <td style="font-weight: 600; color: #0266b3;">${s.supplierName}</td>
           <td><span class="badge-status status-draft">${s.country || 'Quốc tế'}</span></td>
+          <td style="text-align: center;"><span class="badge-status ${isUsd ? 'status-usd' : 'status-vnd'}">${s.currency}</span></td>
           <td style="text-align: right; font-weight: 700;" class="num-val">${s.quantity.toLocaleString('vi-VN')} kg</td>
-          <td style="text-align: right;" class="num-val">$${sAvg.toFixed(2)}</td>
-          <td style="text-align: right; font-weight: 700;" class="num-val money-usd">$${s.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align: right;" class="num-val">${isUsd ? '$' + sAvg.toFixed(2) : Math.round(sAvg).toLocaleString('vi-VN') + ' ₫'}</td>
+          <td style="text-align: right; font-weight: 700;" class="num-val ${isUsd ? 'money-usd' : 'money-vnd'}">${isUsd ? '$' + s.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(s.totalAmount).toLocaleString('vi-VN') + ' ₫'}</td>
           <td style="text-align: center;"><span class="badge-status status-draft">${s.count} lần</span></td>
         </tr>
       `;
@@ -1393,9 +1457,8 @@ function renderProductSummaryTable(data) {
           <td class="align-center" style="font-weight:800;">-</td>
           <td></td>
           <td class="align-right num-val qty" style="font-weight:800;">${grandTotalQty.toLocaleString('vi-VN')} kg</td>
-          <td class="align-right num-val" style="font-weight:800;">$${grandTotalQty > 0 ? (grandTotalUsd / grandTotalQty).toFixed(2) : '0.00'}</td>
           <td class="align-right num-val money-usd" style="font-size:13px; font-weight:800;">$${grandTotalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td class="align-right num-val money-vnd" style="font-size:13px; font-weight:800;">${Math.round(grandTotalUsd * USD_TO_VND_RATE).toLocaleString('vi-VN')} ₫</td>
+          <td class="align-right num-val money-vnd" style="font-size:13px; font-weight:800;">${Math.round(grandTotalVnd).toLocaleString('vi-VN')} ₫</td>
           <td class="align-right num-val" style="font-weight:800; color:#0266b3;">100%</td>
         </tr>
       </tfoot>
@@ -1661,8 +1724,10 @@ function exportToExcel() {
     filtered.forEach((item, idx) => {
       const row = [idx + 1];
       visibleCols.forEach(col => {
-        let val = item[col.id] || '';
-        if (col.id === 'totalAmountVnd') val = Math.round(item.totalAmountVnd || 0);
+        let val = item[col.id];
+        if (col.id === 'totalAmountUsd') val = item.currency === 'USD' ? item.totalAmount : '';
+        else if (col.id === 'totalAmountVnd') val = item.currency !== 'USD' ? Math.round(item.totalAmount) : '';
+        else if (val === null || val === undefined) val = '';
         row.push(val);
       });
       rows.push(row);
@@ -1670,13 +1735,13 @@ function exportToExcel() {
 
     // Total Row
     const totalQty = filtered.reduce((s, x) => s + (x.quantity || 0), 0);
-    const totalUsd = filtered.reduce((s, x) => s + (x.totalAmount || 0), 0);
-    const totalVnd = totalUsd * USD_TO_VND_RATE;
+    const totalUsd = filtered.filter(x => x.currency === 'USD').reduce((s, x) => s + (x.totalAmount || 0), 0);
+    const totalVnd = filtered.filter(x => x.currency !== 'USD').reduce((s, x) => s + (x.totalAmount || 0), 0);
 
     const totalRow = ['TỔNG CỘNG'];
     visibleCols.forEach(col => {
       if (col.id === 'quantity') totalRow.push(totalQty);
-      else if (col.id === 'totalAmount') totalRow.push(totalUsd);
+      else if (col.id === 'totalAmountUsd') totalRow.push(totalUsd);
       else if (col.id === 'totalAmountVnd') totalRow.push(Math.round(totalVnd));
       else totalRow.push('');
     });
@@ -1688,11 +1753,10 @@ function exportToExcel() {
   } else if (activeReportTab === 'by-supplier') {
     // 2. Supplier Summary Sheet
     const groups = groupDataBySupplier(filtered);
-    const headers = ['STT', 'Nhà Cung Cấp', 'Quốc Gia', 'Số Lô Hàng', 'Số Loại Hàng', 'Sản Lượng (kg)', 'Đơn Giá TB ($)', 'Tổng USD', 'Trị Giá (VNĐ)'];
+    const headers = ['STT', 'Nhà Cung Cấp', 'Quốc Gia', 'Số Lô Hàng', 'Số Loại Hàng', 'Sản Lượng (kg)', 'Kim Ngạch ($ USD)', 'Tổng Tiền (VNĐ)'];
     const rows = [headers];
 
     groups.forEach((g, idx) => {
-      const avgPrice = g.totalQuantity > 0 ? (g.totalAmount / g.totalQuantity) : 0;
       rows.push([
         idx + 1,
         g.supplierName,
@@ -1700,9 +1764,8 @@ function exportToExcel() {
         g.shipments.size,
         g.productsMap.size,
         g.totalQuantity,
-        Number(avgPrice.toFixed(2)),
-        g.totalAmount,
-        Math.round(g.totalAmount * USD_TO_VND_RATE)
+        g.totalAmountUsd > 0 ? g.totalAmountUsd : '',
+        g.totalAmountVnd > 0 ? Math.round(g.totalAmountVnd) : ''
       ]);
     });
 
@@ -1712,11 +1775,10 @@ function exportToExcel() {
   } else {
     // 3. Product Summary Sheet
     const groups = groupDataByProduct(filtered);
-    const headers = ['STT', 'Mã SKU', 'Tên Mặt Hàng', 'ĐVT', 'Số Lô', 'Sản Lượng (kg)', 'Đơn Giá TB ($)', 'Tổng USD', 'Trị Giá (VNĐ)'];
+    const headers = ['STT', 'Mã SKU', 'Tên Mặt Hàng', 'ĐVT', 'Số Lô', 'Sản Lượng (kg)', 'Kim Ngạch ($ USD)', 'Tổng Tiền (VNĐ)'];
     const rows = [headers];
 
     groups.forEach((g, idx) => {
-      const avgPrice = g.totalQuantity > 0 ? (g.totalAmount / g.totalQuantity) : 0;
       rows.push([
         idx + 1,
         g.sku,
@@ -1724,9 +1786,8 @@ function exportToExcel() {
         g.unit,
         g.shipments.size,
         g.totalQuantity,
-        Number(avgPrice.toFixed(2)),
-        g.totalAmount,
-        Math.round(g.totalAmount * USD_TO_VND_RATE)
+        g.totalAmountUsd > 0 ? g.totalAmountUsd : '',
+        g.totalAmountVnd > 0 ? Math.round(g.totalAmountVnd) : ''
       ]);
     });
 
