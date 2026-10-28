@@ -520,6 +520,15 @@ export async function renderShipmentForm(container, id) {
   if (isEdit && s.items && s.items.length > 0) {
     formItems = s.items.map(i => {
       const p = allProducts.find(x => x.id === i.productId);
+      let pkgs = i.packages || i.numberOfPackages;
+      if (!pkgs && i.notes) {
+        const m = String(i.notes).match(/(\d+)\s*kiện/i);
+        if (m) pkgs = parseInt(m[1]);
+        else if (!isNaN(parseInt(i.notes))) pkgs = parseInt(i.notes);
+      }
+      if (!pkgs && s.items.length === 1 && s.totalPackages) {
+        pkgs = s.totalPackages;
+      }
       return {
         productId: i.productId,
         productCode: i.sku || i.productCode || p?.sku || '---',
@@ -529,6 +538,7 @@ export async function renderShipmentForm(container, id) {
         origin: i.origin || p?.countryOfOrigin || 'Taiwan',
         unit: i.unit || p?.unit || 'kg',
         quantity: Number(i.quantity || 0),
+        packages: Number(pkgs || 0),
         unitPrice: Number(i.unitPrice || 0),
         netWeight: Number(i.netWeight || i.quantity || 0),
         grossWeight: Number(i.grossWeight || 0),
@@ -541,6 +551,15 @@ export async function renderShipmentForm(container, id) {
       const fetched = itemsRes.data?.items || itemsRes.data || [];
       formItems = fetched.map(i => {
         const p = allProducts.find(x => x.id === i.productId);
+        let pkgs = i.packages || i.numberOfPackages;
+        if (!pkgs && i.notes) {
+          const m = String(i.notes).match(/(\d+)\s*kiện/i);
+          if (m) pkgs = parseInt(m[1]);
+          else if (!isNaN(parseInt(i.notes))) pkgs = parseInt(i.notes);
+        }
+        if (!pkgs && fetched.length === 1 && s?.totalPackages) {
+          pkgs = s.totalPackages;
+        }
         return {
           productId: i.productId,
           productCode: i.sku || i.productCode || p?.sku || '---',
@@ -550,6 +569,7 @@ export async function renderShipmentForm(container, id) {
           origin: i.origin || p?.countryOfOrigin || 'Taiwan',
           unit: i.unit || p?.unit || 'kg',
           quantity: Number(i.quantity || 0),
+          packages: Number(pkgs || 0),
           unitPrice: Number(i.unitPrice || 0),
           netWeight: Number(i.netWeight || i.quantity || 0),
           grossWeight: Number(i.grossWeight || 0),
@@ -1054,10 +1074,11 @@ export async function renderShipmentForm(container, id) {
       hsCode: opt.getAttribute("data-hscode") || '5402.47.00',
       origin: opt.getAttribute("data-origin") || 'Taiwan',
       unit: opt.getAttribute("data-unit") || 'kg',
-      quantity: 100,
+      quantity: 155,
+      packages: 15,
       unitPrice: parseFloat(opt.getAttribute("data-price")) || 1.5,
-      netWeight: 100,
-      grossWeight: 10,
+      netWeight: 155,
+      grossWeight: 160,
       notes: ''
     });
 
@@ -1090,10 +1111,11 @@ export async function renderShipmentForm(container, id) {
         hsCode: defProd?.hsCode || '5402.47.00',
         origin: defProd?.countryOfOrigin || 'Taiwan',
         unit: defProd?.unit || 'kg',
-        quantity: 50,
+        quantity: 100,
+        packages: 10,
         unitPrice: 2.0,
-        netWeight: 50,
-        grossWeight: 5,
+        netWeight: 100,
+        grossWeight: 105,
         notes: ''
       });
       refreshFormItemsTable();
@@ -1110,6 +1132,9 @@ export async function renderShipmentForm(container, id) {
       const val = parseFloat(inp.value) || 0;
       formItems[idx].quantity = val;
       formItems[idx].netWeight = val;
+    }
+    if (inp.classList.contains("item-packages")) {
+      formItems[idx].packages = parseInt(inp.value) || 0;
     }
     if (inp.classList.contains("item-price")) {
       formItems[idx].unitPrice = parseFloat(inp.value) || 0;
@@ -1182,13 +1207,21 @@ export async function renderShipmentForm(container, id) {
       // Lưu chi tiết hàng hóa (Items)
       if (savedId && formItems.length > 0) {
         const itemsPayload = {
-          items: formItems.map(i => ({
-            productId: i.productId.startsWith('custom-') ? allProducts[0]?.id : i.productId,
-            quantity: i.quantity,
-            netWeight: i.netWeight || i.quantity,
-            grossWeight: i.grossWeight,
-            unitPrice: i.unitPrice
-          }))
+          items: formItems.map(i => {
+            const pkgsText = i.packages ? `${i.packages} kiện` : '';
+            let noteContent = i.notes || '';
+            if (pkgsText && !noteContent.includes('kiện')) {
+              noteContent = noteContent ? `${pkgsText} - ${noteContent}` : pkgsText;
+            }
+            return {
+              productId: i.productId.startsWith('custom-') ? allProducts[0]?.id : i.productId,
+              quantity: i.quantity,
+              netWeight: i.netWeight || i.quantity,
+              grossWeight: i.grossWeight,
+              unitPrice: i.unitPrice,
+              notes: noteContent || null
+            };
+          })
         };
         await api.post(`/api/shipments/${savedId}/items`, itemsPayload);
       } else if (savedId && formItems.length === 0 && isEdit) {
@@ -1256,6 +1289,7 @@ function renderFormItemsTable() {
   }
 
   const totalQty = formItems.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
+  const totalPackages = formItems.reduce((s, i) => s + (Number(i.packages) || 0), 0);
   const totalGw = formItems.reduce((s, i) => s + (Number(i.grossWeight) || 0), 0);
   const totalVal = formItems.reduce((s, i) => s + ((Number(i.quantity) || 0) * (Number(i.unitPrice) || 0)), 0);
 
@@ -1268,10 +1302,11 @@ function renderFormItemsTable() {
           <th>Tên sản phẩm</th>
           <th style="width:95px;">HS Code</th>
           <th style="width:85px;">Xuất xứ</th>
-          <th style="width:60px; text-align:center;">ĐVT</th>
+          <th style="width:55px; text-align:center;">ĐVT</th>
           <th style="width:115px; text-align:right;">Số lượng (NW)</th>
-          <th style="width:115px; text-align:right;">Đơn giá ($)</th>
-          <th style="width:130px; text-align:right;">Thành tiền ($)</th>
+          <th style="width:90px; text-align:right;">Số kiện</th>
+          <th style="width:105px; text-align:right;">Đơn giá ($)</th>
+          <th style="width:120px; text-align:right;">Thành tiền ($)</th>
           <th style="width:115px; text-align:right;">Gross Weight (kg)</th>
           <th style="width:50px; text-align:center;">Xóa</th>
         </tr>
@@ -1293,7 +1328,10 @@ function renderFormItemsTable() {
                 <input type="number" step="0.01" class="sd-table-input text-right item-qty" data-idx="${idx}" value="${item.quantity}" style="width:95px; font-weight:600;">
               </td>
               <td style="text-align:right;">
-                <input type="number" step="0.0001" class="sd-table-input text-right item-price" data-idx="${idx}" value="${item.unitPrice}" style="width:95px;">
+                <input type="number" step="1" min="0" class="sd-table-input text-right item-packages" data-idx="${idx}" value="${item.packages || ''}" placeholder="0" style="width:75px; font-weight:600; color:#0266b3;">
+              </td>
+              <td style="text-align:right;">
+                <input type="number" step="0.0001" class="sd-table-input text-right item-price" data-idx="${idx}" value="${item.unitPrice}" style="width:90px;">
               </td>
               <td style="text-align:right; font-weight:700; color:var(--amis-green); font-size:12.5px;">
                 $<span id="item-total-${idx}">${rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1312,6 +1350,7 @@ function renderFormItemsTable() {
         <tr class="sd-total-row">
           <td colspan="6" style="text-align:right;">Tổng cộng (${formItems.length} dòng):</td>
           <td style="text-align:right; color:var(--amis-blue);" id="tblTotalQty">${totalQty.toLocaleString()} kg</td>
+          <td style="text-align:right; color:var(--amis-blue); font-weight:700;" id="tblTotalPackages">${totalPackages.toLocaleString()} kiện</td>
           <td></td>
           <td style="text-align:right; color:var(--amis-green);" id="tblTotalVal">$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
           <td style="text-align:right;" id="tblTotalGw">${totalGw.toLocaleString()} kg</td>
@@ -1327,7 +1366,7 @@ function renderFormItemsTable() {
         </button>
       </div>
       <span style="font-size:11px; color:#64748b;">
-        Tự động tính toán tổng số lượng NW, GW và Trị giá để đồng bộ hồ sơ
+        Tự động tính toán tổng số lượng NW, GW, Số kiện và Trị giá để đồng bộ hồ sơ
       </span>
     </div>
   `;
@@ -1340,15 +1379,18 @@ function refreshFormItemsTable() {
 
 function updateCalculations() {
   let totalQty = 0;
+  let totalPackages = 0;
   let totalGw = 0;
   let totalVal = 0;
 
   formItems.forEach((item, idx) => {
     const q = Number(item.quantity) || 0;
+    const pk = Number(item.packages) || 0;
     const p = Number(item.unitPrice) || 0;
     const gw = Number(item.grossWeight) || 0;
     const rowVal = q * p;
     totalQty += q;
+    totalPackages += pk;
     totalGw += gw;
     totalVal += rowVal;
 
@@ -1360,9 +1402,11 @@ function updateCalculations() {
 
   // Cập nhật tổng bảng
   const tblQty = document.getElementById('tblTotalQty');
+  const tblPackages = document.getElementById('tblTotalPackages');
   const tblVal = document.getElementById('tblTotalVal');
   const tblGw = document.getElementById('tblTotalGw');
   if (tblQty) tblQty.textContent = `${totalQty.toLocaleString()} kg`;
+  if (tblPackages) tblPackages.textContent = `${totalPackages.toLocaleString()} kiện`;
   if (tblVal) tblVal.textContent = `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (tblGw) tblGw.textContent = `${totalGw.toLocaleString()} kg`;
 
@@ -1385,9 +1429,11 @@ function updateCalculations() {
 
   // Cập nhật input ẩn / hiển thị
   const sQty = document.getElementById('sQty');
+  const sPackages = document.getElementById('sPackages');
   const sGw = document.getElementById('sGrossWeight');
   const sVal = document.getElementById('sValue');
   if (sQty && totalQty > 0) sQty.value = totalQty;
+  if (sPackages && totalPackages > 0) sPackages.value = totalPackages;
   if (sGw && totalGw > 0) sGw.value = totalGw;
   if (sVal) sVal.value = totalVal;
 }

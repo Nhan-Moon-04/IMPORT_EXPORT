@@ -200,6 +200,16 @@ export async function renderShipmentDetail(container, shipmentId) {
         || (it.sku && productMap.get(String(it.sku).trim().toLowerCase()))
         || (it.productName && productMap.get(String(it.productName).trim().toLowerCase()));
 
+      let pkgs = it.packages || it.numberOfPackages;
+      if (!pkgs && it.notes) {
+        const m = String(it.notes).match(/(\d+)\s*kiện/i);
+        if (m) pkgs = parseInt(m[1]);
+        else if (!isNaN(parseInt(it.notes))) pkgs = parseInt(it.notes);
+      }
+      if (!pkgs && rawItems.length === 1 && shipment.totalPackages) {
+        pkgs = shipment.totalPackages;
+      }
+
       return {
         ...it,
         productId: it.productId || p?.id,
@@ -208,12 +218,13 @@ export async function renderShipmentDetail(container, shipmentId) {
         hsCode: it.hsCode || p?.hsCode || '---',
         origin: it.origin || it.countryOfOrigin || p?.countryOfOrigin || p?.origin || '---',
         unit: it.unit || p?.unit || 'kg',
+        packages: Number(pkgs || 0)
       };
     });
     const totalQty = shipment.totalQuantity || items.reduce((s, i) => s + (i.quantity || 0), 0) || 0;
     const totalNetWeight = items.reduce((s, i) => s + (i.netWeight || 0), 0) || 0;
     const totalGrossWeight = shipment.totalGrossWeight || items.reduce((s, i) => s + (i.grossWeight || 0), 0) || 0;
-    const totalPackages = shipment.totalPackages || 0;
+    const totalPackages = shipment.totalPackages || items.reduce((s, i) => s + (i.packages || 0), 0) || 0;
     const totalVal = shipment.totalValue || items.reduce((s, i) => s + (i.totalPrice || (i.quantity * i.unitPrice) || 0), 0) || 0;
 
     let partnerContactPerson = shipment.contactPerson || '';
@@ -429,6 +440,7 @@ export async function renderShipmentDetail(container, shipmentId) {
 
     const productRowsOverview = displayItems.length ? displayItems.map((it, idx) => {
       const q = Number(it.quantity || 0);
+      const pk = Number(it.packages || 0);
       const p = Number(it.unitPrice || 0);
       const rowTotal = it.totalPrice ? Number(it.totalPrice) : (q * p);
       return `
@@ -440,16 +452,18 @@ export async function renderShipmentDetail(container, shipmentId) {
         <td>${it.origin}</td>
         <td style="text-align:center;">${it.unit}</td>
         <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
+        <td style="text-align:right;font-weight:600;color:#0266b3;">${pk ? `${pk.toLocaleString()} kiện` : '---'}</td>
         <td style="text-align:right;">$${p.toFixed(2)}</td>
         <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
         <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
         <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
       </tr>
       `;
-    }).join('') : `<tr><td colspan="11" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
+    }).join('') : `<tr><td colspan="12" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
 
     const productRowsItems = displayItems.length ? displayItems.map((it, idx) => {
       const q = Number(it.quantity || 0);
+      const pk = Number(it.packages || 0);
       const p = Number(it.unitPrice || 0);
       const rowTotal = it.totalPrice ? Number(it.totalPrice) : (q * p);
       return `
@@ -461,6 +475,7 @@ export async function renderShipmentDetail(container, shipmentId) {
         <td>${it.origin}</td>
         <td style="text-align:center;">${it.unit}</td>
         <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
+        <td style="text-align:right;font-weight:600;color:#0266b3;">${pk ? `${pk.toLocaleString()} kiện` : '---'}</td>
         <td style="text-align:right;">$${p.toFixed(2)}</td>
         <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
         <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
@@ -470,7 +485,7 @@ export async function renderShipmentDetail(container, shipmentId) {
         </td>
       </tr>
       `;
-    }).join('') : `<tr><td colspan="12" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
+    }).join('') : `<tr><td colspan="13" style="text-align:center;padding:24px;color:#94a3b8;">Không có sản phẩm nào</td></tr>`;
 
 
 
@@ -959,7 +974,8 @@ export async function renderShipmentDetail(container, shipmentId) {
                           <th>HS Code</th>
                           <th>Xuất xứ</th>
                           <th style="text-align:center;">ĐVT</th>
-                          <th style="text-align:right;">Số lượng</th>
+                          <th style="text-align:right;">Số lượng (NW)</th>
+                          <th style="text-align:right;">Số kiện</th>
                           <th style="text-align:right;">Đơn giá (USD)</th>
                           <th style="text-align:right;">Thành tiền (USD)</th>
                           <th style="text-align:right;">Net Weight</th>
@@ -971,6 +987,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <tr class="sd-total-row">
                           <td colspan="6" style="text-align:right;">Tổng cộng:</td>
                           <td style="text-align:right;color:var(--amis-blue);">${Number(totalQty).toLocaleString()} kg</td>
+                          <td style="text-align:right;color:var(--amis-blue);font-weight:700;">${totalPackages.toLocaleString()} kiện</td>
                           <td></td>
                           <td style="text-align:right;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                           <td style="text-align:right;">${totalNetWeight} kg</td>
@@ -1035,6 +1052,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                         <th>Xuất xứ</th>
                         <th style="text-align:center;">ĐVT</th>
                         <th style="text-align:right;">Số lượng</th>
+                        <th style="text-align:right;">Số kiện</th>
                         <th style="text-align:right;">Đơn giá ($)</th>
                         <th style="text-align:right;">Thành tiền ($)</th>
                         <th style="text-align:right;">Net Weight</th>
@@ -1047,6 +1065,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                       <tr class="sd-total-row">
                         <td colspan="6" style="text-align:right;">Tổng cộng (${displayItems.length} dòng):</td>
                         <td style="text-align:right;color:var(--amis-blue);">${Number(totalQty).toLocaleString()} kg</td>
+                        <td style="text-align:right;color:var(--amis-blue);font-weight:700;">${totalPackages.toLocaleString()} kiện</td>
                         <td></td>
                         <td style="text-align:right;color:var(--amis-green);">$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                         <td style="text-align:right;">${totalNetWeight} kg</td>
