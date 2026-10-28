@@ -624,11 +624,6 @@ export async function renderShipmentDetail(container, shipmentId) {
             <div class="sd-hero-left">
               <div class="sd-hero-icon-box">${ICON.ship}</div>
               <div class="sd-hero-titles">
-                <div class="sd-hero-type-tag">
-                  <span>${typeLabel === 'Nhập khẩu' ? '📥 LÔ HÀNG NHẬP KHẨU' : '📤 LÔ HÀNG XUẤT KHẨU'}</span>
-                  <span>•</span>
-                  <span>NGHIỆP VỤ XƠ SỢI POLYESTER (DTY / FDY / POY)</span>
-                </div>
                 <div class="sd-hero-code-row">
                   <span class="sd-hero-code">${shpCode}</span>
                   <button class="sd-btn-sm" id="sd-btn-copy" title="Sao chép mã lô hàng" style="padding: 2px 7px; font-size:11px;">
