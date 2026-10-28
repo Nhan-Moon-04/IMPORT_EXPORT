@@ -6,6 +6,16 @@ import { openCreateInvoiceModal } from '../invoices/invoices.js';
 import { openCreateCustomsModal, parseCustomsMeta } from '../customs/customs.js';
 import { openBLModal, deleteBL, viewBLDetail } from '../billOfLading/billOfLading.js';
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ─── Download Invoice Document Helper ────────────────────────────────────────
 window.downloadInvoiceFile = async function (invoiceId, docId, fileName) {
   try {
@@ -543,7 +553,7 @@ export async function renderShipmentDetail(container, shipmentId) {
               ${!isCdDomestic ? `
                 <div class="sd-field">
                   <div class="sd-field-label">Trị Giá Nguyên Tệ ($ USD)</div>
-                  <div class="sd-field-value" style="color:#0369a1; font-weight:700;">$${Number(meta.valueUsd !== null ? meta.valueUsd : totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                  <div class="sd-field-value" style="color:#0369a1; font-weight:700;">$${Number(meta.valueUsd != null ? meta.valueUsd : (totalVal || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                 </div>
                 <div class="sd-field">
                   <div class="sd-field-label">Tỷ Giá Hải Quan (VNĐ/USD)</div>
@@ -560,7 +570,7 @@ export async function renderShipmentDetail(container, shipmentId) {
               ` : `
                 <div class="sd-field" style="grid-column: span 2;">
                   <div class="sd-field-label">Trị Giá Tính Thuế (VNĐ - Nội Địa)</div>
-                  <div class="sd-field-value" style="color:#15803d; font-weight:700; font-size:14px;">${meta.taxableValueVnd ? `${Number(meta.taxableValueVnd).toLocaleString('vi-VN')} ₫` : `${Number(totalVal).toLocaleString('vi-VN')} ₫`}</div>
+                  <div class="sd-field-value" style="color:#15803d; font-weight:700; font-size:14px;">${meta.taxableValueVnd ? `${Number(meta.taxableValueVnd).toLocaleString('vi-VN')} ₫` : `${Number(totalVal || 0).toLocaleString('vi-VN')} ₫`}</div>
                 </div>
                 <div class="sd-field" style="grid-column: span 2;">
                   <div class="sd-field-label">Tiền Thuế GTGT (VAT)</div>
