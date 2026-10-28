@@ -16,7 +16,6 @@ body {
   line-height: 1.45;
   height: 100vh;
   overflow: hidden;
-  user-select: none;
 }
 
 input, button, select, textarea {
