@@ -1,8 +1,6 @@
 /**
  * HS Codes & Biểu Thuế — MISA AMIS UI Style
- * Sort, column customization, icon-only actions, full CRUD (local data)
- */
-import { api, showToast, showConfirm } from "../../core/api.js";
+import { api, showToast, showConfirm, openModal, closeModal } from "../../core/api.js";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let hsList     = [];
@@ -261,9 +259,13 @@ function renderTable() {
       const val = h[col.key];
       switch (col.key) {
         case 'code':
-          return `<td><strong class="hs-code-badge">${h.code}</strong></td>`;
+          return `<td>
+            <strong class="hs-code-badge" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="window.xnkDetailHs('${h.id}')" title="Nhấn để tra cứu chi tiết biểu thuế & CBPG">
+              🔍 ${h.code}
+            </strong>
+          </td>`;
         case 'description':
-          return `<td class="hs-td-desc">${h.description}</td>`;
+          return `<td class="hs-td-desc" style="cursor:pointer;" onclick="window.xnkDetailHs('${h.id}')" title="Nhấn để tra cứu chi tiết">${h.description}</td>`;
         case 'importTax':
           return `<td style="text-align:right">${taxBadge(val, 'default')}</td>`;
         case 'prefTax':
@@ -289,6 +291,9 @@ function renderTable() {
         ${cells}
         <td class="amis-td-actions">
           <div class="amis-row-actions">
+            <button class="amis-icon-btn" onclick="window.xnkDetailHs('${h.id}')" title="Tra cứu chi tiết biểu thuế & CBPG" style="color:#0284c7;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
             <button class="amis-icon-btn" onclick="window.xnkEditHs('${h.id}')" title="Sửa">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             </button>
@@ -430,8 +435,239 @@ function setupEvents() {
     columns = ALL_COLS.map(c => ({ ...c })); openColPicker();
   });
 
+  window.xnkDetailHs = (id) => openHsDetailModal(id);
   window.xnkEditHs   = (id) => openHsForm(id);
   window.xnkDeleteHs = (id) => deleteHs(id);
+}
+
+// ─── Tra cứu chi tiết Biểu thuế & Thuế Chống Bán Phá Giá (CBPG) ────────────
+function openHsDetailModal(id) {
+  const item = hsList.find(x => x.id === id) || hsList[0];
+  if (!item) return;
+
+  const isDTY = item.code.includes('5402.33') || item.description.toLowerCase().includes('dty');
+  const isFDY = item.code.includes('5402.47') || item.description.toLowerCase().includes('fdy');
+  const hasCBPG = isDTY || isFDY;
+
+  const contentHtml = `
+    <div style="padding: 10px 0; max-height: 75vh; overflow-y: auto;">
+      <!-- Header Summary Card -->
+      <div style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <div style="font-size:11px; font-weight:700; color:#2563eb; text-transform:uppercase; letter-spacing:0.5px;">Phân Loại Hàng Hóa & Biểu Thuế Hải Quan</div>
+            <div style="font-size:20px; font-weight:800; color:#0f172a; font-family:monospace; margin-top:2px;">
+              ${item.code}
+            </div>
+            <div style="font-size:13px; font-weight:600; color:#334155; margin-top:4px;">
+              ${item.description}
+            </div>
+          </div>
+          <span class="status-chip chip-transit" style="font-size:11px; padding:3px 8px;">Chương 54: Xơ sợi nhân tạo</span>
+        </div>
+      </div>
+
+      <!-- Section 1: Biểu Thuế Nhập Khẩu theo C/O & Hiệp định -->
+      <h4 style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        🏛️ 1. Biểu thuế nhập khẩu hiện hành (Theo C/O & Hiệp định thương mại)
+      </h4>
+      <table class="validation-table">
+        <thead>
+          <tr>
+            <th>Loại thuế & Hiệp định</th>
+            <th>Mức thuế</th>
+            <th>Điều kiện C/O áp dụng</th>
+            <th>Căn cứ pháp lý & Hiệu lực</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Thuế NK Thông thường</strong></td>
+            <td><span style="color:#dc2626; font-weight:700;">18%</span></td>
+            <td>Áp dụng khi không có xuất xứ hoặc không thuộc nước MFN</td>
+            <td>Luật Thuế XNK số 107/2016/QH13</td>
+          </tr>
+          <tr>
+            <td><strong>Thuế NK Ưu đãi (MFN)</strong></td>
+            <td><span style="color:#d97706; font-weight:700;">${item.importTax}%</span></td>
+            <td>Áp dụng cho hàng nhập khẩu từ các nước thành viên WTO</td>
+            <td>Nghị định 26/2023/NĐ-CP (Đang áp dụng)</td>
+          </tr>
+          <tr>
+            <td><strong>ACFTA (Việt Nam - Trung Quốc)</strong></td>
+            <td><span style="color:#16a34a; font-weight:700;">0%</span></td>
+            <td>Bắt buộc có <strong>C/O Form E</strong> hợp lệ do Hải quan TQ cấp</td>
+            <td>Nghị định số 118/2022/NĐ-CP</td>
+          </tr>
+          <tr>
+            <td><strong>VKFTA (Việt Nam - Hàn Quốc)</strong></td>
+            <td><span style="color:#16a34a; font-weight:700;">0%</span></td>
+            <td>Bắt buộc có <strong>C/O Form AK / VK</strong> hợp lệ</td>
+            <td>Nghị định số 125/2022/NĐ-CP</td>
+          </tr>
+          <tr>
+            <td><strong>ATIGA (Nội khối ASEAN)</strong></td>
+            <td><span style="color:#16a34a; font-weight:700;">0%</span></td>
+            <td>Bắt buộc có <strong>C/O Form D</strong> hợp lệ</td>
+            <td>Nghị định số 126/2022/NĐ-CP</td>
+          </tr>
+          <tr>
+            <td><strong>Thuế Giá Trị Gia Tăng (VAT)</strong></td>
+            <td><span style="color:#2563eb; font-weight:700;">${item.vat}%</span></td>
+            <td>Tính trên tổng: (Trị giá CIF + Thuế NK + Thuế CBPG)</td>
+            <td>Nghị định giảm thuế GTGT hiện hành</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Section 2: Biểu Thuế Chống Bán Phá Giá (CBPG) -->
+      <h4 style="font-size:13px; font-weight:700; color:#0f172a; margin:16px 0 8px 0; display:flex; align-items:center; gap:6px;">
+        ⚖️ 2. Biểu thuế Chống Bán Phá Giá (CBPG) đối với Sợi DTY / FDY Polyester
+      </h4>
+      ${hasCBPG ? `
+        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:10px 14px; font-size:12px; color:#92400e; margin-bottom:8px;">
+          📌 <strong>Căn cứ:</strong> Quyết định số 2302/QĐ-BCT của Bộ Công Thương áp dụng biện pháp chống bán phá giá chính thức đối với một số sản phẩm sợi filament polyester xuất xứ từ Trung Quốc, Ấn Độ, Indonesia và Malaysia.
+        </div>
+        <table class="validation-table">
+          <thead>
+            <tr>
+              <th>Quốc gia xuất xứ</th>
+              <th>Nhà sản xuất / Xuất khẩu</th>
+              <th>Mức thuế CBPG</th>
+              <th>Tình trạng áp dụng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🇨🇳 <strong>Trung Quốc (China)</strong></td>
+              <td>Tongkun Group / Hengli / Xinfengming</td>
+              <td><span style="color:#dc2626; font-weight:700;">3.28% - 5.12%</span></td>
+              <td><span class="val-warning">Đang có hiệu lực</span></td>
+            </tr>
+            <tr>
+              <td>🇨🇳 <strong>Trung Quốc (China)</strong></td>
+              <td>Các nhà sản xuất / xuất khẩu khác của TQ</td>
+              <td><span style="color:#dc2626; font-weight:700;">17.45%</span></td>
+              <td><span class="val-warning">Mức thuế chung</span></td>
+            </tr>
+            <tr>
+              <td>🇮🇳 <strong>Ấn Độ (India)</strong></td>
+              <td>Reliance Industries / Wellknown Polyester</td>
+              <td><span style="color:#dc2626; font-weight:700;">5.41%</span></td>
+              <td><span class="val-warning">Đang có hiệu lực</span></td>
+            </tr>
+            <tr>
+              <td>🇮🇩 <strong>Indonesia</strong></td>
+              <td>Tất cả các nhà sản xuất xuất khẩu</td>
+              <td><span style="color:#dc2626; font-weight:700;">9.86%</span></td>
+              <td><span class="val-warning">Đang có hiệu lực</span></td>
+            </tr>
+            <tr>
+              <td>🇲🇾 <strong>Malaysia</strong></td>
+              <td>Tất cả các nhà sản xuất xuất khẩu</td>
+              <td><span style="color:#dc2626; font-weight:700;">21.23%</span></td>
+              <td><span class="val-warning">Đang có hiệu lực</span></td>
+            </tr>
+            <tr>
+              <td>🇹🇼 <strong>Đài Loan (Taiwan)</strong></td>
+              <td>Shinkong / Far Eastern / Nan Ya</td>
+              <td><span style="color:#16a34a; font-weight:700;">0% (Không áp CBPG)</span></td>
+              <td><span class="val-match">Miễn thuế CBPG</span></td>
+            </tr>
+          </tbody>
+        </table>
+      ` : `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 14px; font-size:12px; color:#64748b;">
+          Mã hàng hóa này hiện không thuộc diện áp dụng thuế tự vệ hoặc thuế chống bán phá giá (CBPG).
+        </div>
+      `}
+
+      <!-- Section 3: Instant Tax Calculator Simulation -->
+      <h4 style="font-size:13px; font-weight:700; color:#0f172a; margin:18px 0 8px 0; display:flex; align-items:center; gap:6px;">
+        🧮 3. Mô phỏng & Tính thuế nhập khẩu dự kiến khi khai Hải Quan
+      </h4>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+        <div>
+          <label style="font-size:11.5px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Trị giá CIF Lô Hàng (USD):</label>
+          <input type="number" id="calcCifValue" class="form-input" value="30000" style="font-weight:700; color:#0f172a;">
+        </div>
+        <div>
+          <label style="font-size:11.5px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Xuất xứ & Thuế CBPG:</label>
+          <select id="calcOrigin" class="form-select" style="font-size:12px;">
+            <option value="0">Đài Loan (0% CBPG)</option>
+            <option value="0.0328" selected>Trung Quốc - Tongkun (3.28% CBPG)</option>
+            <option value="0.1745">Trung Quốc - Khác (17.45% CBPG)</option>
+            <option value="0.0541">Ấn Độ (5.41% CBPG)</option>
+            <option value="0.0986">Indonesia (9.86% CBPG)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11.5px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Chứng nhận xuất xứ (C/O):</label>
+          <select id="calcCo" class="form-select" style="font-size:12px;">
+            <option value="0" selected>Có C/O Form E / AK (Thuế NK 0%)</option>
+            <option value="${item.importTax / 100}">Không có C/O (Thuế MFN ${item.importTax}%)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div id="calcResultBox" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; margin-top:10px; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; font-size:12px;">
+        <div>
+          <div style="color:#64748b; font-size:11px;">1. Thuế Nhập Khẩu</div>
+          <div id="resImportTax" style="font-weight:700; color:#1d4ed8; font-size:13.5px;">0 ₫</div>
+        </div>
+        <div>
+          <div style="color:#64748b; font-size:11px;">2. Thuế CBPG</div>
+          <div id="resCbpgTax" style="font-weight:700; color:#dc2626; font-size:13.5px;">25.042.800 ₫</div>
+        </div>
+        <div>
+          <div style="color:#64748b; font-size:11px;">3. Thuế GTGT (VAT ${item.vat}%)</div>
+          <div id="resVatTax" style="font-weight:700; color:#0369a1; font-size:13.5px;">63.083.424 ₫</div>
+        </div>
+        <div style="border-left:1px solid #bfdbfe; padding-left:10px;">
+          <div style="color:#1e293b; font-weight:700; font-size:11px;">TỔNG NỘP HẢI QUAN</div>
+          <div id="resTotalTax" style="font-weight:800; color:#15803d; font-size:14px;">88.126.224 ₫</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; font-size:11px; color:#64748b; text-align:right;">
+        * Tỷ giá quy đổi mô phỏng: 25.450 VNĐ/USD theo tỷ giá hạch toán Hải quan Việt Nam.
+      </div>
+    </div>
+  `;
+
+  openModal(`Tra Cứu Chi Tiết Biểu Thuế & CBPG: HS ${item.code}`, contentHtml);
+
+  // Wire up dynamic instant calculation
+  const updateSim = () => {
+    const cifUsd = parseFloat(document.getElementById("calcCifValue")?.value) || 0;
+    const rateVnd = 25450;
+    const cifVnd = cifUsd * rateVnd;
+
+    const cbpgRate = parseFloat(document.getElementById("calcOrigin")?.value) || 0;
+    const nkRate = parseFloat(document.getElementById("calcCo")?.value) || 0;
+    const vatRate = (item.vat || 8) / 100;
+
+    const taxNk = cifVnd * nkRate;
+    const taxCbpg = cifVnd * cbpgRate;
+    const taxVat = (cifVnd + taxNk + taxCbpg) * vatRate;
+    const totalTax = taxNk + taxCbpg + taxVat;
+
+    const elNk = document.getElementById("resImportTax");
+    const elCbpg = document.getElementById("resCbpgTax");
+    const elVat = document.getElementById("resVatTax");
+    const elTot = document.getElementById("resTotalTax");
+
+    if (elNk) elNk.textContent = `${Math.round(taxNk).toLocaleString('vi-VN')} ₫`;
+    if (elCbpg) elCbpg.textContent = `${Math.round(taxCbpg).toLocaleString('vi-VN')} ₫`;
+    if (elVat) elVat.textContent = `${Math.round(taxVat).toLocaleString('vi-VN')} ₫`;
+    if (elTot) elTot.textContent = `${Math.round(totalTax).toLocaleString('vi-VN')} ₫`;
+  };
+
+  document.getElementById("calcCifValue")?.addEventListener("input", updateSim);
+  document.getElementById("calcOrigin")?.addEventListener("change", updateSim);
+  document.getElementById("calcCo")?.addEventListener("change", updateSim);
+  updateSim();
 }
 
 // ─── CRUD: Form modal ─────────────────────────────────────────────────────────

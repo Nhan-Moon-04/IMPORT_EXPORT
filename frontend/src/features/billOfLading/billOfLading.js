@@ -394,9 +394,21 @@ function renderBLTable(items) {
     }
 
     let statusChip = '<span class="status-chip chip-completed">Bản gốc</span>';
-    if (b.status === 'Surrendered') statusChip = '<span class="status-chip chip-transit" style="background:#dbeafe; color:#1d4ed8;">Đã Surrender</span>';
-    else if (b.status === 'Draft') statusChip = '<span class="status-chip chip-pending">Bản nháp</span>';
-    else if (b.status === 'Released') statusChip = '<span class="status-chip chip-delivered" style="background:#f0fdf4; color:#16a34a;">Đã giao hàng</span>';
+    if (b.status === 'Draft') {
+      statusChip = '<span class="status-chip chip-pending" style="background:#f1f5f9; color:#475569;">Draft B/L</span>';
+    } else if (b.status === 'Confirmed') {
+      statusChip = '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">B/L Confirmed</span>';
+    } else if (b.status === 'OnBoard') {
+      statusChip = '<span class="status-chip chip-transit" style="background:#dbeafe; color:#1d4ed8;">On Board</span>';
+    } else if (b.status === 'Surrendered' || b.status === 'Telex') {
+      statusChip = '<span class="status-chip chip-completed" style="background:#dcfce7; color:#15803d; font-weight:700;">Telex Release</span>';
+    } else if (b.status === 'ArrivalNotice') {
+      statusChip = '<span class="status-chip chip-pending" style="background:#fef3c7; color:#b45309;">Arrival Notice</span>';
+    } else if (b.status === 'EDO') {
+      statusChip = '<span class="status-chip chip-delivered" style="background:#f3e8ff; color:#7e22ce; font-weight:700;">Đã nhận EDO</span>';
+    } else if (b.status === 'Released' || b.status === 'Delivered') {
+      statusChip = '<span class="status-chip chip-delivered" style="background:#f0fdf4; color:#16a34a;">Đã giao hàng</span>';
+    }
 
     const hasFile = !!b.docId;
     const polShort = b.pol?.split(',')[0] || '---';
@@ -1140,10 +1152,14 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
         <div>
           <label class="form-label" style="font-weight: 600;">Trạng Thái Vận Đơn</label>
           <select id="bl-status" class="form-input" style="width: 100%;">
-            <option value="Original" ${bl?.status === 'Original' ? 'selected' : ''}>Original (Bản gốc)</option>
-            <option value="Surrendered" ${bl?.status === 'Surrendered' ? 'selected' : ''}>Surrendered (Đã điện giao / Telex)</option>
-            <option value="Released" ${bl?.status === 'Released' ? 'selected' : ''}>Released (Đã giao hàng)</option>
-            <option value="Draft" ${bl?.status === 'Draft' ? 'selected' : ''}>Draft (Bản nháp)</option>
+            <option value="Draft" ${bl?.status === 'Draft' ? 'selected' : ''}>1. Draft B/L (Đang kiểm tra)</option>
+            <option value="Confirmed" ${bl?.status === 'Confirmed' ? 'selected' : ''}>2. B/L Confirmed (Đã xác nhận nội dung)</option>
+            <option value="OnBoard" ${bl?.status === 'OnBoard' ? 'selected' : ''}>3. On Board (Đã xếp lên tàu)</option>
+            <option value="Original" ${(!bl?.status || bl?.status === 'Original') ? 'selected' : ''}>4. Original (B/L Gốc phát hành)</option>
+            <option value="Surrendered" ${bl?.status === 'Surrendered' ? 'selected' : ''}>5. Telex Release / Surrendered (Đã điện giao)</option>
+            <option value="ArrivalNotice" ${bl?.status === 'ArrivalNotice' ? 'selected' : ''}>6. Arrival Notice (Đã có thông báo hàng đến)</option>
+            <option value="EDO" ${bl?.status === 'EDO' ? 'selected' : ''}>7. EDO (Đã nhận lệnh giao hàng điện tử)</option>
+            <option value="Released" ${bl?.status === 'Released' ? 'selected' : ''}>8. Delivery Completed (Đã hoàn tất giao nhận)</option>
           </select>
         </div>
       </div>

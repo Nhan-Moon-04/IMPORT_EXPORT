@@ -205,7 +205,21 @@ function renderShipmentsTable(items) {
       : '---';
 
     const etdText = s.bookings?.[0]?.etd ? new Date(s.bookings[0].etd).toLocaleDateString('vi-VN') : '---';
-    const etaText = s.expectedDate ? new Date(s.expectedDate).toLocaleDateString('vi-VN') : '---';
+    let etaBadge = `<span style="color:#64748b;">---</span>`;
+    if (s.expectedDate) {
+      const etaDate = new Date(s.expectedDate);
+      const now = new Date();
+      const diffDays = Math.ceil((etaDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+      const dateStr = etaDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      
+      if (diffDays < 0) {
+        etaBadge = `<span class="status-chip" style="background:#f1f5f9; color:#475569; font-size:11px;" title="Ngày ETA: ${dateStr}">⚓ Đã cập cảng (${dateStr})</span>`;
+      } else if (diffDays <= 3) {
+        etaBadge = `<span class="status-chip" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-weight:700; font-size:11px;" title="ETA sắp đến: ${dateStr}">⚡ Còn ${diffDays} ngày (${dateStr})</span>`;
+      } else {
+        etaBadge = `<span class="status-chip" style="background:#e0f2fe; color:#0369a1; font-size:11px;" title="ETA: ${dateStr}">🚢 ${dateStr}</span>`;
+      }
+    }
 
     let rowHtml = `
     <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}" style="${bgClass}">
@@ -217,39 +231,44 @@ function renderShipmentsTable(items) {
 
     if (cols.code) {
       rowHtml += `
-      <td style="cursor:pointer;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
-        <strong style="color:var(--amis-blue); text-decoration:underline;">${s.shipmentCode}</strong>
+      <td style="cursor:pointer;" onclick="window.appNavigateTo('shipment-detail', '${s.id}')" title="Nhấn xem chi tiết lô hàng">
+        <span style="font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-weight: 700; color: #1d4ed8; background: #eff6ff; padding: 3px 8px; border-radius: 4px; border: 1px solid #bfdbfe; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+          📦 ${s.shipmentCode}
+        </span>
       </td>`;
     }
     if (cols.type) {
-      rowHtml += `<td>${s.type === 'Import' ? '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">📥 Nhập khẩu</span>' : '<span class="status-chip chip-delivered" style="background:#dcfce7; color:#15803d;">📤 Xuất khẩu</span>'}</td>`;
+      rowHtml += `<td>${s.type === 'Export' ? '<span class="status-chip chip-delivered" style="background:#f3e8ff; color:#7e22ce;">📤 Xuất khẩu</span>' : '<span class="status-chip chip-transit" style="background:#e0f2fe; color:#0369a1;">📥 Nhập khẩu</span>'}</td>`;
     }
     if (cols.partner) {
-      rowHtml += `<td><strong>${s.supplierName || s.customerName || '-'}</strong></td>`;
+      rowHtml += `<td>
+        <div style="font-weight: 600; color: #0f172a; font-size: 13px;">${s.supplierName || s.customerName || '-'}</div>
+        <div style="font-size: 11px; color: #64748b;">${s.incoterms || s.deliveryTerm || 'CIF'} • ${s.currency || 'USD'}</div>
+      </td>`;
     }
     if (cols.products) {
       rowHtml += `<td><span style="font-weight:600; color:#334155;">${productText}</span></td>`;
     }
     if (cols.quantity) {
-      rowHtml += `<td style="text-align:right; font-weight:700;">${Number(s.totalQuantity || 222).toLocaleString()} kg</td>`;
+      rowHtml += `<td style="text-align:right; font-weight:700; color: #0f172a; font-family: monospace; font-size: 12.5px;">${Number(s.totalQuantity || 0).toLocaleString('vi-VN')} kg</td>`;
     }
     if (cols.invoices) {
-      rowHtml += `<td><span style="color:var(--amis-blue); font-weight:600;">${invoiceText}</span></td>`;
+      rowHtml += `<td><span style="color:var(--amis-blue); font-weight:600; font-family:monospace;">${invoiceText}</span></td>`;
     }
     if (cols.declarations) {
       rowHtml += `<td><span style="font-family:monospace; color:#b45309; font-weight:600;">${declText}</span></td>`;
     }
     if (cols.containers) {
-      rowHtml += `<td><span style="color:#475569; font-weight:600;">${contText}</span></td>`;
+      rowHtml += `<td><span style="color:#475569; font-weight:600; font-family:monospace;">${contText}</span></td>`;
     }
     if (cols.etd) {
-      rowHtml += `<td>${etdText}</td>`;
+      rowHtml += `<td style="color:#64748b; font-size:12px;">${etdText}</td>`;
     }
     if (cols.eta) {
-      rowHtml += `<td>${etaText}</td>`;
+      rowHtml += `<td>${etaBadge}</td>`;
     }
     if (cols.value) {
-      rowHtml += `<td style="text-align:right; font-weight:700; color:var(--amis-green);">$${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>`;
+      rowHtml += `<td style="text-align:right; font-weight:700; color: #15803d; font-family: monospace; font-size: 12.5px;">$ ${Number(s.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
     }
     if (cols.status) {
       // Đọc trạng thái mới nhất từ timeline (localStorage)
@@ -259,7 +278,6 @@ function renderShipmentsTable(items) {
       const latestText = tlEntries.length > 0 ? tlEntries[tlEntries.length - 1].text : null;
 
       if (latestText) {
-        // Truncate nếu dài hơn 22 ký tự
         const MAX = 22;
         const display = latestText.length > MAX ? latestText.slice(0, MAX) + '…' : latestText;
         const needsTooltip = latestText.length > MAX;

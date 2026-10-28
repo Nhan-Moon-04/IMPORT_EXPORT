@@ -107,18 +107,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px 5px 18px;
+  padding: 8px 16px 3px 16px;
   cursor: pointer;
   user-select: none;
   transition: color 0.15s ease;
 }
 
 .nav-group-header:hover {
-  color: #1e293b;
+  color: #0f172a;
 }
 
 .group-title {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   color: #64748b;
@@ -128,7 +128,7 @@
 }
 
 .nav-group-header:hover .group-title {
-  color: #1e293b;
+  color: #0f172a;
 }
 
 .group-chevron {
@@ -215,14 +215,15 @@
 
 /* Active Nav Item */
 .nav-item.active {
-  background-color: #eef4ff;
-  color: #2563eb;
+  background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1d4ed8;
   font-weight: 600;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
 }
 
 .nav-item.active svg {
-  color: #2563eb;
-  stroke: #2563eb;
+  color: #1d4ed8;
+  stroke: #1d4ed8;
 }
 
 /* Left Indicator Pill on Active Item */
@@ -232,10 +233,11 @@
   left: -8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3.5px;
-  height: 20px;
+  width: 4px;
+  height: 22px;
   background-color: #2563eb;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
 }
 
 /* =========================================================

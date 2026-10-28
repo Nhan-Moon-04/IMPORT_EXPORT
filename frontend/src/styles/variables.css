@@ -27,13 +27,13 @@
   --amis-sidebar-border: #e2e8f0;
 
   /* Light Theme Defaults */
-  --amis-bg: #f2f5f8; /* Soft background */
+  --amis-bg: #f3f6f9; /* Soft background */
   --amis-card-bg: #ffffff;
   --amis-border: #e2e8f0;
-  --amis-text: #1e293b;
-  --amis-text-muted: #64748b;
+  --amis-text: #0f172a;
+  --amis-text-muted: #475569;
   --amis-row-hover: #f8fafc;
-  --amis-row-selected: #f1f5f9;
+  --amis-row-selected: #eff6ff;
 
   --bg-app: var(--amis-bg);
   --bg-surface: var(--amis-card-bg);
