@@ -131,10 +131,25 @@ public class ProductSalePrice : BaseEntity
     [MaxLength(300)]
     public string? OutputProductName { get; set; }
 
+    // Khách hàng & Thị trường xuất bán
+    public Guid? CustomerId { get; set; }
+
+    [MaxLength(200)]
+    public string? CustomerName { get; set; }
+
+    [MaxLength(50)]
+    public string? CustomerType { get; set; } // ParentCompany, ForeignBuyer, Domestic
+
+    [MaxLength(100)]
+    public string? DestinationCountry { get; set; } // Thị trường / Nước đến
+
     [MaxLength(20)]
     public string Currency { get; set; } = "USD";
 
     public decimal UnitPrice { get; set; }
+
+    // Tỷ giá quy đổi tham chiếu (khi mua VND bán USD hoặc mua USD bán VND)
+    public decimal? ExchangeRate { get; set; }
 
     public bool IsActive { get; set; } = true;
 

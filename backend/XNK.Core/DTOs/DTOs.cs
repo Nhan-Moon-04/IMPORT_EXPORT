@@ -748,6 +748,7 @@ public class ProductPurchasePriceDto
     public Guid ProductId { get; set; }
     public string ProductSku { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
+    public string? CountryOfOrigin { get; set; }
     public string Currency { get; set; } = "USD";
     public decimal UnitPrice { get; set; }
     public bool IsActive { get; set; }
@@ -779,13 +780,20 @@ public class ProductSalePriceDto
     // Input product info
     public string InputProductSku { get; set; } = string.Empty;
     public string InputProductName { get; set; } = string.Empty;
+    public string? InputCountryOfOrigin { get; set; }
     public string InputCurrency { get; set; } = "USD";
     public decimal InputUnitPrice { get; set; }
     // Output product info
     public string OutputSku { get; set; } = string.Empty;
     public string? OutputProductName { get; set; }
+    // Customer & Market info
+    public Guid? CustomerId { get; set; }
+    public string? CustomerName { get; set; }
+    public string? CustomerType { get; set; }
+    public string? DestinationCountry { get; set; }
     public string Currency { get; set; } = "USD";
     public decimal UnitPrice { get; set; }
+    public decimal? ExchangeRate { get; set; }
     public bool IsActive { get; set; }
     public string? Notes { get; set; }
     public DateTime EffectiveDate { get; set; }
@@ -802,10 +810,18 @@ public class CreateProductSalePriceDto
     public string OutputSku { get; set; } = string.Empty;
     [MaxLength(300)]
     public string? OutputProductName { get; set; }
+    public Guid? CustomerId { get; set; }
+    [MaxLength(200)]
+    public string? CustomerName { get; set; }
+    [MaxLength(50)]
+    public string? CustomerType { get; set; }
+    [MaxLength(100)]
+    public string? DestinationCountry { get; set; }
     [Required, MaxLength(20)]
     public string Currency { get; set; } = "USD";
     [Required]
     public decimal UnitPrice { get; set; }
+    public decimal? ExchangeRate { get; set; }
     public string? Notes { get; set; }
     public DateTime? EffectiveDate { get; set; }
 }

@@ -158,7 +158,7 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
@@ -173,6 +173,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pricing-search-box {
@@ -205,6 +206,40 @@
 .pricing-search-input:focus {
   border-color: #0266b3;
   box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.15);
+}
+
+/* Currency Flow Tabs (Segmented Buttons) */
+.flow-tab-group {
+  display: inline-flex;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.flow-tab-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.flow-tab-btn:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.flow-tab-btn.active {
+  background: #ffffff;
+  color: #0266b3;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 /* Table Card */
@@ -280,14 +315,148 @@
   color: #1d4ed8;
 }
 
+/* Country Pill */
+.country-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.country-flag {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.pill-tw {
+  background: #f0fdfa;
+  color: #0f766e;
+  border-color: #ccfbf1;
+}
+
+.pill-cn {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.pill-vn {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fef3c7;
+}
+
+.pill-kr {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-color: #ede9fe;
+}
+
+.pill-jp {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #ffe4e6;
+}
+
+.pill-us {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #dbeafe;
+}
+
+.pill-default {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+/* Customer Classification Badges */
+.badge-cust-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.badge-cust-type.badge-parent {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.badge-cust-type.badge-foreign {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-cust-type.badge-domestic {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-cust-type.badge-general {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Currency Pair Tags */
+.currency-pair-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.pair-vnd-usd {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.pair-usd-usd {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.pair-usd-vnd {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.pair-vnd-vnd {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* Spreads & Margins */
 .spread-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: 'SFMono-Regular', Consolas, monospace;
 }
 
@@ -297,10 +466,45 @@
   border: 1px solid #a7f3d0;
 }
 
+.spread-negative {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
 .spread-neutral {
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
+}
+
+.rate-subtext {
+  font-size: 10px;
+  color: #64748b;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  background: #f8fafc;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Live Rate Preview Box in Modal */
+.rate-preview-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rate-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* Action button in table */
@@ -389,6 +593,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .timeline-price {
@@ -434,4 +640,3 @@
   border-radius: 4px;
   border-left: 3px solid #0266b3;
 }
-

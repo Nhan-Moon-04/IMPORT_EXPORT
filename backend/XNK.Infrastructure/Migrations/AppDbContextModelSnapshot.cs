@@ -951,8 +951,26 @@ namespace XNK.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CustomerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CustomerType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("DestinationCountry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime>("EffectiveDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");

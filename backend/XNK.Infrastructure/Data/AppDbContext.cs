@@ -288,6 +288,7 @@ public class AppDbContext : DbContext
             e.HasOne(x => x.PurchasePrice).WithMany().HasForeignKey(x => x.PurchasePriceId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.PurchasePriceId, x.IsActive });
             e.Property(x => x.UnitPrice).HasColumnType("decimal(18,4)");
+            e.Property(x => x.ExchangeRate).HasColumnType("decimal(18,4)");
         });
 
         // ========== AuditLog ==========

@@ -1,6 +1,23 @@
 /**
  * Pricing Feature Module — Quản Lý Giá Mua Vào & Giá Bán Ra (Ánh Xạ Xuất Khẩu)
  * MISA AMIS Enterprise Style
+ * 
+ * Quy tắc nghiệp vụ trọng tâm:
+ * 1. Giá mua vào: Quản lý theo từng mã sản phẩm nguyên liệu (VD: VL0572), hiển thị nước nhập/xuất xứ từ sản phẩm sợi.
+ * 2. Đa dạng tiền tệ: Hỗ trợ linh hoạt 4 luồng tiền:
+ *    - VND ➔ USD (Mua VNĐ, xuất bán USD)
+ *    - USD ➔ USD (Mua USD, xuất bán USD)
+ *    - USD ➔ VND (Nhập USD, bán nội địa VNĐ)
+ *    - VND ➔ VND (Mua VNĐ, bán nội địa VNĐ)
+ *    Tiền tệ nào giữ nguyên tiền tệ đó ("đô là đô, vnd là vnd"), không tự ý gộp ép giá.
+ *    Khi khác tiền tệ, hỗ trợ Tỷ Giá Quy Đổi Tham Chiếu (VD: 25.450) để tính vốn quy đổi và biên độ lãi/lỗ.
+ * 3. Giá bán ra: Ánh xạ chuyển đổi mã (VD: Mua VL0572 ➔ Bán VN905), gắn liền với Khách Hàng và Phân Loại:
+ *    - 🏢 Công ty Mẹ (ParentCompany): Chính sách giá chuyển nhượng / gia công cty mẹ
+ *    - 🌐 Khách Nước Ngoài (ForeignBuyer): Khách hàng quốc tế mua sợi xuất khẩu
+ *    - 🏬 Khách Nội Địa (Domestic): Doanh nghiệp dệt may trong nước
+ *    Kèm Thị trường / Nước xuất bán đến (Destination Country).
+ * 4. Bảo lưu lịch sử: Khi cập nhật giá mới (VD: từ 4$ lên 5$), giá cũ được bảo lưu vào dòng thời gian (timeline).
+ *    Các tờ khai hải quan và lô hàng quá khứ đã hoàn thành giữ nguyên mức giá snapshot lúc chốt.
  */
 import { api, showToast, showConfirm, openModal, closeModal } from "../../core/api.js";
 
@@ -20,7 +37,7 @@ function formatMoney(amount, currency = 'USD') {
   if (curr === 'VND') {
     return `<span class="price-pill price-vnd" title="${val.toLocaleString('vi-VN')} ₫">${val.toLocaleString('vi-VN')} <small>₫</small></span>`;
   }
-  return `<span class="price-pill price-usd" title="$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}"><small>$</small>${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+  return `<span class="price-pill price-usd" title="$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}"><small>$</small>${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
 }
 
 function formatDate(dateStr) {
@@ -32,6 +49,118 @@ function formatDate(dateStr) {
     return String(dateStr);
   }
 }
+
+function formatCountryBadge(country) {
+  if (!country || !country.trim()) {
+    return `<span class="country-pill pill-default"><span class="country-flag">🌍</span> Chưa rõ</span>`;
+  }
+  const c = country.trim().toLowerCase();
+  if (c.includes('taiwan') || c.includes('đài loan') || c.includes('tw')) {
+    return `<span class="country-pill pill-tw"><span class="country-flag">🇹🇼</span> Đài Loan</span>`;
+  }
+  if (c.includes('china') || c.includes('trung quốc') || c.includes('trung quoc') || c.includes('cn')) {
+    return `<span class="country-pill pill-cn"><span class="country-flag">🇨🇳</span> Trung Quốc</span>`;
+  }
+  if (c.includes('vietnam') || c.includes('việt nam') || c.includes('viet nam') || c.includes('vn')) {
+    return `<span class="country-pill pill-vn"><span class="country-flag">🇻🇳</span> Việt Nam</span>`;
+  }
+  if (c.includes('korea') || c.includes('hàn quốc') || c.includes('han quoc') || c.includes('kr')) {
+    return `<span class="country-pill pill-kr"><span class="country-flag">🇰🇷</span> Hàn Quốc</span>`;
+  }
+  if (c.includes('japan') || c.includes('nhật bản') || c.includes('nhat ban') || c.includes('jp')) {
+    return `<span class="country-pill pill-jp"><span class="country-flag">🇯🇵</span> Nhật Bản</span>`;
+  }
+  if (c.includes('usa') || c.includes('mỹ') || c.includes('hoa kỳ') || c.includes('us')) {
+    return `<span class="country-pill pill-us"><span class="country-flag">🇺🇸</span> Hoa Kỳ</span>`;
+  }
+  return `<span class="country-pill pill-default"><span class="country-flag">🌐</span> ${escapeHtml(country)}</span>`;
+}
+
+function formatCustomerTypeBadge(type) {
+  if (!type) return '';
+  const t = String(type).trim().toLowerCase();
+  if (t === 'parentcompany' || t === 'cty mẹ' || t === 'parent') {
+    return `<span class="badge-cust-type badge-parent" title="Công ty Mẹ tập đoàn"><span class="cust-icon">🏢</span> Cty Mẹ</span>`;
+  }
+  if (t === 'foreignbuyer' || t === 'khách ngoại' || t === 'foreign') {
+    return `<span class="badge-cust-type badge-foreign" title="Khách nước ngoài độc lập"><span class="cust-icon">🌐</span> Khách Ngoại</span>`;
+  }
+  if (t === 'domestic' || t === 'nội địa' || t === 'local') {
+    return `<span class="badge-cust-type badge-domestic" title="Doanh nghiệp khách hàng nội địa"><span class="cust-icon">🏬</span> Nội Địa</span>`;
+  }
+  return `<span class="badge-cust-type badge-general">${escapeHtml(type)}</span>`;
+}
+
+function formatCurrencyPairBadge(inCurr, outCurr) {
+  const inC = (inCurr || 'USD').toUpperCase();
+  const outC = (outCurr || 'USD').toUpperCase();
+  return `<span class="currency-pair-tag pair-${inC.toLowerCase()}-${outC.toLowerCase()}">${inC} ➔ ${outC}</span>`;
+}
+
+function renderMarginCell(it) {
+  const inCurr = (it.inputCurrency || 'USD').toUpperCase();
+  const outCurr = (it.currency || 'USD').toUpperCase();
+  const inVal = Number(it.inputUnitPrice || 0);
+  const outVal = Number(it.unitPrice || 0);
+  const rate = Number(it.exchangeRate || 25450);
+
+  if (inCurr === outCurr) {
+    if (inVal <= 0) return `<span class="spread-badge spread-neutral">---</span>`;
+    const diff = outVal - inVal;
+    const pct = (diff / inVal) * 100;
+    const isPos = diff >= 0;
+    const diffStr = inCurr === 'VND' 
+      ? `${Math.round(diff).toLocaleString('vi-VN')} ₫` 
+      : `$${diff.toFixed(2)}`;
+    return `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+        <span class="spread-badge ${isPos ? 'spread-positive' : 'spread-negative'}" title="Chênh lệch: ${diffStr}">
+          ${isPos ? '▲ +' : '▼ '}${pct.toFixed(1)}%
+        </span>
+        <span style="font-size:10.5px; color:#64748b; font-family:monospace;">${diffStr}</span>
+      </div>
+    `;
+  }
+
+  // Cross-currency: VND ➔ USD
+  if (inCurr === 'VND' && outCurr === 'USD') {
+    const costInUSD = rate > 0 ? (inVal / rate) : 0;
+    const diff = outVal - costInUSD;
+    const pct = costInUSD > 0 ? (diff / costInUSD) * 100 : 0;
+    const isPos = diff >= 0;
+    return `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+        <span class="spread-badge ${isPos ? 'spread-positive' : 'spread-negative'}" title="Vốn quy đổi: $${costInUSD.toFixed(3)} | Lãi: $${diff.toFixed(2)}/kg">
+          ${isPos ? '▲ +' : '▼ '}${pct.toFixed(1)}%
+        </span>
+        <span class="rate-subtext" title="Tỷ giá quy đổi tham chiếu: 1 USD = ${rate.toLocaleString('vi-VN')} ₫">
+          TG: ${rate.toLocaleString('vi-VN')}
+        </span>
+      </div>
+    `;
+  }
+
+  // Cross-currency: USD ➔ VND
+  if (inCurr === 'USD' && outCurr === 'VND') {
+    const costInVND = inVal * rate;
+    const diff = outVal - costInVND;
+    const pct = costInVND > 0 ? (diff / costInVND) * 100 : 0;
+    const isPos = diff >= 0;
+    return `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+        <span class="spread-badge ${isPos ? 'spread-positive' : 'spread-negative'}" title="Vốn quy đổi: ${Math.round(costInVND).toLocaleString('vi-VN')} ₫ | Lãi: ${Math.round(diff).toLocaleString('vi-VN')} ₫/kg">
+          ${isPos ? '▲ +' : '▼ '}${pct.toFixed(1)}%
+        </span>
+        <span class="rate-subtext" title="Tỷ giá quy đổi tham chiếu: 1 USD = ${rate.toLocaleString('vi-VN')} ₫">
+          TG: ${rate.toLocaleString('vi-VN')}
+        </span>
+      </div>
+    `;
+  }
+
+  return `<span class="spread-badge spread-neutral">---</span>`;
+}
+
 
 // =============================================================================
 // TRANG 1: GIÁ MUA VÀO (PURCHASE PRICES)
@@ -51,7 +180,7 @@ export async function renderPurchasePrices(container) {
             Bảng Giá Mua Vào & Lịch Sử Giá Nhập Sợi
           </h2>
           <div class="pricing-subtitle">
-            Quản lý giá mua vào theo từng mã sản phẩm/nguyên liệu, theo dõi lịch sử biến động giá qua các thời kỳ và bảo lưu giá trên chứng từ cũ
+            Quản lý giá mua vào theo từng mã nguyên liệu (VD: VL0572), xuất xứ nước nhập, theo dõi lịch sử biến động giá và bảo lưu giá trên chứng từ cũ
           </div>
         </div>
         <div class="pricing-header-actions">
@@ -122,7 +251,7 @@ export async function renderPurchasePrices(container) {
         <div class="pricing-toolbar-right">
           <div class="pricing-search-box">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="purchaseSearchInput" class="pricing-search-input" placeholder="Lọc theo mã SKU, tên hàng hoá...">
+            <input type="text" id="purchaseSearchInput" class="pricing-search-input" placeholder="Lọc theo mã SKU, tên hàng hoá, nước nhập...">
           </div>
         </div>
       </div>
@@ -135,17 +264,18 @@ export async function renderPurchasePrices(container) {
               <tr>
                 <th style="width: 40px; text-align:center;">STT</th>
                 <th style="min-width: 140px;">Mã Sản Phẩm (SKU)</th>
-                <th style="min-width: 250px;">Tên Hàng Hoá Mua Vào</th>
+                <th style="min-width: 240px;">Tên Hàng Hoá Mua Vào</th>
+                <th style="min-width: 130px; text-align:center;">Nước Nhập / Xuất Xứ</th>
                 <th style="min-width: 80px; text-align:center;">Tiền Tệ</th>
                 <th style="min-width: 140px; text-align:right;">Đơn Giá Hiện Hành</th>
-                <th style="min-width: 120px;">Ngày Hiệu Lực</th>
-                <th style="min-width: 220px;">Ghi Chú / Nguồn Nhập</th>
-                <th style="min-width: 110px;">Người Tạo</th>
-                <th style="min-width: 130px; text-align:center;">Thao Tác</th>
+                <th style="min-width: 110px;">Ngày Hiệu Lực</th>
+                <th style="min-width: 200px;">Ghi Chú / Nguồn Nhập</th>
+                <th style="min-width: 100px;">Người Tạo</th>
+                <th style="min-width: 120px; text-align:center;">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="purchaseTbody">
-              <tr><td colspan="9" style="text-align:center; padding: 32px; color: #64748b;">Đang nạp dữ liệu giá mua vào...</td></tr>
+              <tr><td colspan="10" style="text-align:center; padding: 32px; color: #64748b;">Đang nạp dữ liệu giá mua vào...</td></tr>
             </tbody>
           </table>
         </div>
@@ -168,7 +298,7 @@ async function loadPurchasePrices() {
     purchaseFilteredList = [...purchasePricesList];
     updatePurchaseKpi(purchasePricesList);
     renderPurchaseTable(purchaseFilteredList);
-  } catch (err) {
+  } catch {
     showToast('Lỗi khi tải bảng giá mua vào', 'error');
   }
 }
@@ -221,7 +351,7 @@ function renderPurchaseTable(items) {
   if (items.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align:center; padding: 40px; color: #64748b;">
+        <td colspan="10" style="text-align:center; padding: 40px; color: #64748b;">
           <div style="font-size: 28px; margin-bottom: 6px;">🏷️</div>
           <div style="font-weight: 600; color: #334155;">Chưa có dữ liệu giá mua vào</div>
           <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Nhấn nút "Thêm Giá Mua Vào" để bắt đầu thiết lập giá nguyên liệu</div>
@@ -243,6 +373,9 @@ function renderPurchaseTable(items) {
       </td>
       <td>
         <strong style="color:#0f172a;">${escapeHtml(it.productName || '---')}</strong>
+      </td>
+      <td style="text-align:center;">
+        ${formatCountryBadge(it.countryOfOrigin)}
       </td>
       <td style="text-align:center;">
         <span class="status-badge" style="background:#f1f5f9; color:#475569; font-weight:700;">
@@ -298,6 +431,7 @@ function setupPurchaseEvents() {
       purchaseFilteredList = purchasePricesList.filter(it => 
         (it.productSku || '').toLowerCase().includes(q) ||
         (it.productName || '').toLowerCase().includes(q) ||
+        (it.countryOfOrigin || '').toLowerCase().includes(q) ||
         (it.notes || '').toLowerCase().includes(q)
       );
     }
@@ -310,11 +444,12 @@ function exportPurchaseToExcel() {
     showToast('Không có dữ liệu để xuất', 'warning');
     return;
   }
-  const headers = ["STT", "Mã SKU", "Tên Hàng Hoá Mua Vào", "Tiền Tệ", "Đơn Giá Hiện Hành", "Ngày Hiệu Lực", "Ghi Chú", "Người Tạo"];
+  const headers = ["STT", "Mã SKU", "Tên Hàng Hoá Mua Vào", "Nước Xuất Xứ / Nước Nhập", "Tiền Tệ", "Đơn Giá Hiện Hành", "Ngày Hiệu Lực", "Ghi Chú", "Người Tạo"];
   const rows = purchaseFilteredList.map((it, idx) => [
     idx + 1,
     it.productSku || '',
     it.productName || '',
+    it.countryOfOrigin || '',
     it.currency || 'USD',
     it.unitPrice || 0,
     formatDate(it.effectiveDate),
@@ -355,13 +490,13 @@ async function openAddPurchaseModal() {
         <select id="ppAddProductSelect" class="form-select" style="width:100%; font-size:13.5px; padding:8px 10px;">
           <option value="">-- Chọn sản phẩm từ danh mục --</option>
           ${products.map(p => `
-            <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}">
-              [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.unit || 'kg'})
+            <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-country="${escapeHtml(p.countryOfOrigin || '')}">
+              [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.countryOfOrigin ? escapeHtml(p.countryOfOrigin) : 'Chưa rõ nước nhập'})
             </option>
           `).join('')}
         </select>
-        <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
-          * Ví dụ: Mã nguyên liệu thô <strong>VL0572</strong> nhập khẩu
+        <div id="ppAddProductPreview" style="margin-top:6px; font-size:12px; color:#475569; display:none;">
+          <span style="font-weight:600;">Nước xuất xứ / nước nhập:</span> <span id="ppAddProductCountryBadge"></span>
         </div>
       </div>
 
@@ -410,6 +545,21 @@ async function openAddPurchaseModal() {
 
   openModal('Thêm Giá Mua Vào Mới', content);
 
+  const sel = document.getElementById('ppAddProductSelect');
+  const previewDiv = document.getElementById('ppAddProductPreview');
+  const countryBadge = document.getElementById('ppAddProductCountryBadge');
+
+  sel?.addEventListener('change', () => {
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.value) {
+      const country = opt.getAttribute('data-country');
+      countryBadge.innerHTML = formatCountryBadge(country);
+      previewDiv.style.display = 'block';
+    } else {
+      previewDiv.style.display = 'none';
+    }
+  });
+
   document.getElementById('btnConfirmAddPurchase')?.addEventListener('click', async () => {
     const productId = document.getElementById('ppAddProductSelect').value;
     const currency = document.getElementById('ppAddCurrency').value;
@@ -437,13 +587,13 @@ async function openAddPurchaseModal() {
       showToast('Đã tạo giá mua vào thành công!', 'success');
       closeModal();
       await loadPurchasePrices();
-    } catch (err) {
+    } catch {
       showToast('Lỗi khi tạo giá mua vào', 'error');
     }
   });
 }
 
-// Modal Cập Nhật Giá Mua Vào (Giá mới thay thế giá hiện hành, lưu giá cũ vào lịch sử)
+// Modal Cập Nhật Giá Mua Vào
 window.xnkOpenUpdatePurchaseModal = async function(id) {
   let item = null;
   try {
@@ -458,9 +608,10 @@ window.xnkOpenUpdatePurchaseModal = async function(id) {
     <div style="padding: 10px 0;">
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:16px;">
         <div style="font-size:12px; color:#64748b; margin-bottom:4px;">SẢN PHẨM NGUYÊN LIỆU:</div>
-        <div style="font-size:14px; font-weight:700; color:#0f172a;">
-          <span class="sku-badge" style="margin-right:6px;">📦 ${escapeHtml(item.productSku)}</span>
+        <div style="font-size:14px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span class="sku-badge">📦 ${escapeHtml(item.productSku)}</span>
           ${escapeHtml(item.productName)}
+          ${formatCountryBadge(item.countryOfOrigin)}
         </div>
         <div style="margin-top:8px; font-size:13px; color:#475569;">
           Giá hiện tại đang áp dụng: <strong style="color:#059669; font-size:15px; font-family:monospace;">${item.currency === 'VND' ? `${Number(item.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(item.unitPrice).toFixed(2)}`}</strong>
@@ -529,7 +680,7 @@ window.xnkOpenUpdatePurchaseModal = async function(id) {
         productId: item.productId,
         currency,
         unitPrice,
-        notes: notes.trim() || `Điều chỉnh từ ${item.unitPrice} lên ${unitPrice}`,
+        notes: notes.trim() || `Điều chỉnh từ ${item.unitPrice} sang ${unitPrice}`,
         effectiveDate: effectiveDate ? new Date(effectiveDate).toISOString() : new Date().toISOString()
       });
       showToast('Đã lưu mức giá mới và bảo lưu giá cũ vào lịch sử!', 'success');
@@ -541,7 +692,7 @@ window.xnkOpenUpdatePurchaseModal = async function(id) {
   });
 };
 
-// Modal Xem Toàn Bộ Lịch Sử Biến Động Giá
+// Modal Xem Toàn Bộ Lịch Sử Biến Động Giá Mua Vào
 window.xnkOpenPurchaseHistoryModal = async function(id) {
   let item = null;
   try {
@@ -560,9 +711,10 @@ window.xnkOpenPurchaseHistoryModal = async function(id) {
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
           <div>
             <div style="font-size:12px; color:#64748b;">MÃ SẢN PHẨM:</div>
-            <div style="font-size:15px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:6px;">
+            <div style="font-size:15px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:8px;">
               <span class="sku-badge">📦 ${escapeHtml(item.productSku)}</span>
               ${escapeHtml(item.productName)}
+              ${formatCountryBadge(item.countryOfOrigin)}
             </div>
           </div>
           <div style="text-align:right;">
@@ -574,7 +726,7 @@ window.xnkOpenPurchaseHistoryModal = async function(id) {
 
       <div style="max-height: 420px; overflow-y: auto; padding-right: 6px;">
         <div class="price-history-timeline">
-          ${history.map((h, idx) => {
+          ${history.map((h) => {
             const isActive = h.isActive;
             const priceFormatted = h.currency === 'VND' 
               ? `${Number(h.unitPrice).toLocaleString('vi-VN')} ₫ / kg`
@@ -640,6 +792,8 @@ window.xnkDeletePurchasePrice = async function(id) {
 
 let salePricesList = [];
 let saleFilteredList = [];
+let activeFlowFilter = 'ALL';
+let activeCustTypeFilter = 'ALL';
 
 export async function renderSalePrices(container) {
   container.innerHTML = `
@@ -652,7 +806,7 @@ export async function renderSalePrices(container) {
             Bảng Giá Bán Ra & Ánh Xạ Mã Xuất Khẩu
           </h2>
           <div class="pricing-subtitle">
-            Quản lý mối liên kết chuyển đổi mã (VD: Mua vào mã VL0572 → Bán ra / Xuất khẩu mã VN905), theo dõi biên độ giá và lịch sử xuất hàng
+            Quản lý mối liên kết chuyển đổi mã (VD: Mua vào VL0572 ➔ Bán ra VN905), phân loại khách hàng (Cty Mẹ / Khách Ngoại / Nội Địa), hỗ trợ 4 luồng tiền tệ và bảo lưu giá tờ khai
           </div>
         </div>
         <div class="pricing-header-actions">
@@ -710,20 +864,31 @@ export async function renderSalePrices(container) {
         </div>
       </div>
 
-      <!-- Toolbar Card -->
+      <!-- Toolbar Card with Currency Flow Tabs & Customer Filter -->
       <div class="pricing-toolbar-card">
         <div class="pricing-toolbar-left">
-          <span style="font-size:12.5px; font-weight:600; color:#475569;">
-            Bảng tham chiếu chi tiết: Sản phẩm Mua Vào ➔ Sản phẩm Bán Ra / Xuất Khẩu
-          </span>
-          <span style="font-size:11px; background:#f5f3ff; color:#7c3aed; padding:2px 8px; border-radius:12px; font-weight:600;">
-            Tờ khai xuất khẩu cũ hoàn thành giữ nguyên giá bán lịch sử
-          </span>
+          <!-- Currency Flow Filter Tabs -->
+          <div class="flow-tab-group" id="flowTabs">
+            <button class="flow-tab-btn active" data-flow="ALL">Tất cả luồng tiền</button>
+            <button class="flow-tab-btn" data-flow="VND_USD">VND ➔ USD</button>
+            <button class="flow-tab-btn" data-flow="USD_USD">USD ➔ USD</button>
+            <button class="flow-tab-btn" data-flow="USD_VND">USD ➔ VND</button>
+            <button class="flow-tab-btn" data-flow="VND_VND">VND ➔ VND</button>
+          </div>
+
+          <!-- Customer Type Filter -->
+          <select id="custTypeFilter" class="form-select" style="height:32px; font-size:12px; padding:2px 8px; border-radius:4px;">
+            <option value="ALL">Tất cả đối tượng khách</option>
+            <option value="ParentCompany">🏢 Công ty Mẹ</option>
+            <option value="ForeignBuyer">🌐 Khách Nước Ngoài</option>
+            <option value="Domestic">🏬 Khách Nội Địa</option>
+          </select>
         </div>
+
         <div class="pricing-toolbar-right">
           <div class="pricing-search-box">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="saleSearchInput" class="pricing-search-input" placeholder="Lọc theo mã mua vào, mã bán ra (VN905)...">
+            <input type="text" id="saleSearchInput" class="pricing-search-input" placeholder="Lọc theo mã mua vào, mã bán ra (VN905), khách hàng, thị trường...">
           </div>
         </div>
       </div>
@@ -736,25 +901,26 @@ export async function renderSalePrices(container) {
               <tr>
                 <th style="width: 35px; text-align:center;">STT</th>
                 <th style="min-width: 170px;">SP Mua Vào (Nguyên Liệu)</th>
-                <th style="min-width: 130px; text-align:right;">Giá Mua Tham Chiếu</th>
-                <th style="width: 40px; text-align:center;"></th>
-                <th style="min-width: 140px;">Mã Xuất Khẩu (Đầu Ra)</th>
-                <th style="min-width: 220px;">Tên Hàng Hoá Bán Ra / Xuất Khẩu</th>
-                <th style="min-width: 130px; text-align:right;">Giá Bán Hiện Hành</th>
-                <th style="min-width: 110px; text-align:center;">Biên Độ</th>
-                <th style="min-width: 110px;">Ngày Hiệu Lực</th>
-                <th style="min-width: 160px;">Ghi Chú Thị Trường</th>
-                <th style="min-width: 120px; text-align:center;">Thao Tác</th>
+                <th style="min-width: 120px; text-align:right;">Giá Mua Nguồn</th>
+                <th style="width: 30px; text-align:center;"></th>
+                <th style="min-width: 110px;">Mã Bán (Output)</th>
+                <th style="min-width: 180px;">Tên Hàng Hoá Bán Ra</th>
+                <th style="min-width: 180px;">Khách Hàng & Phân Loại</th>
+                <th style="min-width: 120px; text-align:center;">Thị Trường / Nước Đến</th>
+                <th style="min-width: 120px; text-align:right;">Giá Bán Hiện Hành</th>
+                <th style="min-width: 110px; text-align:center;">Biên Độ & Tỷ Giá</th>
+                <th style="min-width: 95px;">Ngày Hiệu Lực</th>
+                <th style="min-width: 110px; text-align:center;">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="saleTbody">
-              <tr><td colspan="11" style="text-align:center; padding: 32px; color: #64748b;">Đang nạp dữ liệu giá bán ra...</td></tr>
+              <tr><td colspan="12" style="text-align:center; padding: 32px; color: #64748b;">Đang nạp dữ liệu giá bán ra...</td></tr>
             </tbody>
           </table>
         </div>
         <div class="shipments-pagination-bar">
           <div id="salePaginationText">Tổng số: 0 bản ghi</div>
-          <div style="font-size: 12px; color: #64748b;">Bấm vào 📜 để xem lịch sử điều chỉnh giá bán ra của từng mã xuất khẩu</div>
+          <div style="font-size: 12px; color: #64748b;">Bảo lưu giá snapshot trên tờ khai xuất khẩu và lô hàng đã hoàn thành</div>
         </div>
       </div>
     </div>
@@ -768,12 +934,51 @@ async function loadSalePrices() {
   try {
     const res = await api.get('/api/sale-prices');
     salePricesList = res.data || [];
-    saleFilteredList = [...salePricesList];
-    updateSaleKpi(salePricesList);
-    renderSaleTable(saleFilteredList);
-  } catch (err) {
+    applySaleFilters();
+  } catch {
     showToast('Lỗi khi tải bảng giá bán ra', 'error');
   }
+}
+
+function applySaleFilters() {
+  const q = (document.getElementById('saleSearchInput')?.value || '').toLowerCase().trim();
+
+  saleFilteredList = salePricesList.filter(it => {
+    // 1. Flow Filter
+    if (activeFlowFilter !== 'ALL') {
+      const inCurr = (it.inputCurrency || 'USD').toUpperCase();
+      const outCurr = (it.currency || 'USD').toUpperCase();
+      const pair = `${inCurr}_${outCurr}`;
+      if (pair !== activeFlowFilter) return false;
+    }
+
+    // 2. Customer Type Filter
+    if (activeCustTypeFilter !== 'ALL') {
+      const cType = (it.customerType || '').toLowerCase();
+      if (cType !== activeCustTypeFilter.toLowerCase()) return false;
+    }
+
+    // 3. Keyword Search
+    if (q) {
+      const textToSearch = [
+        it.inputProductSku,
+        it.inputProductName,
+        it.inputCountryOfOrigin,
+        it.outputSku,
+        it.outputProductName,
+        it.customerName,
+        it.destinationCountry,
+        it.notes
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      if (!textToSearch.includes(q)) return false;
+    }
+
+    return true;
+  });
+
+  updateSaleKpi(saleFilteredList);
+  renderSaleTable(saleFilteredList);
 }
 
 function updateSaleKpi(items) {
@@ -787,6 +992,7 @@ function updateSaleKpi(items) {
     const pVal = Number(it.inputUnitPrice || 0);
     const curr = (it.currency || 'USD').toUpperCase();
     const inCurr = (it.inputCurrency || 'USD').toUpperCase();
+    const rate = Number(it.exchangeRate || 25450);
 
     if (curr === 'VND') {
       vndSum += sVal;
@@ -796,10 +1002,22 @@ function updateSaleKpi(items) {
       usdCount++;
     }
 
+    // Calculate margin based on currency
     if (curr === inCurr && pVal > 0) {
-      const marginPct = ((sVal - pVal) / pVal) * 100;
-      marginTotal += marginPct;
+      marginTotal += ((sVal - pVal) / pVal) * 100;
       marginCount++;
+    } else if (inCurr === 'VND' && curr === 'USD' && rate > 0) {
+      const costUSD = pVal / rate;
+      if (costUSD > 0) {
+        marginTotal += ((sVal - costUSD) / costUSD) * 100;
+        marginCount++;
+      }
+    } else if (inCurr === 'USD' && curr === 'VND' && rate > 0) {
+      const costVND = pVal * rate;
+      if (costVND > 0) {
+        marginTotal += ((sVal - costVND) / costVND) * 100;
+        marginCount++;
+      }
     }
   });
 
@@ -830,10 +1048,10 @@ function renderSaleTable(items) {
   if (items.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" style="text-align:center; padding: 40px; color: #64748b;">
+        <td colspan="12" style="text-align:center; padding: 40px; color: #64748b;">
           <div style="font-size: 28px; margin-bottom: 6px;">🏷️</div>
-          <div style="font-weight: 600; color: #334155;">Chưa có dữ liệu giá bán ra / xuất khẩu</div>
-          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Nhấn nút "Thiết Lập Giá Bán Ra Mới" để ánh xạ từ mã nguyên liệu sang mã xuất khẩu</div>
+          <div style="font-weight: 600; color: #334155;">Chưa có dữ liệu giá bán ra / xuất khẩu phù hợp</div>
+          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Nhấn nút "Thiết Lập Giá Bán Ra Mới" hoặc chọn bộ lọc khác</div>
         </td>
       </tr>
     `;
@@ -842,36 +1060,21 @@ function renderSaleTable(items) {
   }
 
   tbody.innerHTML = items.map((it, idx) => {
-    const sVal = Number(it.unitPrice || 0);
-    const pVal = Number(it.inputUnitPrice || 0);
-    const curr = (it.currency || 'USD').toUpperCase();
-    const inCurr = (it.inputCurrency || 'USD').toUpperCase();
-
-    let marginHtml = `<span class="spread-badge spread-neutral">---</span>`;
-    if (curr === inCurr && pVal > 0) {
-      const diff = sVal - pVal;
-      const pct = (diff / pVal) * 100;
-      const isPos = diff >= 0;
-      const diffFormatted = curr === 'VND' ? `${Math.round(diff).toLocaleString('vi-VN')} ₫` : `$${diff.toFixed(2)}`;
-      marginHtml = `
-        <span class="spread-badge ${isPos ? 'spread-positive' : 'spread-neutral'}" title="Chênh lệch: ${diffFormatted}">
-          ${isPos ? '▲' : '▼'} ${isPos ? '+' : ''}${pct.toFixed(1)}%
-        </span>
-      `;
-    }
-
     return `
       <tr class="shipment-main-row">
         <td style="text-align:center; color:#94a3b8;">${idx + 1}</td>
         <td>
           <div style="display:flex; flex-direction:column; gap:2px;">
-            <span class="sku-badge" style="width:fit-content;">📦 ${escapeHtml(it.inputProductSku || '---')}</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="sku-badge">📦 ${escapeHtml(it.inputProductSku || '---')}</span>
+              ${formatCountryBadge(it.inputCountryOfOrigin)}
+            </div>
             <span style="font-size:12px; color:#475569; font-weight:500;">${escapeHtml(it.inputProductName || '---')}</span>
           </div>
         </td>
         <td style="text-align:right;">
           ${formatMoney(it.inputUnitPrice, it.inputCurrency)}
-          <span style="font-size:11px; color:#94a3b8; margin-left:3px;">/ kg</span>
+          <span style="font-size:11px; color:#94a3b8; margin-left:2px;">/ kg</span>
         </td>
         <td style="text-align:center;">
           <span class="mapping-arrow">➔</span>
@@ -885,21 +1088,28 @@ function renderSaleTable(items) {
         <td>
           <strong style="color:#0f172a; font-size:13px;">${escapeHtml(it.outputProductName || it.outputSku || '---')}</strong>
         </td>
-        <td style="text-align:right;">
-          ${formatMoney(it.unitPrice, it.currency)}
-          <span style="font-size:11px; color:#94a3b8; margin-left:3px;">/ kg</span>
+        <td>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-weight:600; color:#1e293b; font-size:12.5px;">${escapeHtml(it.customerName || '---')}</span>
+            <div style="display:flex; align-items:center; gap:4px;">
+              ${formatCustomerTypeBadge(it.customerType)}
+              ${formatCurrencyPairBadge(it.inputCurrency, it.currency)}
+            </div>
+          </div>
         </td>
         <td style="text-align:center;">
-          ${marginHtml}
+          ${formatCountryBadge(it.destinationCountry)}
+        </td>
+        <td style="text-align:right;">
+          ${formatMoney(it.unitPrice, it.currency)}
+          <span style="font-size:11px; color:#94a3b8; margin-left:2px;">/ kg</span>
+        </td>
+        <td style="text-align:center;">
+          ${renderMarginCell(it)}
         </td>
         <td>
           <span style="font-family:monospace; color:#475569; font-size:12px;">
             📅 ${formatDate(it.effectiveDate)}
-          </span>
-        </td>
-        <td>
-          <span style="font-size:12px; color:#475569;" title="${escapeHtml(it.notes || '')}">
-            ${escapeHtml(it.notes || '---')}
           </span>
         </td>
         <td style="text-align:center;">
@@ -927,20 +1137,25 @@ function setupSaleEvents() {
   document.getElementById('btnSalePriceAdd')?.addEventListener('click', () => openAddSaleModal());
   document.getElementById('btnSaleExportExcel')?.addEventListener('click', () => exportSaleToExcel());
 
-  document.getElementById('saleSearchInput')?.addEventListener('input', (e) => {
-    const q = (e.target.value || '').toLowerCase().trim();
-    if (!q) {
-      saleFilteredList = [...salePricesList];
-    } else {
-      saleFilteredList = salePricesList.filter(it => 
-        (it.inputProductSku || '').toLowerCase().includes(q) ||
-        (it.inputProductName || '').toLowerCase().includes(q) ||
-        (it.outputSku || '').toLowerCase().includes(q) ||
-        (it.outputProductName || '').toLowerCase().includes(q) ||
-        (it.notes || '').toLowerCase().includes(q)
-      );
-    }
-    renderSaleTable(saleFilteredList);
+  // Currency Flow filter tabs
+  document.querySelectorAll('#flowTabs .flow-tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('#flowTabs .flow-tab-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      activeFlowFilter = e.target.getAttribute('data-flow');
+      applySaleFilters();
+    });
+  });
+
+  // Customer Type filter
+  document.getElementById('custTypeFilter')?.addEventListener('change', (e) => {
+    activeCustTypeFilter = e.target.value;
+    applySaleFilters();
+  });
+
+  // Search input
+  document.getElementById('saleSearchInput')?.addEventListener('input', () => {
+    applySaleFilters();
   });
 }
 
@@ -949,17 +1164,39 @@ function exportSaleToExcel() {
     showToast('Không có dữ liệu để xuất', 'warning');
     return;
   }
-  const headers = ["STT", "Mã SP Mua Vào", "Tên SP Mua Vào", "Giá Mua Vào", "Tiền Tệ Mua", "Mã Xuất Khẩu (Output)", "Tên Hàng Bán Ra", "Giá Bán Ra", "Tiền Tệ Bán", "Ngày Hiệu Lực", "Ghi Chú"];
+  const headers = [
+    "STT", 
+    "Mã SP Mua Vào", 
+    "Tên SP Mua Vào", 
+    "Nước Nhập Khẩu", 
+    "Giá Mua Nguồn", 
+    "Tiền Tệ Mua", 
+    "Mã Xuất Khẩu (Output)", 
+    "Tên Hàng Bán Ra", 
+    "Khách Hàng", 
+    "Phân Loại Khách", 
+    "Thị Trường Đến", 
+    "Giá Bán Ra", 
+    "Tiền Tệ Bán", 
+    "Tỷ Giá Tham Chiếu", 
+    "Ngày Hiệu Lực", 
+    "Ghi Chú"
+  ];
   const rows = saleFilteredList.map((it, idx) => [
     idx + 1,
     it.inputProductSku || '',
     it.inputProductName || '',
+    it.inputCountryOfOrigin || '',
     it.inputUnitPrice || 0,
     it.inputCurrency || 'USD',
     it.outputSku || '',
     it.outputProductName || '',
+    it.customerName || '',
+    it.customerType || '',
+    it.destinationCountry || '',
     it.unitPrice || 0,
     it.currency || 'USD',
+    it.exchangeRate || '',
     formatDate(it.effectiveDate),
     it.notes || ''
   ]);
@@ -983,9 +1220,14 @@ function exportSaleToExcel() {
 // Modal Thêm Thiết Lập Giá Bán Ra Mới
 async function openAddSaleModal() {
   let purchases = [];
+  let customers = [];
   try {
-    const res = await api.get('/api/purchase-prices');
-    purchases = res.data || [];
+    const [pRes, cRes] = await Promise.all([
+      api.get('/api/purchase-prices'),
+      api.get('/api/customers?pageSize=100')
+    ]);
+    purchases = pRes.data || [];
+    customers = cRes.data?.items || [];
   } catch { }
 
   if (purchases.length === 0) {
@@ -995,6 +1237,7 @@ async function openAddSaleModal() {
 
   const content = `
     <div style="padding: 10px 0;">
+      <!-- Step 1: Chọn SP mua vào -->
       <div style="margin-bottom: 14px;">
         <label class="form-label required" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
           1. Chọn Sản Phẩm Mua Vào Làm Nguồn Tham Chiếu
@@ -1002,16 +1245,17 @@ async function openAddSaleModal() {
         <select id="spAddPurchaseSelect" class="form-select" style="width:100%; font-size:13.5px; padding:8px 10px;">
           <option value="">-- Chọn sản phẩm mua vào đã có giá --</option>
           ${purchases.map(p => `
-            <option value="${p.id}" data-curr="${p.currency}" data-price="${p.unitPrice}" data-sku="${escapeHtml(p.productSku)}">
-              [${escapeHtml(p.productSku)}] ${escapeHtml(p.productName)} — Giá mua: ${p.currency === 'VND' ? `${Number(p.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(p.unitPrice).toFixed(2)}`}
+            <option value="${p.id}" data-curr="${p.currency}" data-price="${p.unitPrice}" data-sku="${escapeHtml(p.productSku)}" data-country="${escapeHtml(p.countryOfOrigin || '')}">
+              [${escapeHtml(p.productSku)}] ${escapeHtml(p.productName)} — ${p.countryOfOrigin ? `(Xuất xứ: ${p.countryOfOrigin})` : ''} — Giá mua: ${p.currency === 'VND' ? `${Number(p.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(p.unitPrice).toFixed(2)}`}
             </option>
           `).join('')}
         </select>
-        <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
-          * Ví dụ: Chọn mã nguyên liệu <strong>VL0572</strong> nhập về với giá 4$ hoặc 5$
+        <div id="spAddInputInfo" style="margin-top:6px; font-size:12px; color:#475569; display:none; background:#f8fafc; padding:6px 10px; border-radius:4px; border:1px solid #e2e8f0;">
+          <span id="spAddInputBadge"></span>
         </div>
       </div>
 
+      <!-- Step 2: Thông tin mã xuất khẩu -->
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 14px;">
         <div>
           <label class="form-label required" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
@@ -1026,11 +1270,52 @@ async function openAddSaleModal() {
           <label class="form-label required" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
             Tên Hàng Hoá Bán Ra / Xuất Khẩu
           </label>
-          <input type="text" id="spAddOutputName" class="form-input" placeholder="VD: Sợi Dệt Xuất Khẩu VN-905" style="width:100%; font-size:13.5px; padding:8px 10px;">
+          <input type="text" id="spAddOutputName" class="form-input" placeholder="VD: Sợi Polyester DTY 75D/36F Đã Gia Công" style="width:100%; font-size:13.5px; padding:8px 10px;">
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 14px;">
+      <!-- Step 3: Khách Hàng & Phân Loại -->
+      <div style="background:#fdf2f8; border:1px solid #fbcfe8; border-radius:6px; padding:10px 12px; margin-bottom:14px;">
+        <div style="font-size:12.5px; font-weight:700; color:#9d174d; margin-bottom:8px;">
+          3. Khách Hàng, Đối Tượng & Thị Trường Xuất Bán
+        </div>
+        <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:10px;">
+          <div>
+            <label class="form-label required" style="font-size:12px; font-weight:600; margin-bottom:4px; display:block;">
+              Tên Khách Hàng
+            </label>
+            <input type="text" id="spAddCustomerName" list="customerSuggestions" class="form-input" placeholder="Chọn hoặc gõ tên khách..." style="width:100%; font-size:12.5px; padding:6px 10px;">
+            <datalist id="customerSuggestions">
+              <option value="TONGKUN GLOBAL CO., LTD">Công ty Mẹ - Tongkun Global</option>
+              <option value="FORMOSA TAFFETA CO., LTD">Formosa Taffeta Co., Ltd</option>
+              <option value="FAR EASTERN NEW CENTURY">Far Eastern New Century</option>
+              ${customers.map(c => `<option value="${escapeHtml(c.companyName)}">${escapeHtml(c.country || '')}</option>`).join('')}
+            </datalist>
+          </div>
+          <div>
+            <label class="form-label required" style="font-size:12px; font-weight:600; margin-bottom:4px; display:block;">
+              Phân Loại Đối Tượng
+            </label>
+            <select id="spAddCustomerType" class="form-select" style="width:100%; font-size:12.5px; padding:6px 8px;">
+              <option value="ParentCompany">🏢 Công ty Mẹ (Tongkun Global)</option>
+              <option value="ForeignBuyer" selected>🌐 Khách Nước Ngoài Độc Lập</option>
+              <option value="Domestic">🏬 Khách Hàng Nội Địa VN</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:12px; font-weight:600; margin-bottom:4px; display:block;">
+              Thị Trường / Nước Đến
+            </label>
+            <input type="text" id="spAddDestCountry" class="form-input" placeholder="VD: Trung Quốc, Đài Loan..." value="Đài Loan" style="width:100%; font-size:12.5px; padding:6px 10px;">
+          </div>
+        </div>
+        <div style="font-size:11px; color:#be185d; margin-top:5px;">
+          * Giá bán cho công ty mẹ và khách mua độc lập sẽ có chính sách đơn giá khác nhau.
+        </div>
+      </div>
+
+      <!-- Step 4: Tiền Tệ & Đơn Giá & Tỷ Giá Quy Đổi -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 12px;">
         <div>
           <label class="form-label required" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
             Đơn Vị Tiền Tệ Bán Ra
@@ -1048,6 +1333,28 @@ async function openAddSaleModal() {
         </div>
       </div>
 
+      <!-- Cross-currency Exchange Rate Box -->
+      <div id="spAddRateRow" style="display:none; margin-bottom:14px;">
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;">
+            <label class="form-label required" style="font-weight:600; font-size:12.5px; margin:0; color:#1e40af;">
+              Tỷ Giá Hải Quan / Quy Đổi Tham Chiếu (1 USD = ? VNĐ)
+            </label>
+            <input type="number" id="spAddExchangeRate" step="1" min="1" class="form-input" value="25450" style="width:130px; font-size:13px; padding:4px 8px; font-weight:700; text-align:right;">
+          </div>
+          <div class="rate-preview-box" id="spAddRatePreview">
+            <div class="rate-preview-row">
+              <span style="color:#64748b;">Giá vốn mua vào quy đổi:</span>
+              <strong id="spAddConvertedCost" style="font-family:monospace;">---</strong>
+            </div>
+            <div class="rate-preview-row">
+              <span style="color:#64748b;">Biên độ chênh lệch dự kiến:</span>
+              <strong id="spAddMarginPreview" style="font-family:monospace;">---</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style="margin-bottom: 14px;">
         <label class="form-label" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
           Ngày Bắt Đầu Áp Dụng / Hiệu Lực
@@ -1057,13 +1364,13 @@ async function openAddSaleModal() {
 
       <div style="margin-bottom: 14px;">
         <label class="form-label" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
-          Ghi Chú Thị Trường / Khách Hàng Xuất Khẩu
+          Ghi Chú Hợp Đồng / Điều Kiện Bán
         </label>
-        <textarea id="spAddNotes" class="form-input" rows="2" placeholder="VD: Xuất khẩu thị trường Nhật Bản / Hàn Quốc (Hợp đồng FOB)..." style="width:100%; font-size:13px; padding:8px 10px;"></textarea>
+        <textarea id="spAddNotes" class="form-input" rows="2" placeholder="VD: Hợp đồng FOB xuất khẩu, điều khoản thanh toán LC..." style="width:100%; font-size:13px; padding:8px 10px;"></textarea>
       </div>
 
       <div style="background:#f5f3ff; border:1px solid #ddd6fe; border-radius:6px; padding:10px 12px; font-size:12px; color:#5b21b6; line-height:1.4;">
-        ℹ️ <strong>Quy tắc ánh xạ:</strong> Hệ thống lưu cặp chuyển đổi mã và giá bán hiện hành. Các đơn hàng/tờ khai xuất khẩu trong quá khứ đã chốt giá không bị thay đổi.
+        ℹ️ <strong>Quy tắc ánh xạ:</strong> Mức giá này sẽ được áp dụng cho các lô hàng / tờ khai xuất khẩu mới. Các tờ khai xuất khẩu trong quá khứ đã chốt giữ nguyên giá lịch sử.
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px; border-top:1px solid #e2e8f0; padding-top:12px;">
@@ -1075,12 +1382,81 @@ async function openAddSaleModal() {
 
   openModal('Thiết Lập Giá Bán Ra & Ánh Xạ Xuất Khẩu', content);
 
+  const purchaseSel = document.getElementById('spAddPurchaseSelect');
+  const inputInfo = document.getElementById('spAddInputInfo');
+  const inputBadge = document.getElementById('spAddInputBadge');
+  const currencySel = document.getElementById('spAddCurrency');
+  const unitPriceInp = document.getElementById('spAddUnitPrice');
+  const rateRow = document.getElementById('spAddRateRow');
+  const exchangeRateInp = document.getElementById('spAddExchangeRate');
+  const convertedCostEl = document.getElementById('spAddConvertedCost');
+  const marginPreviewEl = document.getElementById('spAddMarginPreview');
+
+  function updateRateVisibilityAndCalculation() {
+    const opt = purchaseSel.options[purchaseSel.selectedIndex];
+    if (!opt || !opt.value) {
+      inputInfo.style.display = 'none';
+      rateRow.style.display = 'none';
+      return;
+    }
+
+    const inCurr = opt.getAttribute('data-curr') || 'USD';
+    const inPrice = parseFloat(opt.getAttribute('data-price') || '0');
+    const inCountry = opt.getAttribute('data-country') || '';
+    const inSku = opt.getAttribute('data-sku') || '';
+
+    inputInfo.style.display = 'block';
+    inputBadge.innerHTML = `Đã chọn: <strong>[${escapeHtml(inSku)}]</strong> • Nước nhập: ${formatCountryBadge(inCountry)} • Giá vốn gốc: <strong>${inCurr === 'VND' ? `${inPrice.toLocaleString('vi-VN')} ₫` : `$${inPrice.toFixed(2)}`}</strong>`;
+
+    const outCurr = currencySel.value;
+    const isCross = inCurr !== outCurr;
+
+    if (isCross) {
+      rateRow.style.display = 'block';
+      const rate = parseFloat(exchangeRateInp.value) || 25450;
+      const sVal = parseFloat(unitPriceInp.value) || 0;
+
+      if (inCurr === 'VND' && outCurr === 'USD') {
+        const costUSD = rate > 0 ? (inPrice / rate) : 0;
+        convertedCostEl.textContent = `$${costUSD.toFixed(3)} / kg`;
+        if (sVal > 0 && costUSD > 0) {
+          const diff = sVal - costUSD;
+          const pct = (diff / costUSD) * 100;
+          marginPreviewEl.innerHTML = `<span style="color:${diff >= 0 ? '#059669' : '#dc2626'};">${diff >= 0 ? '▲ +' : '▼ '}${pct.toFixed(1)}% (Lãi: $${diff.toFixed(2)}/kg)</span>`;
+        } else {
+          marginPreviewEl.textContent = '---';
+        }
+      } else if (inCurr === 'USD' && outCurr === 'VND') {
+        const costVND = inPrice * rate;
+        convertedCostEl.textContent = `${Math.round(costVND).toLocaleString('vi-VN')} ₫ / kg`;
+        if (sVal > 0 && costVND > 0) {
+          const diff = sVal - costVND;
+          const pct = (diff / costVND) * 100;
+          marginPreviewEl.innerHTML = `<span style="color:${diff >= 0 ? '#059669' : '#dc2626'};">${diff >= 0 ? '▲ +' : '▼ '}${pct.toFixed(1)}% (Lãi: ${Math.round(diff).toLocaleString('vi-VN')} ₫/kg)</span>`;
+        } else {
+          marginPreviewEl.textContent = '---';
+        }
+      }
+    } else {
+      rateRow.style.display = 'none';
+    }
+  }
+
+  purchaseSel?.addEventListener('change', updateRateVisibilityAndCalculation);
+  currencySel?.addEventListener('change', updateRateVisibilityAndCalculation);
+  unitPriceInp?.addEventListener('input', updateRateVisibilityAndCalculation);
+  exchangeRateInp?.addEventListener('input', updateRateVisibilityAndCalculation);
+
   document.getElementById('btnConfirmAddSale')?.addEventListener('click', async () => {
-    const purchasePriceId = document.getElementById('spAddPurchaseSelect').value;
+    const purchasePriceId = purchaseSel.value;
     const outputSku = document.getElementById('spAddOutputSku').value.trim();
     const outputProductName = document.getElementById('spAddOutputName').value.trim();
-    const currency = document.getElementById('spAddCurrency').value;
-    const unitPrice = parseFloat(document.getElementById('spAddUnitPrice').value);
+    const customerName = document.getElementById('spAddCustomerName').value.trim();
+    const customerType = document.getElementById('spAddCustomerType').value;
+    const destinationCountry = document.getElementById('spAddDestCountry').value.trim();
+    const currency = currencySel.value;
+    const unitPrice = parseFloat(unitPriceInp.value);
+    const exchangeRate = rateRow.style.display !== 'none' ? parseFloat(exchangeRateInp.value) : null;
     const effectiveDate = document.getElementById('spAddEffectiveDate').value;
     const notes = document.getElementById('spAddNotes').value;
 
@@ -1090,6 +1466,10 @@ async function openAddSaleModal() {
     }
     if (!outputSku) {
       showToast('Vui lòng nhập mã bán ra / xuất khẩu (VD: VN905)', 'warning');
+      return;
+    }
+    if (!customerName) {
+      showToast('Vui lòng nhập tên khách hàng', 'warning');
       return;
     }
     if (isNaN(unitPrice) || unitPrice < 0) {
@@ -1102,8 +1482,12 @@ async function openAddSaleModal() {
         purchasePriceId,
         outputSku: outputSku.toUpperCase(),
         outputProductName: outputProductName || null,
+        customerName: customerName || null,
+        customerType: customerType || null,
+        destinationCountry: destinationCountry || null,
         currency,
         unitPrice,
+        exchangeRate,
         notes: notes.trim() || null,
         effectiveDate: effectiveDate ? new Date(effectiveDate).toISOString() : new Date().toISOString()
       });
@@ -1127,20 +1511,29 @@ window.xnkOpenUpdateSaleModal = async function(id) {
     return;
   }
 
+  const isCross = (item.inputCurrency || 'USD') !== (item.currency || 'USD');
+
   const content = `
     <div style="padding: 10px 0;">
+      <!-- Header mapping card -->
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:16px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
           <span class="sku-badge">📦 Mua vào: ${escapeHtml(item.inputProductSku)}</span>
+          ${formatCountryBadge(item.inputCountryOfOrigin)}
           <span class="mapping-arrow">➔</span>
           <span class="sku-output-badge">🏷️ Xuất khẩu: ${escapeHtml(item.outputSku)}</span>
         </div>
         <div style="font-size:13.5px; font-weight:700; color:#0f172a;">
           ${escapeHtml(item.outputProductName || item.outputSku)}
         </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
+          <span style="font-size:12px; color:#475569;">Khách hàng: <strong>${escapeHtml(item.customerName || '---')}</strong></span>
+          ${formatCustomerTypeBadge(item.customerType)}
+          ${item.destinationCountry ? `• Thị trường: ${formatCountryBadge(item.destinationCountry)}` : ''}
+        </div>
         <div style="margin-top:8px; font-size:13px; color:#475569;">
           Giá bán hiện tại: <strong style="color:#059669; font-size:15px; font-family:monospace;">${item.currency === 'VND' ? `${Number(item.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(item.unitPrice).toFixed(2)}`}</strong>
-          <span style="font-size:11.5px; color:#94a3b8; margin-left:6px;">(Giá mua tham chiếu: ${item.inputCurrency === 'VND' ? `${Number(item.inputUnitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(item.inputUnitPrice).toFixed(2)}`})</span>
+          <span style="font-size:11.5px; color:#94a3b8; margin-left:6px;">(Giá vốn tham chiếu: ${item.inputCurrency === 'VND' ? `${Number(item.inputUnitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(item.inputUnitPrice).toFixed(2)}`})</span>
         </div>
       </div>
 
@@ -1159,6 +1552,17 @@ window.xnkOpenUpdateSaleModal = async function(id) {
             Đơn Giá Bán Ra Mới (trên 1 KG)
           </label>
           <input type="number" id="spUpdUnitPrice" step="0.0001" min="0" class="form-input" value="${item.unitPrice}" style="width:100%; font-size:14px; padding:8px 10px; font-weight:700; color:#059669;">
+        </div>
+      </div>
+
+      <div id="spUpdRateRow" style="display:${isCross ? 'block' : 'none'}; margin-bottom:14px;">
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <label class="form-label required" style="font-weight:600; font-size:12.5px; margin:0; color:#1e40af;">
+              Tỷ Giá Hải Quan / Quy Đổi Tham Chiếu
+            </label>
+            <input type="number" id="spUpdExchangeRate" step="1" min="1" class="form-input" value="${item.exchangeRate || 25450}" style="width:130px; font-size:13px; padding:4px 8px; font-weight:700; text-align:right;">
+          </div>
         </div>
       </div>
 
@@ -1189,9 +1593,18 @@ window.xnkOpenUpdateSaleModal = async function(id) {
 
   openModal(`Điều Chỉnh Giá Bán Ra: ${item.outputSku}`, content);
 
+  const currSel = document.getElementById('spUpdCurrency');
+  const rateRow = document.getElementById('spUpdRateRow');
+
+  currSel?.addEventListener('change', () => {
+    const isNowCross = (item.inputCurrency || 'USD') !== currSel.value;
+    rateRow.style.display = isNowCross ? 'block' : 'none';
+  });
+
   document.getElementById('btnConfirmUpdSale')?.addEventListener('click', async () => {
-    const currency = document.getElementById('spUpdCurrency').value;
+    const currency = currSel.value;
     const unitPrice = parseFloat(document.getElementById('spUpdUnitPrice').value);
+    const exchangeRate = rateRow.style.display !== 'none' ? parseFloat(document.getElementById('spUpdExchangeRate').value) : null;
     const effectiveDate = document.getElementById('spUpdEffectiveDate').value;
     const notes = document.getElementById('spUpdNotes').value;
 
@@ -1205,9 +1618,13 @@ window.xnkOpenUpdateSaleModal = async function(id) {
         purchasePriceId: item.purchasePriceId,
         outputSku: item.outputSku,
         outputProductName: item.outputProductName,
+        customerName: item.customerName,
+        customerType: item.customerType,
+        destinationCountry: item.destinationCountry,
         currency,
         unitPrice,
-        notes: notes.trim() || `Điều chỉnh từ ${item.unitPrice} lên ${unitPrice}`,
+        exchangeRate,
+        notes: notes.trim() || `Điều chỉnh từ ${item.unitPrice} sang ${unitPrice}`,
         effectiveDate: effectiveDate ? new Date(effectiveDate).toISOString() : new Date().toISOString()
       });
       showToast('Đã lưu mức giá bán mới và bảo lưu giá cũ vào lịch sử!', 'success');
@@ -1237,13 +1654,19 @@ window.xnkOpenSaleHistoryModal = async function(id) {
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:16px;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
           <div>
-            <div style="font-size:12px; color:#64748b;">ÁNH XẠ CHUYỂN ĐỔI:</div>
+            <div style="font-size:12px; color:#64748b;">ÁNH XẠ CHUYỂN ĐỔI & KHÁCH HÀNG:</div>
             <div style="display:flex; align-items:center; gap:8px; margin-top:2px; font-size:14px; font-weight:700;">
               <span class="sku-badge">📦 ${escapeHtml(item.inputProductSku)}</span>
+              ${formatCountryBadge(item.inputCountryOfOrigin)}
               <span class="mapping-arrow">➔</span>
               <span class="sku-output-badge">🏷️ ${escapeHtml(item.outputSku)}</span>
             </div>
             <div style="font-size:13px; color:#475569; margin-top:3px;">${escapeHtml(item.outputProductName || '')}</div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+              <span style="font-size:12px; color:#334155; font-weight:600;">👤 ${escapeHtml(item.customerName || '---')}</span>
+              ${formatCustomerTypeBadge(item.customerType)}
+              ${item.destinationCountry ? `• ${formatCountryBadge(item.destinationCountry)}` : ''}
+            </div>
           </div>
           <div style="text-align:right;">
             <div style="font-size:11.5px; color:#64748b;">Số mốc giá bán ra:</div>
@@ -1254,7 +1677,7 @@ window.xnkOpenSaleHistoryModal = async function(id) {
 
       <div style="max-height: 420px; overflow-y: auto; padding-right: 6px;">
         <div class="price-history-timeline">
-          ${history.map((h, idx) => {
+          ${history.map((h) => {
             const isActive = h.isActive;
             const priceFormatted = h.currency === 'VND' 
               ? `${Number(h.unitPrice).toLocaleString('vi-VN')} ₫ / kg`
@@ -1275,6 +1698,7 @@ window.xnkOpenSaleHistoryModal = async function(id) {
                     <span>📅 <strong>Ngày hiệu lực:</strong> ${formatDate(h.effectiveDate)}</span>
                     <span>👤 <strong>Người cập nhật:</strong> ${escapeHtml(h.createdBy || 'Hệ thống')}</span>
                     <span>🕒 <strong>Thời điểm lưu:</strong> ${formatDate(h.createdAt)}</span>
+                    ${h.exchangeRate ? `<span>💱 <strong>Tỷ giá:</strong> ${Number(h.exchangeRate).toLocaleString('vi-VN')}</span>` : ''}
                   </div>
                   ${h.notes ? `<div class="timeline-notes" style="border-left-color:#7c3aed;">📝 ${escapeHtml(h.notes)}</div>` : ''}
                 </div>
@@ -1312,4 +1736,3 @@ window.xnkDeleteSalePrice = async function(id) {
     showToast('Lỗi khi xóa bản ghi', 'error');
   }
 };
-

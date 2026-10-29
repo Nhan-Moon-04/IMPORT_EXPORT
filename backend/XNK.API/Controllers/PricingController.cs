@@ -145,7 +145,7 @@ public class PricingController : ControllerBase
         var query = _db.ProductSalePrices
             .Include(s => s.PurchasePrice)
                 .ThenInclude(pp => pp.Product)
-            .Where(s => s.IsActive && !s.IsDeleted);
+            .Where(s => s.IsActive && !s.IsDeleted && s.PurchasePrice.IsActive);
 
         if (purchasePriceId.HasValue)
             query = query.Where(s => s.PurchasePriceId == purchasePriceId.Value);
@@ -173,13 +173,19 @@ public class PricingController : ControllerBase
 
         var dto = MapSale(item);
 
-        // Load history for the same PurchasePriceId + OutputSku combo
-        var history = await _db.ProductSalePrices
+        // Load history for the same Raw Product + OutputSku (and Customer if specified)
+        var rawProductId = item.PurchasePrice.ProductId;
+        var historyQuery = _db.ProductSalePrices
             .Include(s => s.PurchasePrice)
                 .ThenInclude(pp => pp.Product)
-            .Where(s => s.PurchasePriceId == item.PurchasePriceId
+            .Where(s => s.PurchasePrice.ProductId == rawProductId
                      && s.OutputSku == item.OutputSku
-                     && !s.IsDeleted)
+                     && !s.IsDeleted);
+
+        if (!string.IsNullOrEmpty(item.CustomerName))
+            historyQuery = historyQuery.Where(s => s.CustomerName == item.CustomerName);
+
+        var history = await historyQuery
             .OrderByDescending(s => s.EffectiveDate)
             .ToListAsync();
 
@@ -200,10 +206,11 @@ public class PricingController : ControllerBase
         if (purchasePrice == null)
             return BadRequest(ApiResponse<object>.Error("Giá mua vào không tồn tại"));
 
-        // Deactivate previous active sale prices for same PurchasePriceId + OutputSku
+        // Deactivate previous active sale prices for same PurchasePriceId + OutputSku + Customer
         var prevSales = await _db.ProductSalePrices
             .Where(s => s.PurchasePriceId == dto.PurchasePriceId
                      && s.OutputSku == dto.OutputSku
+                     && (s.CustomerName == dto.CustomerName || (s.CustomerId.HasValue && s.CustomerId == dto.CustomerId))
                      && s.IsActive
                      && !s.IsDeleted)
             .ToListAsync();
@@ -220,8 +227,13 @@ public class PricingController : ControllerBase
             PurchasePriceId = dto.PurchasePriceId,
             OutputSku = dto.OutputSku,
             OutputProductName = dto.OutputProductName,
+            CustomerId = dto.CustomerId,
+            CustomerName = dto.CustomerName,
+            CustomerType = dto.CustomerType,
+            DestinationCountry = dto.DestinationCountry,
             Currency = dto.Currency,
             UnitPrice = dto.UnitPrice,
+            ExchangeRate = dto.ExchangeRate,
             Notes = dto.Notes,
             EffectiveDate = dto.EffectiveDate ?? DateTime.UtcNow,
             IsActive = true,
@@ -281,6 +293,7 @@ public class PricingController : ControllerBase
         ProductId = p.ProductId,
         ProductSku = p.Product?.SKU ?? string.Empty,
         ProductName = p.Product?.Name ?? string.Empty,
+        CountryOfOrigin = p.Product?.CountryOfOrigin ?? string.Empty,
         Currency = p.Currency,
         UnitPrice = p.UnitPrice,
         IsActive = p.IsActive,
@@ -296,12 +309,18 @@ public class PricingController : ControllerBase
         PurchasePriceId = s.PurchasePriceId,
         InputProductSku = s.PurchasePrice?.Product?.SKU ?? string.Empty,
         InputProductName = s.PurchasePrice?.Product?.Name ?? string.Empty,
+        InputCountryOfOrigin = s.PurchasePrice?.Product?.CountryOfOrigin ?? string.Empty,
         InputCurrency = s.PurchasePrice?.Currency ?? "USD",
         InputUnitPrice = s.PurchasePrice?.UnitPrice ?? 0,
         OutputSku = s.OutputSku,
         OutputProductName = s.OutputProductName,
+        CustomerId = s.CustomerId,
+        CustomerName = s.CustomerName ?? string.Empty,
+        CustomerType = s.CustomerType ?? string.Empty,
+        DestinationCountry = s.DestinationCountry ?? string.Empty,
         Currency = s.Currency,
         UnitPrice = s.UnitPrice,
+        ExchangeRate = s.ExchangeRate,
         IsActive = s.IsActive,
         Notes = s.Notes,
         EffectiveDate = s.EffectiveDate,
