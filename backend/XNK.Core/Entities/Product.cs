@@ -89,3 +89,60 @@ public class ProductSpecification : BaseEntity
     public Guid ProductId { get; set; }
     public Product Product { get; set; } = null!;
 }
+
+/// <summary>
+/// Giá mua vào - Lịch sử giá nhập của từng sản phẩm
+/// </summary>
+public class ProductPurchasePrice : BaseEntity
+{
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; } = null!;
+
+    [MaxLength(20)]
+    public string Currency { get; set; } = "USD"; // USD or VND
+
+    public decimal UnitPrice { get; set; }
+
+    public bool IsActive { get; set; } = true; // current effective price
+
+    [MaxLength(500)]
+    public string? Notes { get; set; }
+
+    public DateTime EffectiveDate { get; set; } = DateTime.UtcNow;
+
+    // Who made this price entry
+    [MaxLength(100)]
+    public new string? CreatedBy { get; set; }
+}
+
+/// <summary>
+/// Giá bán ra - ánh xạ từ sản phẩm mua vào sang sản phẩm xuất khẩu kèm giá bán
+/// </summary>
+public class ProductSalePrice : BaseEntity
+{
+    // Input (mua vào)
+    public Guid PurchasePriceId { get; set; }
+    public ProductPurchasePrice PurchasePrice { get; set; } = null!;
+
+    // Output product info (bán ra / xuất khẩu)
+    [MaxLength(100)]
+    public string OutputSku { get; set; } = string.Empty; // e.g. VN905
+
+    [MaxLength(300)]
+    public string? OutputProductName { get; set; }
+
+    [MaxLength(20)]
+    public string Currency { get; set; } = "USD";
+
+    public decimal UnitPrice { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    [MaxLength(500)]
+    public string? Notes { get; set; }
+
+    public DateTime EffectiveDate { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(100)]
+    public new string? CreatedBy { get; set; }
+}

@@ -48,6 +48,10 @@ public class AppDbContext : DbContext
     public DbSet<Container> Containers => Set<Container>();
     public DbSet<CustomsDeclaration> CustomsDeclarations => Set<CustomsDeclaration>();
 
+    // Pricing
+    public DbSet<ProductPurchasePrice> ProductPurchasePrices => Set<ProductPurchasePrice>();
+    public DbSet<ProductSalePrice> ProductSalePrices => Set<ProductSalePrice>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -268,6 +272,22 @@ public class AppDbContext : DbContext
                   .WithMany(s => s.CustomsDeclarations)
                   .HasForeignKey(e => e.ShipmentId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ========== ProductPurchasePrice ==========
+        modelBuilder.Entity<ProductPurchasePrice>(e => {
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.ProductId, x.IsActive });
+            e.Property(x => x.UnitPrice).HasColumnType("decimal(18,4)");
+        });
+
+        // ========== ProductSalePrice ==========
+        modelBuilder.Entity<ProductSalePrice>(e => {
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.PurchasePrice).WithMany().HasForeignKey(x => x.PurchasePriceId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PurchasePriceId, x.IsActive });
+            e.Property(x => x.UnitPrice).HasColumnType("decimal(18,4)");
         });
 
         // ========== AuditLog ==========

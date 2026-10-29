@@ -1,0 +1,437 @@
+/* =========================================================
+   MISA AMIS ENTERPRISE STYLE — QUẢN LÝ GIÁ MUA VÀO & BÁN RA
+   ========================================================= */
+
+.pricing-page-wrapper {
+  padding: 12px 16px 24px 16px;
+  background-color: var(--amis-bg, #f3f6f9);
+  min-height: calc(100vh - var(--header-height, 56px));
+  font-family: var(--font-family, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  color: var(--amis-text, #0f172a);
+}
+
+/* Page Header */
+.pricing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pricing-header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pricing-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.pricing-title .title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #0266b3, #0088eb);
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.pricing-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.pricing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* KPI Summary Cards */
+.pricing-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pricing-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pricing-kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+}
+
+.pricing-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3.5px;
+  height: 100%;
+}
+
+.pricing-kpi-card.kpi-blue::before { background: #0266b3; }
+.pricing-kpi-card.kpi-emerald::before { background: #10b981; }
+.pricing-kpi-card.kpi-purple::before { background: #8b5cf6; }
+.pricing-kpi-card.kpi-amber::before { background: #f59e0b; }
+
+.pricing-kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.kpi-blue .pricing-kpi-icon { background: #eff6ff; color: #1d4ed8; }
+.kpi-emerald .pricing-kpi-icon { background: #ecfdf5; color: #059669; }
+.kpi-purple .pricing-kpi-icon { background: #f5f3ff; color: #7c3aed; }
+.kpi-amber .pricing-kpi-icon { background: #fffbeb; color: #d97706; }
+
+.pricing-kpi-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pricing-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.pricing-kpi-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pricing-kpi-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Toolbar Card */
+.pricing-toolbar-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.pricing-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pricing-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pricing-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 260px;
+}
+
+.pricing-search-box svg {
+  position: absolute;
+  left: 9px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.pricing-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 4px 10px 4px 30px;
+  font-size: 12.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  outline: none;
+  background-color: #ffffff;
+  color: #0f172a;
+  transition: all 0.15s ease;
+}
+
+.pricing-search-input:focus {
+  border-color: #0266b3;
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.15);
+}
+
+/* Table Card */
+.pricing-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.pricing-table-container {
+  max-height: calc(100vh - 290px);
+  min-height: 320px;
+  overflow: auto;
+}
+
+/* Badges & Cell Formats */
+.sku-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-weight: 700;
+  font-size: 12px;
+  color: #0266b3;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.sku-output-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-weight: 700;
+  font-size: 12px;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.mapping-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+.price-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.price-pill.price-usd {
+  color: #059669;
+}
+
+.price-pill.price-vnd {
+  color: #1d4ed8;
+}
+
+.spread-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.spread-positive {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.spread-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Action button in table */
+.pricing-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pricing-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.pricing-btn-icon:hover {
+  background: #f8fafc;
+  color: #0266b3;
+  border-color: #cbd5e1;
+}
+
+/* History Timeline in Modal */
+.price-history-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 10px 0 10px 24px;
+}
+
+.price-history-timeline::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  bottom: 15px;
+  left: 9px;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-node {
+  position: absolute;
+  left: -20px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2.5px solid #0266b3;
+  box-shadow: 0 0 0 2px #eff6ff;
+}
+
+.timeline-item.active .timeline-node {
+  background: #10b981;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px #ecfdf5;
+}
+
+.timeline-content {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.timeline-price {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.timeline-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.timeline-badge.badge-active {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.timeline-badge.badge-history {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.timeline-meta {
+  font-size: 11.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.timeline-notes {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #334155;
+  background: #f8fafc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 3px solid #0266b3;
+}
+

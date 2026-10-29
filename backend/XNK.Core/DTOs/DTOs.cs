@@ -740,3 +740,72 @@ public class CreateOrderItemDto
     public decimal UnitPrice { get; set; }
 }
 
+
+// ==================== PRODUCT PURCHASE PRICE ====================
+public class ProductPurchasePriceDto
+{
+    public Guid Id { get; set; }
+    public Guid ProductId { get; set; }
+    public string ProductSku { get; set; } = string.Empty;
+    public string ProductName { get; set; } = string.Empty;
+    public string Currency { get; set; } = "USD";
+    public decimal UnitPrice { get; set; }
+    public bool IsActive { get; set; }
+    public string? Notes { get; set; }
+    public DateTime EffectiveDate { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    // History entries for this product
+    public List<ProductPurchasePriceDto>? History { get; set; }
+}
+
+public class CreateProductPurchasePriceDto
+{
+    [Required]
+    public Guid ProductId { get; set; }
+    [Required, MaxLength(20)]
+    public string Currency { get; set; } = "USD";
+    [Required]
+    public decimal UnitPrice { get; set; }
+    public string? Notes { get; set; }
+    public DateTime? EffectiveDate { get; set; }
+}
+
+// ==================== PRODUCT SALE PRICE ====================
+public class ProductSalePriceDto
+{
+    public Guid Id { get; set; }
+    public Guid PurchasePriceId { get; set; }
+    // Input product info
+    public string InputProductSku { get; set; } = string.Empty;
+    public string InputProductName { get; set; } = string.Empty;
+    public string InputCurrency { get; set; } = "USD";
+    public decimal InputUnitPrice { get; set; }
+    // Output product info
+    public string OutputSku { get; set; } = string.Empty;
+    public string? OutputProductName { get; set; }
+    public string Currency { get; set; } = "USD";
+    public decimal UnitPrice { get; set; }
+    public bool IsActive { get; set; }
+    public string? Notes { get; set; }
+    public DateTime EffectiveDate { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public List<ProductSalePriceDto>? History { get; set; }
+}
+
+public class CreateProductSalePriceDto
+{
+    [Required]
+    public Guid PurchasePriceId { get; set; }
+    [Required, MaxLength(100)]
+    public string OutputSku { get; set; } = string.Empty;
+    [MaxLength(300)]
+    public string? OutputProductName { get; set; }
+    [Required, MaxLength(20)]
+    public string Currency { get; set; } = "USD";
+    [Required]
+    public decimal UnitPrice { get; set; }
+    public string? Notes { get; set; }
+    public DateTime? EffectiveDate { get; set; }
+}

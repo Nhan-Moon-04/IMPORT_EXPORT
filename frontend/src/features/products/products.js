@@ -792,10 +792,22 @@ async function viewHistory(id) {
     `;
 
     footer.innerHTML = `
-      <button type="button" class="btn btn-default" onclick="window.closeModal()">Đóng</button>
-      <button type="button" class="btn btn-primary" onclick="window.closeModal(); window.appNavigateTo('product-history','${id}')">
-        Xem Báo Cáo Đầy Đủ →
-      </button>
+      <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="btn btn-default btn-sm" onclick="window.closeModal(); window.appNavigateTo('purchase-prices')">
+            💰 Quản Lý Giá Mua Vào
+          </button>
+          <button type="button" class="btn btn-default btn-sm" onclick="window.closeModal(); window.appNavigateTo('sale-prices')">
+            💵 Quản Lý Giá Bán Ra
+          </button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-default" onclick="window.closeModal()">Đóng</button>
+          <button type="button" class="btn btn-primary" onclick="window.closeModal(); window.appNavigateTo('product-history','${id}')">
+            Xem Báo Cáo Đầy Đủ →
+          </button>
+        </div>
+      </div>
     `;
   } catch (_) {}
 }

@@ -4,6 +4,8 @@ import { api, toast, openModal, closeModal, showConfirm } from './core/api.js';
 
 import { renderDashboard } from './features/dashboard/dashboard.js';
 import { renderProducts } from './features/products/products.js';
+import { renderPurchasePrices, renderSalePrices } from './features/products/pricing.js';
+
 import { renderProductHistory } from './features/products/productHistory.js';
 import { renderHsCodes } from './features/products/hsCodes.js';
 import { renderShipments, renderShipmentForm } from './features/shipments/shipments.js';
@@ -28,6 +30,8 @@ let currentParam = null;
 const ROUTE_TITLES = {
   'dashboard': 'Tổng Quan Hệ Thống (Dashboard)',
   'products': 'Danh Mục Sản Phẩm Sợi',
+  'purchase-prices': 'Bảng Giá Mua Vào Sợi Nguyên Liệu',
+  'sale-prices': 'Bảng Giá Bán Ra & Ánh Xạ Xuất Khẩu',
   'product-history': 'Lịch Sử Nhập / Xuất Hàng Hóa',
   'hs-codes': 'Biểu Thuế & HS Code',
   'shipments-import': 'Lô Hàng Nhập Khẩu Sợi',
@@ -435,6 +439,14 @@ export function navigateTo(tab, updateHistory = true, param = null) {
 
     case 'product-history':
       renderProductHistory(mainContent, param);
+      break;
+
+    case 'purchase-prices':
+      renderPurchasePrices(mainContent);
+      break;
+
+    case 'sale-prices':
+      renderSalePrices(mainContent);
       break;
 
     case 'shipments':
