@@ -263,8 +263,9 @@ export async function renderPurchasePrices(container) {
             <thead>
               <tr>
                 <th style="width: 40px; text-align:center;">STT</th>
-                <th style="min-width: 140px;">Mã Sản Phẩm (SKU)</th>
-                <th style="min-width: 240px;">Tên Hàng Hoá Mua Vào</th>
+                <th style="min-width: 130px;">Mã Sản Phẩm (SKU)</th>
+                <th style="min-width: 220px;">Tên Hàng Hoá Mua Vào</th>
+                <th style="min-width: 190px;">Đối Tác (Nhà Cung Cấp)</th>
                 <th style="min-width: 130px; text-align:center;">Nước Nhập / Xuất Xứ</th>
                 <th style="min-width: 80px; text-align:center;">Tiền Tệ</th>
                 <th style="min-width: 140px; text-align:right;">Đơn Giá Hiện Hành</th>
@@ -374,6 +375,12 @@ function renderPurchaseTable(items) {
       <td>
         <strong style="color:#0f172a;">${escapeHtml(it.productName || '---')}</strong>
       </td>
+      <td>
+        <span style="font-weight:600; color:#1e293b; display:inline-flex; align-items:center; gap:5px;">
+          <span style="color:#0284c7;">🏢</span>
+          <span>${escapeHtml(it.supplierName || '---')}</span>
+        </span>
+      </td>
       <td style="text-align:center;">
         ${formatCountryBadge(it.countryOfOrigin)}
       </td>
@@ -432,6 +439,7 @@ function setupPurchaseEvents() {
         (it.productSku || '').toLowerCase().includes(q) ||
         (it.productName || '').toLowerCase().includes(q) ||
         (it.countryOfOrigin || '').toLowerCase().includes(q) ||
+        (it.supplierName || '').toLowerCase().includes(q) ||
         (it.notes || '').toLowerCase().includes(q)
       );
     }
@@ -476,9 +484,14 @@ function exportPurchaseToExcel() {
 // Modal Thêm Giá Mua Vào Mới
 async function openAddPurchaseModal() {
   let products = [];
+  let suppliers = [];
   try {
-    const res = await api.get('/api/products?pageSize=200');
-    products = res.data?.items || [];
+    const [pRes, sRes] = await Promise.all([
+      api.get('/api/products?pageSize=200'),
+      api.get('/api/suppliers?pageSize=200')
+    ]);
+    products = pRes.data?.items || pRes.items || pRes.data || [];
+    suppliers = sRes.data?.items || sRes.items || sRes.data || [];
   } catch { }
 
   const content = `
@@ -497,6 +510,26 @@ async function openAddPurchaseModal() {
         </select>
         <div id="ppAddProductPreview" style="margin-top:6px; font-size:12px; color:#475569; display:none;">
           <span style="font-weight:600;">Nước xuất xứ / nước nhập:</span> <span id="ppAddProductCountryBadge"></span>
+        </div>
+      </div>
+
+      <!-- Chọn Đối Tác (Nhà Cung Cấp) -->
+      <div style="margin-bottom: 14px;">
+        <label class="form-label required" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
+          🏢 Đối Tác (Nhà Cung Cấp)
+        </label>
+        <select id="ppAddSupplierSelect" class="form-select" style="width:100%; font-size:13px; padding:8px 10px;">
+          <option value="">-- Chọn Nhà Cung Cấp từ danh mục Nhà Cung Cấp --</option>
+          ${suppliers.map(s => `
+            <option value="${s.id}" data-name="${escapeHtml(s.companyName || s.name)}" data-country="${escapeHtml(s.country || '')}">
+              ${escapeHtml(s.companyName || s.name)} ${s.country ? `(${escapeHtml(s.country)})` : ''}
+            </option>
+          `).join('')}
+          <option value="CUSTOM_OTHER">+ Nhà cung cấp khác (nhập tay)...</option>
+        </select>
+        <input type="text" id="ppAddSupplierName" class="form-input" placeholder="Nhập tên Nhà Cung Cấp..." style="width:100%; font-size:12.5px; padding:6px 10px; margin-top:5px; display:none;">
+        <div style="font-size:11.5px; color:#64748b; margin-top:3px;">
+          Sổ danh sách đối tác tự động từ mục <strong>Nhà Cung Cấp</strong>
         </div>
       </div>
 
@@ -1224,10 +1257,10 @@ async function openAddSaleModal() {
   try {
     const [pRes, cRes] = await Promise.all([
       api.get('/api/purchase-prices'),
-      api.get('/api/customers?pageSize=100')
+      api.get('/api/customers?pageSize=200')
     ]);
     purchases = pRes.data || [];
-    customers = cRes.data?.items || [];
+    customers = cRes.data?.items || cRes.items || cRes.data || [];
   } catch { }
 
   if (purchases.length === 0) {
@@ -1277,20 +1310,26 @@ async function openAddSaleModal() {
       <!-- Step 3: Khách Hàng & Phân Loại -->
       <div style="background:#fdf2f8; border:1px solid #fbcfe8; border-radius:6px; padding:10px 12px; margin-bottom:14px;">
         <div style="font-size:12.5px; font-weight:700; color:#9d174d; margin-bottom:8px;">
-          3. Khách Hàng, Đối Tượng & Thị Trường Xuất Bán
+          3. Đối Tác (Khách Hàng), Phân Loại & Thị Trường Xuất Bán
         </div>
-        <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:10px;">
+        <div style="display:grid; grid-template-columns: 1.3fr 1fr 1fr; gap:10px;">
           <div>
             <label class="form-label required" style="font-size:12px; font-weight:600; margin-bottom:4px; display:block;">
-              Tên Khách Hàng
+              👤 Chọn Khách Hàng (Đối Tác)
             </label>
-            <input type="text" id="spAddCustomerName" list="customerSuggestions" class="form-input" placeholder="Chọn hoặc gõ tên khách..." style="width:100%; font-size:12.5px; padding:6px 10px;">
-            <datalist id="customerSuggestions">
-              <option value="TONGKUN GLOBAL CO., LTD">Công ty Mẹ - Tongkun Global</option>
-              <option value="FORMOSA TAFFETA CO., LTD">Formosa Taffeta Co., Ltd</option>
-              <option value="FAR EASTERN NEW CENTURY">Far Eastern New Century</option>
-              ${customers.map(c => `<option value="${escapeHtml(c.companyName)}">${escapeHtml(c.country || '')}</option>`).join('')}
-            </datalist>
+            <select id="spAddCustomerSelect" class="form-select" style="width:100%; font-size:12.5px; padding:7px 8px;">
+              <option value="">-- Chọn Khách Hàng từ danh mục Khách Hàng --</option>
+              ${customers.map(c => `
+                <option value="${c.id}" data-name="${escapeHtml(c.companyName || c.name)}" data-country="${escapeHtml(c.country || 'Việt Nam')}">
+                  ${escapeHtml(c.companyName || c.name)} ${c.country ? `(${escapeHtml(c.country)})` : ''}
+                </option>
+              `).join('')}
+              <option value="CUSTOM_OTHER">+ Khách hàng khác (nhập tay)...</option>
+            </select>
+            <input type="text" id="spAddCustomerName" class="form-input" placeholder="Nhập tên khách hàng..." style="width:100%; font-size:12.5px; padding:6px 10px; margin-top:5px; display:none;">
+            <div style="font-size:11px; color:#be185d; margin-top:3px;">
+              Sổ danh sách tự động từ danh mục <strong>Khách Hàng</strong>
+            </div>
           </div>
           <div>
             <label class="form-label required" style="font-size:12px; font-weight:600; margin-bottom:4px; display:block;">
@@ -1442,6 +1481,42 @@ async function openAddSaleModal() {
     }
   }
 
+  const custSel = document.getElementById('spAddCustomerSelect');
+  const custCustomInp = document.getElementById('spAddCustomerName');
+  const destInp = document.getElementById('spAddDestCountry');
+  const typeSel = document.getElementById('spAddCustomerType');
+
+  custSel?.addEventListener('change', () => {
+    const val = custSel.value;
+    if (val === 'CUSTOM_OTHER') {
+      custCustomInp.style.display = 'block';
+      custCustomInp.focus();
+      custCustomInp.value = '';
+    } else {
+      custCustomInp.style.display = 'none';
+      const opt = custSel.options[custSel.selectedIndex];
+      if (opt && opt.value) {
+        const name = opt.getAttribute('data-name') || '';
+        const country = opt.getAttribute('data-country') || 'Việt Nam';
+        custCustomInp.value = name;
+        if (destInp) destInp.value = country;
+        if (typeSel) {
+          const lCountry = country.toLowerCase();
+          const lName = name.toLowerCase();
+          if (lName.includes('tongkun') || lName.includes('cty mẹ') || lName.includes('mẹ')) {
+            typeSel.value = 'ParentCompany';
+          } else if (lCountry.includes('viet') || lCountry.includes('vn')) {
+            typeSel.value = 'Domestic';
+          } else {
+            typeSel.value = 'ForeignBuyer';
+          }
+        }
+      } else {
+        custCustomInp.value = '';
+      }
+    }
+  });
+
   purchaseSel?.addEventListener('change', updateRateVisibilityAndCalculation);
   currencySel?.addEventListener('change', updateRateVisibilityAndCalculation);
   unitPriceInp?.addEventListener('input', updateRateVisibilityAndCalculation);
@@ -1451,9 +1526,24 @@ async function openAddSaleModal() {
     const purchasePriceId = purchaseSel.value;
     const outputSku = document.getElementById('spAddOutputSku').value.trim();
     const outputProductName = document.getElementById('spAddOutputName').value.trim();
-    const customerName = document.getElementById('spAddCustomerName').value.trim();
-    const customerType = document.getElementById('spAddCustomerType').value;
-    const destinationCountry = document.getElementById('spAddDestCountry').value.trim();
+
+    // Lấy khách hàng từ dropdown hoặc ô nhập tay
+    const isCustomCust = custSel?.value === 'CUSTOM_OTHER';
+    const customerId = (!isCustomCust && custSel?.value) ? custSel.value : null;
+    let customerName = isCustomCust 
+      ? custCustomInp?.value.trim() 
+      : (custSel?.options[custSel.selectedIndex]?.getAttribute('data-name') || custCustomInp?.value.trim());
+
+    // Fallback: nếu chưa trigger change nhưng dropdown đang chọn một khách hàng
+    if (!customerName && custSel && custSel.selectedIndex > 0) {
+      const opt = custSel.options[custSel.selectedIndex];
+      if (opt && opt.value && opt.value !== 'CUSTOM_OTHER') {
+        customerName = opt.getAttribute('data-name') || opt.text.trim();
+      }
+    }
+
+    const customerType = typeSel?.value || 'ForeignBuyer';
+    const destinationCountry = destInp?.value.trim() || '';
     const currency = currencySel.value;
     const unitPrice = parseFloat(unitPriceInp.value);
     const exchangeRate = rateRow.style.display !== 'none' ? parseFloat(exchangeRateInp.value) : null;
@@ -1466,14 +1556,18 @@ async function openAddSaleModal() {
     }
     if (!outputSku) {
       showToast('Vui lòng nhập mã bán ra / xuất khẩu (VD: VN905)', 'warning');
+      document.getElementById('spAddOutputSku')?.focus();
       return;
     }
     if (!customerName) {
-      showToast('Vui lòng nhập tên khách hàng', 'warning');
+      showToast('Vui lòng chọn hoặc nhập tên Khách Hàng', 'warning');
+      if (isCustomCust) custCustomInp?.focus();
+      else custSel?.focus();
       return;
     }
     if (isNaN(unitPrice) || unitPrice < 0) {
       showToast('Đơn giá bán ra không hợp lệ', 'warning');
+      unitPriceInp?.focus();
       return;
     }
 
@@ -1482,6 +1576,7 @@ async function openAddSaleModal() {
         purchasePriceId,
         outputSku: outputSku.toUpperCase(),
         outputProductName: outputProductName || null,
+        customerId,
         customerName: customerName || null,
         customerType: customerType || null,
         destinationCountry: destinationCountry || null,

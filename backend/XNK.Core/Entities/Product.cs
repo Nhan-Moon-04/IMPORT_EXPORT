@@ -88,6 +88,7 @@ public class ProductSpecification : BaseEntity
     // Navigation
     public Guid ProductId { get; set; }
     public Product Product { get; set; } = null!;
+
 }
 
 /// <summary>
@@ -97,6 +98,12 @@ public class ProductPurchasePrice : BaseEntity
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; } = null!;
+
+    public Guid? SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
+
+    [MaxLength(200)]
+    public string? SupplierName { get; set; }
 
     [MaxLength(20)]
     public string Currency { get; set; } = "USD"; // USD or VND

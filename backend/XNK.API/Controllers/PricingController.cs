@@ -25,6 +25,7 @@ public class PricingController : ControllerBase
     {
         var query = _db.ProductPurchasePrices
             .Include(p => p.Product)
+            .Include(p => p.Supplier)
             .Where(p => p.IsActive && !p.IsDeleted);
 
         if (productId.HasValue)
@@ -44,6 +45,7 @@ public class PricingController : ControllerBase
     {
         var item = await _db.ProductPurchasePrices
             .Include(p => p.Product)
+            .Include(p => p.Supplier)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
 
         if (item == null)
@@ -54,6 +56,7 @@ public class PricingController : ControllerBase
         // Load full history for this product
         var history = await _db.ProductPurchasePrices
             .Include(p => p.Product)
+            .Include(p => p.Supplier)
             .Where(p => p.ProductId == item.ProductId && !p.IsDeleted)
             .OrderByDescending(p => p.EffectiveDate)
             .ToListAsync();
@@ -84,9 +87,18 @@ public class PricingController : ControllerBase
             prev.UpdatedBy = User.Identity?.Name;
         }
 
+        string? supplierName = dto.SupplierName;
+        if (dto.SupplierId.HasValue && string.IsNullOrWhiteSpace(supplierName))
+        {
+            var sup = await _db.Suppliers.FindAsync(dto.SupplierId.Value);
+            supplierName = sup?.CompanyName;
+        }
+
         var entry = new ProductPurchasePrice
         {
             ProductId = dto.ProductId,
+            SupplierId = dto.SupplierId,
+            SupplierName = supplierName,
             Currency = dto.Currency,
             UnitPrice = dto.UnitPrice,
             Notes = dto.Notes,
@@ -294,6 +306,8 @@ public class PricingController : ControllerBase
         ProductSku = p.Product?.SKU ?? string.Empty,
         ProductName = p.Product?.Name ?? string.Empty,
         CountryOfOrigin = p.Product?.CountryOfOrigin ?? string.Empty,
+        SupplierId = p.SupplierId,
+        SupplierName = p.SupplierName ?? p.Supplier?.CompanyName ?? string.Empty,
         Currency = p.Currency,
         UnitPrice = p.UnitPrice,
         IsActive = p.IsActive,

@@ -22,6 +22,8 @@ let currentStatusTab = 'ALL';
 // Danh sách sản phẩm được chọn trong form (local state)
 let formItems = []; // [{ productId, productName, sku, unit, quantity, unitPrice }]
 let allProducts = []; // cache danh sách sản phẩm
+let purchasePrices = []; // danh sách giá mua vào đang áp dụng
+let salePrices = []; // danh sách giá bán ra đang áp dụng
 
 // Cấu hình các cột hiển thị theo chuẩn nghiệp vụ người dùng
 const COLUMN_CONFIG = [
@@ -867,6 +869,94 @@ function addShipmentTimeline(shipmentId, text, by = 'admin') {
   } catch (e) {}
 }
 
+
+function renderProductPickerHtml(type, selectedCustName = '') {
+  const isImport = type === 'Import';
+  if (isImport) {
+    return `
+      <select id="productPickerSelect" class="sd-form-select" style="min-width:380px; height:34px; font-size:12.5px; border-color:#93c5fd; background:#f0f9ff; font-weight:500;">
+        <option value="">-- Chọn sản phẩm nguyên liệu nhập khẩu (có sẵn giá mua vào) --</option>
+        ${purchasePrices.length > 0 ? `
+          <optgroup label="🏷️ Sản phẩm có BẢNG GIÁ MUA VÀO (${purchasePrices.length} mặt hàng)">
+            ${purchasePrices.map(p => {
+              const matchedProd = allProducts.find(x => x.id === p.productId || x.sku === p.productSku);
+              const hs = matchedProd?.hsCode || '---';
+              const origin = p.countryOfOrigin || matchedProd?.countryOfOrigin || '---';
+              const nameVi = matchedProd?.nameVi || '';
+              const unit = matchedProd?.unit || 'kg';
+              const priceFormatted = p.currency === 'VND' 
+                ? `${Number(p.unitPrice).toLocaleString('vi-VN')} ₫/kg` 
+                : `${Number(p.unitPrice).toFixed(2)}/kg`;
+              const supTag = p.supplierName ? ` • NCC: ${p.supplierName}` : '';
+              return `
+                <option value="${p.id}" data-type="purchase" data-productid="${p.productId}" data-sku="${escapeHtml(p.productSku)}" data-name="${escapeHtml(p.productName)}" data-namevi="${escapeHtml(nameVi)}" data-hscode="${escapeHtml(hs)}" data-origin="${escapeHtml(origin)}" data-price="${p.unitPrice}" data-curr="${p.currency || 'USD'}" data-rate="25450" data-unit="${escapeHtml(unit)}" data-notes="${escapeHtml(p.notes || '')}">
+                  [${escapeHtml(p.productSku)}] ${escapeHtml(p.productName)}${escapeHtml(supTag)} ${origin && origin !== '---' ? `— (Xuất xứ: ${escapeHtml(origin)})` : ''} — Giá mua: ${priceFormatted}
+                </option>
+              `;
+            }).join('')}
+          </optgroup>
+        ` : ''}
+        ${allProducts.length > 0 ? `
+          <optgroup label="📦 Danh mục sản phẩm khác (chưa có giá - nhập giá thủ công) (${allProducts.length})">
+            ${allProducts.map(p => `
+              <option value="${p.id}" data-type="product" data-productid="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-namevi="${escapeHtml(p.nameVi || '')}" data-hscode="${escapeHtml(p.hsCode || '---')}" data-origin="${escapeHtml(p.countryOfOrigin || '---')}" data-price="" data-curr="" data-rate="25450" data-unit="${escapeHtml(p.unit || 'kg')}">
+                [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.unit || 'kg'})${p.hsCode ? ` - HS: ${escapeHtml(p.hsCode)}` : ''}
+              </option>
+            `).join('')}
+          </optgroup>
+        ` : ''}
+      </select>
+    `;
+  } else {
+    // Export: Sale prices
+    const sortedSales = [...salePrices].sort((a, b) => {
+      if (selectedCustName && selectedCustName !== 'Chưa chọn đối tác') {
+        const matchA = (a.customerName || '').toLowerCase().includes(selectedCustName.toLowerCase());
+        const matchB = (b.customerName || '').toLowerCase().includes(selectedCustName.toLowerCase());
+        if (matchA && !matchB) return -1;
+        if (!matchA && matchB) return 1;
+      }
+      return 0;
+    });
+
+    return `
+      <select id="productPickerSelect" class="sd-form-select" style="min-width:380px; height:34px; font-size:12.5px; border-color:#c4b5fd; background:#faf5ff; font-weight:500;">
+        <option value="">-- Chọn sản phẩm xuất khẩu (có sẵn giá bán ra) --</option>
+        ${sortedSales.length > 0 ? `
+          <optgroup label="🏷️ Sản phẩm có BẢNG GIÁ BÁN RA (${sortedSales.length} mã)">
+            ${sortedSales.map(sp => {
+              const matchedPur = purchasePrices.find(p => p.id === sp.purchasePriceId);
+              const matchedProd = allProducts.find(x => x.id === matchedPur?.productId || x.sku === sp.inputProductSku);
+              const hs = matchedProd?.hsCode || '---';
+              const nameVi = matchedProd?.nameVi || '';
+              const origin = 'Việt Nam';
+              const priceFormatted = sp.currency === 'VND' 
+                ? `${Number(sp.unitPrice).toLocaleString('vi-VN')} ₫/kg` 
+                : `${Number(sp.unitPrice).toFixed(2)}/kg`;
+              const custTag = sp.customerName ? ` • KH: ${sp.customerName}` : '';
+              const destTag = sp.destinationCountry ? ` ➔ ${sp.destinationCountry}` : '';
+              return `
+                <option value="${sp.id}" data-type="sale" data-purchaseid="${sp.purchasePriceId}" data-productid="${matchedProd?.id || ''}" data-sku="${escapeHtml(sp.outputSku)}" data-name="${escapeHtml(sp.outputProductName || sp.outputSku)}" data-namevi="${escapeHtml(nameVi)}" data-hscode="${escapeHtml(hs)}" data-origin="${origin}" data-price="${sp.unitPrice}" data-curr="${sp.currency || 'USD'}" data-rate="${sp.exchangeRate || 25450}" data-unit="kg" data-notes="${escapeHtml(sp.notes || `Gia công từ ${sp.inputProductSku}`)}" data-customer="${escapeHtml(sp.customerName || '')}">
+                  [${escapeHtml(sp.outputSku)}] ${escapeHtml(sp.outputProductName || sp.outputSku)}${escapeHtml(custTag)}${escapeHtml(destTag)} — Giá bán: ${priceFormatted}
+                </option>
+              `;
+            }).join('')}
+          </optgroup>
+        ` : ''}
+        ${allProducts.length > 0 ? `
+          <optgroup label="📦 Danh mục sản phẩm khác (chưa có giá - nhập giá thủ công) (${allProducts.length})">
+            ${allProducts.map(p => `
+              <option value="${p.id}" data-type="product" data-productid="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-namevi="${escapeHtml(p.nameVi || '')}" data-hscode="${escapeHtml(p.hsCode || '---')}" data-origin="Việt Nam" data-price="" data-curr="" data-rate="25450" data-unit="${escapeHtml(p.unit || 'kg')}">
+                [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.unit || 'kg'})${p.hsCode ? ` - HS: ${escapeHtml(p.hsCode)}` : ''}
+              </option>
+            `).join('')}
+          </optgroup>
+        ` : ''}
+      </select>
+    `;
+  }
+}
+
 export async function renderShipmentForm(container, id) {
   let s = null;
   if (id) {
@@ -887,15 +977,19 @@ export async function renderShipmentForm(container, id) {
   const autoGenCode = s?.shipmentCode || `SHP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
 
   // Load master data song song
-  const [supRes, cusRes, prodRes] = await Promise.all([
+  const [supRes, cusRes, prodRes, purRes, saleRes] = await Promise.all([
     api.get("/api/suppliers?pageSize=200"),
     api.get("/api/customers?pageSize=200"),
-    api.get("/api/products?pageSize=500")
+    api.get("/api/products?pageSize=500"),
+    api.get("/api/purchase-prices"),
+    api.get("/api/sale-prices")
   ]);
 
   const suppliers = supRes.data?.items || supRes.data || [];
   const customers = cusRes.data?.items || cusRes.data || [];
   allProducts = prodRes.data?.items || prodRes.data || [];
+  purchasePrices = purRes.data || [];
+  salePrices = saleRes.data || [];
 
   // Khởi tạo formItems từ dữ liệu cũ nếu edit
   if (isEdit && s.items && s.items.length > 0) {
@@ -921,6 +1015,7 @@ export async function renderShipmentForm(container, id) {
         quantity: Number(i.quantity || 0),
         packages: Number(pkgs || 0),
         unitPrice: Number(i.unitPrice || 0),
+        currency: s?.currency || 'USD',
         netWeight: Number(i.netWeight || i.quantity || 0),
         grossWeight: Number(i.grossWeight || 0),
         notes: i.notes || ''
@@ -952,6 +1047,7 @@ export async function renderShipmentForm(container, id) {
           quantity: Number(i.quantity || 0),
           packages: Number(pkgs || 0),
           unitPrice: Number(i.unitPrice || 0),
+        currency: s?.currency || 'USD',
           netWeight: Number(i.netWeight || i.quantity || 0),
           grossWeight: Number(i.grossWeight || 0),
           notes: i.notes || ''
@@ -1032,6 +1128,15 @@ export async function renderShipmentForm(container, id) {
             <option value="Import" ${currentType === 'Import' ? 'selected' : ''}>📥 Nhập khẩu</option>
             <option value="Export" ${currentType === 'Export' ? 'selected' : ''}>📤 Xuất khẩu</option>
           </select>
+        </div>
+
+        <div class="sd-field">
+          <div class="sd-field-label">💲 Tiền tệ lô hàng *</div>
+          <select id="sCurrency" class="sd-form-select" style="font-weight:700;">
+            <option value="USD" ${(s?.currency || 'USD') === 'USD' ? 'selected' : ''}>USD ($ - Đô la Mỹ)</option>
+            <option value="VND" ${s?.currency === 'VND' ? 'selected' : ''}>VND (₫ - Đồng Việt Nam)</option>
+          </select>
+          <div class="sd-field-sub" id="dispCurrSub">${s?.currency === "VND" ? "Tiền tệ: Việt Nam Đồng" : "Tiền tệ: Đô la Mỹ"}</div>
         </div>
 
         <div class="sd-field" id="supplierField" style="${currentType === 'Export' ? 'display:none;' : ''}">
@@ -1180,18 +1285,18 @@ export async function renderShipmentForm(container, id) {
               <!-- BẢNG DANH SÁCH HÀNG HÓA -->
               <div>
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; margin-top:4px;">
-                  <span style="font-size:13px; font-weight:700; color:var(--text-main);">
-                    Danh sách hàng hóa <span style="font-weight:400; color:#64748b;" id="itemsCountText">(${formItems.length})</span>
-                  </span>
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:13px; font-weight:700; color:var(--text-main);">
+                      Danh sách hàng hóa <span style="font-weight:400; color:#64748b;" id="itemsCountText">(${formItems.length})</span>
+                    </span>
+                    <span id="pickerTypeHint" style="font-size:11.5px; padding:3px 9px; border-radius:12px; font-weight:600; ${currentType === 'Export' ? 'background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;' : 'background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;'}">
+                      ${currentType === 'Export' ? '📤 Xuất khẩu: Chọn sản phẩm điền sẵn Đơn giá bán ra' : '📥 Nhập khẩu: Chọn sản phẩm điền sẵn Đơn giá mua vào'}
+                    </span>
+                  </div>
                   <div style="display:flex; gap:8px; align-items:center;">
-                    <select id="productPickerSelect" class="sd-form-select" style="min-width:320px; height:32px; font-size:12px;">
-                      <option value="">-- Chọn sản phẩm thêm vào lô hàng --</option>
-                      ${allProducts.map(p => `
-                        <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-unit="${escapeHtml(p.unit || 'kg')}" data-hscode="${escapeHtml(p.hsCode || '5402.47.00')}" data-origin="${escapeHtml(p.countryOfOrigin || 'Taiwan')}" data-price="${p.unitPrice || p.standardPrice || 1.0}">
-                          [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.unit || 'kg'})
-                        </option>
-                      `).join('')}
-                    </select>
+                    <div id="productPickerContainer">
+                      ${renderProductPickerHtml(currentType, partnerTitle)}
+                    </div>
                     <button type="button" id="btnAddProduct" class="sd-btn-sm sd-btn-primary" style="height:32px; padding:0 12px; font-weight:600; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                       Thêm vào lô
@@ -1267,10 +1372,12 @@ export async function renderShipmentForm(container, id) {
           <!-- Tổng giá trị lô hàng callout -->
           <div class="sd-price-callout">
             <div class="sd-price-label">TỔNG GIÁ TRỊ LÔ HÀNG</div>
-            <div class="sd-price-amount" id="sbTotalValue">$${Number(initVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div class="sd-price-amount" id="sbTotalValue">
+              ${(s?.currency || 'USD') === 'VND' ? `${Math.round(initVal).toLocaleString('vi-VN')} ₫` : `${Number(initVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </div>
             
             <div class="sd-price-meta">
-              <div>Đơn vị tiền tệ: <strong>USD</strong></div>
+              <div>Đơn vị tiền tệ: <strong id="sbCurrencyLabel">${(s?.currency || 'USD').toUpperCase()}</strong></div>
               <div>Tổng số lượng NW: <strong id="sbTotalQty">${Number(initQty).toLocaleString()}</strong> kg</div>
               <div>Tổng Gross Weight: <strong id="sbTotalGw">${Number(initGw).toLocaleString()}</strong> kg</div>
               <div>Số mặt hàng: <strong id="sbTotalItems">${formItems.length}</strong> sản phẩm</div>
@@ -1359,12 +1466,28 @@ export async function renderShipmentForm(container, id) {
     showToast(`Đã tạo mã lô hàng mới: ${newCode}`, "info");
   });
 
+    function updateProductPicker(type, custName = '') {
+    const container = document.getElementById("productPickerContainer");
+    if (container) {
+      container.innerHTML = renderProductPickerHtml(type, custName);
+    }
+  }
+
   // Chuyển loại hình (Import / Export)
   document.getElementById("sType")?.addEventListener("change", function () {
     const type = this.value;
     const supField = document.getElementById("supplierField");
     const cusField = document.getElementById("customerField");
     const badgeType = document.getElementById("headerTypeBadge");
+    const pickerHint = document.getElementById("pickerTypeHint");
+
+    let currentCust = '';
+    if (type === 'Export') {
+      const cusSel = document.getElementById("sCustomerId");
+      const opt = cusSel?.options[cusSel.selectedIndex];
+      currentCust = opt ? (opt.getAttribute("data-name") || '') : '';
+    }
+    updateProductPicker(type, currentCust);
 
     if (type === 'Import') {
       supField.style.display = '';
@@ -1372,6 +1495,12 @@ export async function renderShipmentForm(container, id) {
       if (badgeType) {
         badgeType.className = 'chip chip-blue';
         badgeType.textContent = 'Nhập khẩu';
+      }
+      if (pickerHint) {
+        pickerHint.style.background = '#eff6ff';
+        pickerHint.style.color = '#1d4ed8';
+        pickerHint.style.border = '1px solid #bfdbfe';
+        pickerHint.textContent = '📥 Nhập khẩu: Chọn sản phẩm điền sẵn Đơn giá mua vào';
       }
       document.getElementById("sPol").value = 'Shanghai Port, China';
       document.getElementById("sPod").value = 'Cat Lai Port, Ho Chi Minh City';
@@ -1383,10 +1512,27 @@ export async function renderShipmentForm(container, id) {
         badgeType.className = 'chip chip-purple';
         badgeType.textContent = 'Xuất khẩu';
       }
+      if (pickerHint) {
+        pickerHint.style.background = '#f5f3ff';
+        pickerHint.style.color = '#7c3aed';
+        pickerHint.style.border = '1px solid #ddd6fe';
+        pickerHint.textContent = '📤 Xuất khẩu: Chọn sản phẩm điền sẵn Đơn giá bán ra';
+      }
       document.getElementById("sPol").value = 'Cat Lai Port, Ho Chi Minh City';
       document.getElementById("sPod").value = 'Tokyo Port, Japan';
       document.getElementById("sCustomerId")?.dispatchEvent(new Event('change'));
     }
+  });
+
+  // Khi chọn tiền tệ lô hàng
+  document.getElementById("sCurrency")?.addEventListener("change", function () {
+    const curr = this.value;
+    const dispCurrSub = document.getElementById("dispCurrSub");
+    if (dispCurrSub) dispCurrSub.textContent = curr === 'VND' ? 'Tiền tệ: Việt Nam Đồng' : 'Tiền tệ: Đô la Mỹ';
+    const sbCurr = document.getElementById("sbCurrencyLabel");
+    if (sbCurr) sbCurr.textContent = curr;
+    refreshFormItemsTable();
+    updateCalculations();
   });
 
   // Chọn đối tác (Supplier / Customer)
@@ -1420,6 +1566,11 @@ export async function renderShipmentForm(container, id) {
       if (dispContactSub && sub) {
         dispContactSub.textContent = sub;
       }
+
+      // If in Export mode, re-filter sale prices with selected customer
+      if (document.getElementById("sType")?.value === 'Export') {
+        updateProductPicker('Export', name);
+      }
     }
   };
   document.getElementById("sSupplierId")?.addEventListener("change", onPartnerSelect);
@@ -1432,41 +1583,109 @@ export async function renderShipmentForm(container, id) {
     document.getElementById("sCustomerId")?.dispatchEvent(new Event('change'));
   }
 
+  // Chọn đối tác (Supplier / Customer)
   // Thêm sản phẩm từ select box
   document.getElementById("btnAddProduct")?.addEventListener("click", () => {
     const sel = document.getElementById("productPickerSelect");
-    const opt = sel.options[sel.selectedIndex];
+    const opt = sel?.options[sel.selectedIndex];
     if (!opt || !opt.value) {
-      showToast("Vui lòng chọn một sản phẩm từ danh mục", "error");
-      return;
-    }
-    const pid = opt.value;
-    const already = formItems.find(i => i.productId === pid);
-    if (already) {
-      showToast("Sản phẩm này đã có trong danh sách lô hàng", "warning");
+      showToast("Vui lòng chọn một sản phẩm từ danh sách", "warning");
       return;
     }
 
+    const dataType = opt.getAttribute("data-type");
+    const sku = opt.getAttribute("data-sku") || '---';
+    const name = opt.getAttribute("data-name") || '---';
+    const nameVi = opt.getAttribute("data-namevi") || '';
+    const rawPriceAttr = opt.getAttribute("data-price");
+    const itemCurrency = opt.getAttribute("data-curr") || '';
+    const origin = opt.getAttribute("data-origin") || (document.getElementById("sType")?.value === 'Export' ? 'Việt Nam' : '---');
+    const unit = opt.getAttribute("data-unit") || 'kg';
+    const hsCode = opt.getAttribute("data-hscode") || '---';
+    const notes = opt.getAttribute("data-notes") || '';
+    const exRate = parseFloat(opt.getAttribute("data-rate")) || 25450;
+    let prodId = opt.getAttribute("data-productid");
+
+    if (dataType === 'sale') {
+      const purchaseId = opt.getAttribute("data-purchaseid");
+      const matchedPur = purchasePrices.find(p => p.id === purchaseId);
+      prodId = prodId || matchedPur?.productId || allProducts[0]?.id;
+    }
+
+    const already = formItems.find(i => (i.productCode === sku || i.sku === sku));
+    if (already) {
+      showToast(`Mã sản phẩm [${sku}] đã có trong danh sách lô hàng`, "warning");
+      return;
+    }
+
+    // Tiền tệ lô hàng hiện tại
+    const curInp = document.getElementById("sCurrency");
+    let shipmentCurrency = curInp?.value || 'USD';
+
+    // Xác định đơn giá & xử lý tiền tệ
+    let unitPrice = '';
+    const hasPrice = rawPriceAttr !== null && rawPriceAttr !== '' && !isNaN(parseFloat(rawPriceAttr)) && parseFloat(rawPriceAttr) > 0;
+
+    if (hasPrice) {
+      const rawPrice = parseFloat(rawPriceAttr);
+      // Nếu là sản phẩm đầu tiên thêm vào lô hàng, tự động đồng bộ tiền tệ lô hàng theo sản phẩm này
+      if (formItems.length === 0 && itemCurrency && curInp) {
+        shipmentCurrency = itemCurrency;
+        curInp.value = itemCurrency;
+        const dispCurrSub = document.getElementById("dispCurrSub");
+        if (dispCurrSub) dispCurrSub.textContent = itemCurrency === 'VND' ? 'Tiền tệ: Việt Nam Đồng' : 'Tiền tệ: Đô la Mỹ';
+        const sbCurr = document.getElementById("sbCurrencyLabel");
+        if (sbCurr) sbCurr.textContent = itemCurrency;
+      }
+
+      // Nếu tiền tệ sản phẩm khác tiền tệ lô hàng, tự động quy đổi chính xác
+      if (itemCurrency && shipmentCurrency && itemCurrency !== shipmentCurrency) {
+        if (shipmentCurrency === 'VND' && itemCurrency === 'USD') {
+          unitPrice = Math.round(rawPrice * exRate);
+          showToast(`Đã quy đổi giá [${sku}]: $${rawPrice.toFixed(2)} ➔ ${unitPrice.toLocaleString('vi-VN')} ₫ theo tỷ giá ${exRate.toLocaleString('vi-VN')}`, "info");
+        } else if (shipmentCurrency === 'USD' && itemCurrency === 'VND') {
+          unitPrice = +(rawPrice / exRate).toFixed(4);
+          showToast(`Đã quy đổi giá [${sku}]: ${rawPrice.toLocaleString('vi-VN')} ₫ ➔ $${unitPrice} theo tỷ giá ${exRate.toLocaleString('vi-VN')}`, "info");
+        } else {
+          unitPrice = rawPrice;
+        }
+      } else {
+        unitPrice = rawPrice;
+      }
+    } else {
+      // Không có giá cấu hình sẵn: để trống để người dùng tự nhập
+      unitPrice = '';
+    }
+
+    // Thêm dòng mới: Số lượng, Số kiện, GW, NW ĐỀU ĐỂ TRỐNG để người dùng nhập
     formItems.push({
-      productId: pid,
-      productCode: opt.getAttribute("data-sku") || '---',
-      productName: opt.getAttribute("data-name") || '---',
-      sku: opt.getAttribute("data-sku") || '---',
-      hsCode: opt.getAttribute("data-hscode") || '5402.47.00',
-      origin: opt.getAttribute("data-origin") || 'Taiwan',
-      unit: opt.getAttribute("data-unit") || 'kg',
-      quantity: 155,
-      packages: 15,
-      unitPrice: parseFloat(opt.getAttribute("data-price")) || 1.5,
-      netWeight: 155,
-      grossWeight: 160,
-      notes: ''
+      productId: prodId || allProducts[0]?.id,
+      productCode: sku,
+      productName: name,
+      nameVi: nameVi,
+      sku: sku,
+      hsCode: hsCode,
+      origin: origin,
+      unit: unit,
+      quantity: '',       // ĐỂ TRỐNG
+      packages: '',       // ĐỂ TRỐNG
+      unitPrice: unitPrice, // Điền giá nếu có trong bảng giá, để trống nếu không có
+      currency: shipmentCurrency,
+      netWeight: '',      // ĐỂ TRỐNG
+      grossWeight: '',    // ĐỂ TRỐNG
+      notes: notes
     });
 
     sel.value = "";
     refreshFormItemsTable();
     updateCalculations();
-    showToast("Đã thêm sản phẩm vào lô hàng", "success");
+
+    if (hasPrice) {
+      const priceText = shipmentCurrency === 'VND' ? `${Number(unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(unitPrice).toFixed(2)}`;
+      showToast(`Đã thêm [${sku}] với đơn giá: ${priceText} / kg. Vui lòng nhập số lượng và số kiện.`, "success");
+    } else {
+      showToast(`Đã thêm [${sku}]. Vui lòng nhập số lượng, số kiện và đơn giá.`, "info");
+    }
   });
 
   // Delegate input & remove trong bảng
@@ -1484,23 +1703,27 @@ export async function renderShipmentForm(container, id) {
     const btnBlank = e.target.closest("#btnQuickAddBlank");
     if (btnBlank) {
       const defProd = allProducts[0];
+      const isExport = document.getElementById("sType")?.value === 'Export';
       formItems.push({
         productId: defProd?.id || `custom-${Date.now()}`,
-        productCode: defProd?.sku || 'NEW-SKU',
-        productName: defProd?.name || 'Mặt hàng sợi chỉ dệt',
-        sku: defProd?.sku || 'NEW-SKU',
-        hsCode: defProd?.hsCode || '5402.47.00',
-        origin: defProd?.countryOfOrigin || 'Taiwan',
-        unit: defProd?.unit || 'kg',
-        quantity: 100,
-        packages: 10,
-        unitPrice: 2.0,
-        netWeight: 100,
-        grossWeight: 105,
+        productCode: '',
+        productName: '',
+        nameVi: '',
+        sku: '',
+        hsCode: '',
+        origin: isExport ? 'Việt Nam' : '',
+        unit: 'kg',
+        quantity: '',
+        packages: '',
+        unitPrice: '',
+        currency: document.getElementById("sCurrency")?.value || 'USD',
+        netWeight: '',
+        grossWeight: '',
         notes: ''
       });
       refreshFormItemsTable();
       updateCalculations();
+      showToast("Đã thêm dòng sản phẩm trống. Vui lòng nhập thông tin chi tiết.", "info");
     }
   });
 
@@ -1510,18 +1733,18 @@ export async function renderShipmentForm(container, id) {
     if (isNaN(idx) || !formItems[idx]) return;
 
     if (inp.classList.contains("item-qty")) {
-      const val = parseFloat(inp.value) || 0;
+      const val = inp.value.trim() === '' ? '' : parseFloat(inp.value);
       formItems[idx].quantity = val;
       formItems[idx].netWeight = val;
     }
     if (inp.classList.contains("item-packages")) {
-      formItems[idx].packages = parseInt(inp.value) || 0;
+      formItems[idx].packages = inp.value.trim() === '' ? '' : parseInt(inp.value);
     }
     if (inp.classList.contains("item-price")) {
-      formItems[idx].unitPrice = parseFloat(inp.value) || 0;
+      formItems[idx].unitPrice = inp.value.trim() === '' ? '' : parseFloat(inp.value);
     }
     if (inp.classList.contains("item-gw")) {
-      formItems[idx].grossWeight = parseFloat(inp.value) || 0;
+      formItems[idx].grossWeight = inp.value.trim() === '' ? '' : parseFloat(inp.value);
     }
 
     updateCalculations();
@@ -1568,7 +1791,7 @@ export async function renderShipmentForm(container, id) {
       totalQuantity: totalQty,
       totalGrossWeight: totalGw,
       totalValue: totalVal,
-      currency: "USD",
+      currency: document.getElementById("sCurrency")?.value || "USD",
       notes: document.getElementById("sNotes")?.value.trim() || null
     };
 
@@ -1595,7 +1818,7 @@ export async function renderShipmentForm(container, id) {
               noteContent = noteContent ? `${pkgsText} - ${noteContent}` : pkgsText;
             }
             return {
-              productId: i.productId.startsWith('custom-') ? allProducts[0]?.id : i.productId,
+              productId: (i.productId && !String(i.productId).startsWith('custom-')) ? i.productId : (allProducts[0]?.id || i.productId),
               quantity: i.quantity,
               netWeight: i.netWeight || i.quantity,
               grossWeight: i.grossWeight,
@@ -1665,10 +1888,26 @@ function renderFormItemsTable() {
     `;
   }
 
-  const totalQty = formItems.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
-  const totalPackages = formItems.reduce((s, i) => s + (Number(i.packages) || 0), 0);
-  const totalGw = formItems.reduce((s, i) => s + (Number(i.grossWeight) || 0), 0);
-  const totalVal = formItems.reduce((s, i) => s + ((Number(i.quantity) || 0) * (Number(i.unitPrice) || 0)), 0);
+  const currentCurrency = document.getElementById("sCurrency")?.value || (formItems[0]?.currency) || 'USD';
+  const isVnd = currentCurrency === 'VND';
+  const currSymbol = isVnd ? '₫' : '$';
+
+  let totalQty = 0;
+  let totalPackages = 0;
+  let totalGw = 0;
+  let totalVal = 0;
+
+  formItems.forEach(i => {
+    const q = (i.quantity !== '' && i.quantity !== null && !isNaN(i.quantity)) ? parseFloat(i.quantity) : 0;
+    const pk = (i.packages !== '' && i.packages !== null && !isNaN(i.packages)) ? parseInt(i.packages) : 0;
+    const gw = (i.grossWeight !== '' && i.grossWeight !== null && !isNaN(i.grossWeight)) ? parseFloat(i.grossWeight) : 0;
+    const p = (i.unitPrice !== '' && i.unitPrice !== null && !isNaN(i.unitPrice)) ? parseFloat(i.unitPrice) : 0;
+
+    totalQty += q;
+    totalPackages += pk;
+    totalGw += gw;
+    if (q > 0 && p > 0) totalVal += (q * p);
+  });
 
   return `
     <table class="sd-table">
@@ -1682,39 +1921,49 @@ function renderFormItemsTable() {
           <th style="width:55px; text-align:center;">ĐVT</th>
           <th style="width:115px; text-align:right;">Số lượng (NW)</th>
           <th style="width:90px; text-align:right;">Số kiện</th>
-          <th style="width:105px; text-align:right;">Đơn giá ($)</th>
-          <th style="width:120px; text-align:right;">Thành tiền ($)</th>
+          <th style="width:115px; text-align:right;">Đơn giá (${currSymbol})</th>
+          <th style="width:130px; text-align:right;">Thành tiền (${currSymbol})</th>
           <th style="width:115px; text-align:right;">Gross Weight (kg)</th>
           <th style="width:50px; text-align:center;">Xóa</th>
         </tr>
       </thead>
       <tbody>
         ${formItems.map((item, idx) => {
-          const q = Number(item.quantity) || 0;
-          const p = Number(item.unitPrice) || 0;
-          const rowVal = q * p;
+          const hasQ = item.quantity !== '' && item.quantity !== null && !isNaN(item.quantity);
+          const hasP = item.unitPrice !== '' && item.unitPrice !== null && !isNaN(item.unitPrice);
+          const q = hasQ ? parseFloat(item.quantity) : 0;
+          const p = hasP ? parseFloat(item.unitPrice) : 0;
+          const hasVal = hasQ && hasP && (q * p > 0);
+          const rowVal = hasVal ? (q * p) : 0;
+          const rowValFormatted = hasVal
+            ? (isVnd ? `${Math.round(rowVal).toLocaleString('vi-VN')} ₫` : `$${rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+            : '---';
+
           return `
             <tr>
               <td style="text-align:center; color:#64748b;">${idx + 1}</td>
-              <td style="font-weight:700; color:var(--amis-blue);">${escapeHtml(item.productCode || item.sku)}</td>
-              <td><strong>${escapeHtml(item.productName)}</strong></td>
+              <td style="font-weight:700; color:var(--amis-blue);">${escapeHtml(item.productCode || item.sku || '---')}</td>
+              <td>
+                <strong>${escapeHtml(item.productName || '---')}</strong>
+                ${item.nameVi && item.nameVi !== item.productName ? `<div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.2;">${escapeHtml(item.nameVi)}</div>` : ''}
+              </td>
               <td style="font-family:monospace; color:#475569;">${escapeHtml(item.hsCode || '---')}</td>
               <td>${escapeHtml(item.origin || '---')}</td>
               <td style="text-align:center;">${escapeHtml(item.unit || 'kg')}</td>
               <td style="text-align:right;">
-                <input type="number" step="0.01" class="sd-table-input text-right item-qty" data-idx="${idx}" value="${item.quantity}" style="width:95px; font-weight:600;">
+                <input type="number" step="0.01" min="0" class="sd-table-input text-right item-qty" data-idx="${idx}" value="${item.quantity !== '' && item.quantity !== null && item.quantity !== undefined ? item.quantity : ''}" placeholder="0" style="width:95px; font-weight:600;">
               </td>
               <td style="text-align:right;">
-                <input type="number" step="1" min="0" class="sd-table-input text-right item-packages" data-idx="${idx}" value="${item.packages || ''}" placeholder="0" style="width:75px; font-weight:600; color:#0266b3;">
+                <input type="number" step="1" min="0" class="sd-table-input text-right item-packages" data-idx="${idx}" value="${item.packages !== '' && item.packages !== null && item.packages !== undefined ? item.packages : ''}" placeholder="0" style="width:75px; font-weight:600; color:#0266b3;">
               </td>
               <td style="text-align:right;">
-                <input type="number" step="0.0001" class="sd-table-input text-right item-price" data-idx="${idx}" value="${item.unitPrice}" style="width:90px;">
+                <input type="number" step="${isVnd ? '100' : '0.0001'}" min="0" class="sd-table-input text-right item-price" data-idx="${idx}" value="${item.unitPrice !== '' && item.unitPrice !== null && item.unitPrice !== undefined ? item.unitPrice : ''}" placeholder="0" style="width:95px; font-weight:600;">
               </td>
               <td style="text-align:right; font-weight:700; color:var(--amis-green); font-size:12.5px;">
-                $<span id="item-total-${idx}">${rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span id="item-total-${idx}">${rowValFormatted}</span>
               </td>
               <td style="text-align:right;">
-                <input type="number" step="0.01" class="sd-table-input text-right item-gw" data-idx="${idx}" value="${item.grossWeight || ''}" style="width:95px;">
+                <input type="number" step="0.01" min="0" class="sd-table-input text-right item-gw" data-idx="${idx}" value="${item.grossWeight !== '' && item.grossWeight !== null && item.grossWeight !== undefined ? item.grossWeight : ''}" placeholder="0" style="width:95px;">
               </td>
               <td style="text-align:center;">
                 <button type="button" class="btn-remove-item" data-idx="${idx}" title="Xóa dòng sản phẩm" style="background:transparent; border:none; cursor:pointer; color:#ef4444; padding:4px; border-radius:4px; display:inline-flex; align-items:center;">
@@ -1726,11 +1975,11 @@ function renderFormItemsTable() {
         }).join('')}
         <tr class="sd-total-row">
           <td colspan="6" style="text-align:right;">Tổng cộng (${formItems.length} dòng):</td>
-          <td style="text-align:right; color:var(--amis-blue);" id="tblTotalQty">${totalQty.toLocaleString()} kg</td>
-          <td style="text-align:right; color:var(--amis-blue); font-weight:700;" id="tblTotalPackages">${totalPackages.toLocaleString()} kiện</td>
+          <td style="text-align:right; color:var(--amis-blue);" id="tblTotalQty">${totalQty > 0 ? `${totalQty.toLocaleString()} kg` : '0 kg'}</td>
+          <td style="text-align:right; color:var(--amis-blue); font-weight:700;" id="tblTotalPackages">${totalPackages > 0 ? `${totalPackages.toLocaleString()} kiện` : '0 kiện'}</td>
           <td></td>
-          <td style="text-align:right; color:var(--amis-green);" id="tblTotalVal">$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td style="text-align:right;" id="tblTotalGw">${totalGw.toLocaleString()} kg</td>
+          <td style="text-align:right; color:var(--amis-green);" id="tblTotalVal">${isVnd ? `${Math.round(totalVal).toLocaleString('vi-VN')} ₫` : `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+          <td style="text-align:right;" id="tblTotalGw">${totalGw > 0 ? `${totalGw.toLocaleString()} kg` : '0 kg'}</td>
           <td></td>
         </tr>
       </tbody>
@@ -1755,17 +2004,24 @@ function refreshFormItemsTable() {
 }
 
 function updateCalculations() {
+  const currentCurrency = document.getElementById("sCurrency")?.value || (formItems[0]?.currency) || 'USD';
+  const isVnd = currentCurrency === 'VND';
+
   let totalQty = 0;
   let totalPackages = 0;
   let totalGw = 0;
   let totalVal = 0;
 
   formItems.forEach((item, idx) => {
-    const q = Number(item.quantity) || 0;
-    const pk = Number(item.packages) || 0;
-    const p = Number(item.unitPrice) || 0;
-    const gw = Number(item.grossWeight) || 0;
-    const rowVal = q * p;
+    const hasQ = item.quantity !== '' && item.quantity !== null && !isNaN(item.quantity);
+    const hasP = item.unitPrice !== '' && item.unitPrice !== null && !isNaN(item.unitPrice);
+    const q = hasQ ? parseFloat(item.quantity) : 0;
+    const pk = (item.packages !== '' && item.packages !== null && !isNaN(item.packages)) ? parseInt(item.packages) : 0;
+    const p = hasP ? parseFloat(item.unitPrice) : 0;
+    const gw = (item.grossWeight !== '' && item.grossWeight !== null && !isNaN(item.grossWeight)) ? parseFloat(item.grossWeight) : 0;
+    const hasVal = hasQ && hasP && (q * p > 0);
+    const rowVal = hasVal ? (q * p) : 0;
+
     totalQty += q;
     totalPackages += pk;
     totalGw += gw;
@@ -1773,7 +2029,13 @@ function updateCalculations() {
 
     const rowValEl = document.getElementById(`item-total-${idx}`);
     if (rowValEl) {
-      rowValEl.textContent = rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (hasVal) {
+        rowValEl.textContent = isVnd 
+          ? `${Math.round(rowVal).toLocaleString('vi-VN')} ₫` 
+          : `$${rowVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      } else {
+        rowValEl.textContent = '---';
+      }
     }
   });
 
@@ -1782,10 +2044,12 @@ function updateCalculations() {
   const tblPackages = document.getElementById('tblTotalPackages');
   const tblVal = document.getElementById('tblTotalVal');
   const tblGw = document.getElementById('tblTotalGw');
-  if (tblQty) tblQty.textContent = `${totalQty.toLocaleString()} kg`;
-  if (tblPackages) tblPackages.textContent = `${totalPackages.toLocaleString()} kiện`;
-  if (tblVal) tblVal.textContent = `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  if (tblGw) tblGw.textContent = `${totalGw.toLocaleString()} kg`;
+  if (tblQty) tblQty.textContent = totalQty > 0 ? `${totalQty.toLocaleString()} kg` : '0 kg';
+  if (tblPackages) tblPackages.textContent = totalPackages > 0 ? `${totalPackages.toLocaleString()} kiện` : '0 kiện';
+  if (tblVal) tblVal.textContent = isVnd
+    ? `${Math.round(totalVal).toLocaleString('vi-VN')} ₫`
+    : `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (tblGw) tblGw.textContent = totalGw > 0 ? `${totalGw.toLocaleString()} kg` : '0 kg';
 
   // Cập nhật sidebar & badge
   const sbVal = document.getElementById('sbTotalValue');
@@ -1796,25 +2060,26 @@ function updateCalculations() {
   const tabBadge = document.getElementById('tabItemsBadge');
   const itemsCountText = document.getElementById('itemsCountText');
 
-  if (sbVal) sbVal.textContent = `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (sbVal) sbVal.textContent = isVnd
+    ? `${Math.round(totalVal).toLocaleString('vi-VN')} ₫`
+    : `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (sbVnd) sbVnd.style.display = "none";
-  if (sbQty) sbQty.textContent = totalQty.toLocaleString();
-  if (sbGw) sbGw.textContent = totalGw.toLocaleString();
+  if (sbQty) sbQty.textContent = totalQty > 0 ? totalQty.toLocaleString() : '0';
+  if (sbGw) sbGw.textContent = totalGw > 0 ? totalGw.toLocaleString() : '0';
   if (sbItems) sbItems.textContent = formItems.length;
   if (tabBadge) tabBadge.textContent = formItems.length;
   if (itemsCountText) itemsCountText.textContent = `(${formItems.length})`;
 
-  // Cập nhật input ẩn / hiển thị
+  // Cập nhật input ở Thông số vận chuyển & đóng gói
   const sQty = document.getElementById('sQty');
   const sPackages = document.getElementById('sPackages');
   const sGw = document.getElementById('sGrossWeight');
   const sVal = document.getElementById('sValue');
-  if (sQty && totalQty > 0) sQty.value = totalQty;
-  if (sPackages && totalPackages > 0) sPackages.value = totalPackages;
-  if (sGw && totalGw > 0) sGw.value = totalGw;
-  if (sVal) sVal.value = totalVal;
+  if (sQty) sQty.value = totalQty > 0 ? totalQty : '';
+  if (sPackages) sPackages.value = totalPackages > 0 ? totalPackages : '';
+  if (sGw) sGw.value = totalGw > 0 ? totalGw : '';
+  if (sVal) sVal.value = totalVal > 0 ? totalVal : '';
 }
-
 
 // ==================== STATUS MODAL ====================
 window.xnkStatusShipment = openStatusModal;

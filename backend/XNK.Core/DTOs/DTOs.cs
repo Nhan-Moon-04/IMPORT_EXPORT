@@ -69,6 +69,8 @@ public class ProductDto
     public string? Composition { get; set; }
     public string? Manufacturer { get; set; }
     public string? CountryOfOrigin { get; set; }
+    public Guid? SupplierId { get; set; }
+    public string? SupplierName { get; set; }
     public string? HSCode { get; set; }
     public string? Notes { get; set; }
     public ProductSpecDto? Specification { get; set; }
@@ -315,6 +317,8 @@ public class ShipmentItemDto
 {
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
+    public Guid? SupplierId { get; set; }
+    public string? SupplierName { get; set; }
     public string? ProductName { get; set; }
     public string? SKU { get; set; }
     public string? Unit { get; set; }
@@ -749,6 +753,8 @@ public class ProductPurchasePriceDto
     public string ProductSku { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
     public string? CountryOfOrigin { get; set; }
+    public Guid? SupplierId { get; set; }
+    public string? SupplierName { get; set; }
     public string Currency { get; set; } = "USD";
     public decimal UnitPrice { get; set; }
     public bool IsActive { get; set; }
@@ -764,6 +770,8 @@ public class CreateProductPurchasePriceDto
 {
     [Required]
     public Guid ProductId { get; set; }
+    public Guid? SupplierId { get; set; }
+    public string? SupplierName { get; set; }
     [Required, MaxLength(20)]
     public string Currency { get; set; } = "USD";
     [Required]

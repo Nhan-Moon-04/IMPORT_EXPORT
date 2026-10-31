@@ -278,6 +278,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProductPurchasePrice>(e => {
             e.HasKey(x => x.Id);
             e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Supplier).WithMany().HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(x => new { x.ProductId, x.IsActive });
             e.Property(x => x.UnitPrice).HasColumnType("decimal(18,4)");
         });
