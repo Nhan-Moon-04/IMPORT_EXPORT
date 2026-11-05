@@ -789,6 +789,8 @@ public class ProductSalePriceDto
     public string InputProductSku { get; set; } = string.Empty;
     public string InputProductName { get; set; } = string.Empty;
     public string? InputCountryOfOrigin { get; set; }
+    public Guid? InputSupplierId { get; set; }
+    public string? InputSupplierName { get; set; }
     public string InputCurrency { get; set; } = "USD";
     public decimal InputUnitPrice { get; set; }
     // Output product info

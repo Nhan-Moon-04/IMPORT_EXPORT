@@ -503,7 +503,7 @@ async function openAddPurchaseModal() {
         <select id="ppAddProductSelect" class="form-select" style="width:100%; font-size:13.5px; padding:8px 10px;">
           <option value="">-- Chọn sản phẩm từ danh mục --</option>
           ${products.map(p => `
-            <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-country="${escapeHtml(p.countryOfOrigin || '')}">
+            <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-name="${escapeHtml(p.name)}" data-country="${escapeHtml(p.countryOfOrigin || '')}" data-manufacturer="${escapeHtml(p.manufacturer || '')}">
               [${escapeHtml(p.sku)}] ${escapeHtml(p.name)} (${p.countryOfOrigin ? escapeHtml(p.countryOfOrigin) : 'Chưa rõ nước nhập'})
             </option>
           `).join('')}
@@ -581,6 +581,8 @@ async function openAddPurchaseModal() {
   const sel = document.getElementById('ppAddProductSelect');
   const previewDiv = document.getElementById('ppAddProductPreview');
   const countryBadge = document.getElementById('ppAddProductCountryBadge');
+  const supSel = document.getElementById('ppAddSupplierSelect');
+  const supCustomInp = document.getElementById('ppAddSupplierName');
 
   sel?.addEventListener('change', () => {
     const opt = sel.options[sel.selectedIndex];
@@ -588,8 +590,38 @@ async function openAddPurchaseModal() {
       const country = opt.getAttribute('data-country');
       countryBadge.innerHTML = formatCountryBadge(country);
       previewDiv.style.display = 'block';
+
+      // Tự động gợi ý Nhà cung cấp nếu trùng tên nhà sản xuất
+      const mfr = (opt.getAttribute('data-manufacturer') || '').toLowerCase().trim();
+      if (mfr && supSel && !supSel.value) {
+        for (let i = 0; i < supSel.options.length; i++) {
+          const sName = (supSel.options[i].getAttribute('data-name') || '').toLowerCase();
+          if (sName && (sName.includes(mfr) || mfr.includes(sName))) {
+            supSel.selectedIndex = i;
+            if (supCustomInp) supCustomInp.style.display = 'none';
+            break;
+          }
+        }
+      }
     } else {
       previewDiv.style.display = 'none';
+    }
+  });
+
+  supSel?.addEventListener('change', () => {
+    const val = supSel.value;
+    if (val === 'CUSTOM_OTHER') {
+      supCustomInp.style.display = 'block';
+      supCustomInp.focus();
+      supCustomInp.value = '';
+    } else {
+      supCustomInp.style.display = 'none';
+      const opt = supSel.options[supSel.selectedIndex];
+      if (opt && opt.value) {
+        supCustomInp.value = opt.getAttribute('data-name') || opt.text.trim();
+      } else {
+        supCustomInp.value = '';
+      }
     }
   });
 
@@ -600,8 +632,27 @@ async function openAddPurchaseModal() {
     const effectiveDate = document.getElementById('ppAddEffectiveDate').value;
     const notes = document.getElementById('ppAddNotes').value;
 
+    const isCustomSup = supSel?.value === 'CUSTOM_OTHER';
+    const supplierId = (!isCustomSup && supSel?.value) ? supSel.value : null;
+    let supplierName = isCustomSup 
+      ? supCustomInp?.value.trim() 
+      : (supSel?.options[supSel.selectedIndex]?.getAttribute('data-name') || supCustomInp?.value.trim());
+
+    if (!supplierName && supSel && supSel.selectedIndex > 0) {
+      const opt = supSel.options[supSel.selectedIndex];
+      if (opt && opt.value && opt.value !== 'CUSTOM_OTHER') {
+        supplierName = opt.getAttribute('data-name') || opt.text.trim();
+      }
+    }
+
     if (!productId) {
       showToast('Vui lòng chọn sản phẩm nguyên liệu', 'warning');
+      return;
+    }
+    if (!supplierName) {
+      showToast('Vui lòng chọn hoặc nhập tên Đối Tác (Nhà Cung Cấp)', 'warning');
+      if (isCustomSup) supCustomInp?.focus();
+      else supSel?.focus();
       return;
     }
     if (isNaN(unitPrice) || unitPrice < 0) {
@@ -612,6 +663,8 @@ async function openAddPurchaseModal() {
     try {
       await api.post('/api/purchase-prices', {
         productId,
+        supplierId,
+        supplierName: supplierName || null,
         currency,
         unitPrice,
         notes: notes.trim() || null,
@@ -629,9 +682,14 @@ async function openAddPurchaseModal() {
 // Modal Cập Nhật Giá Mua Vào
 window.xnkOpenUpdatePurchaseModal = async function(id) {
   let item = null;
+  let suppliers = [];
   try {
-    const res = await api.get(`/api/purchase-prices/${id}`);
+    const [res, sRes] = await Promise.all([
+      api.get(`/api/purchase-prices/${id}`),
+      api.get('/api/suppliers?pageSize=200').catch(() => ({ data: [] }))
+    ]);
     item = res.data;
+    suppliers = sRes.data?.items || sRes.items || sRes.data || [];
   } catch {
     showToast('Lỗi khi tải thông tin giá mua', 'error');
     return;
@@ -645,11 +703,29 @@ window.xnkOpenUpdatePurchaseModal = async function(id) {
           <span class="sku-badge">📦 ${escapeHtml(item.productSku)}</span>
           ${escapeHtml(item.productName)}
           ${formatCountryBadge(item.countryOfOrigin)}
+          ${item.supplierName ? `<span style="font-size:12.5px; font-weight:600; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">🏢 NCC: ${escapeHtml(item.supplierName)}</span>` : ''}
         </div>
         <div style="margin-top:8px; font-size:13px; color:#475569;">
           Giá hiện tại đang áp dụng: <strong style="color:#059669; font-size:15px; font-family:monospace;">${item.currency === 'VND' ? `${Number(item.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(item.unitPrice).toFixed(2)}`}</strong>
           <span style="font-size:11.5px; color:#94a3b8; margin-left:6px;">(Hiệu lực từ ${formatDate(item.effectiveDate)})</span>
         </div>
+      </div>
+
+      <!-- Chọn Đối Tác (Nhà Cung Cấp) -->
+      <div style="margin-bottom: 14px;">
+        <label class="form-label" style="font-weight:600; font-size:13px; margin-bottom:5px; display:block;">
+          🏢 Đối Tác (Nhà Cung Cấp)
+        </label>
+        <select id="ppUpdSupplierSelect" class="form-select" style="width:100%; font-size:13px; padding:8px 10px;">
+          <option value="">-- Giữ nguyên (${escapeHtml(item.supplierName || 'Chưa thiết lập')}) --</option>
+          ${suppliers.map(s => `
+            <option value="${s.id}" data-name="${escapeHtml(s.companyName || s.name)}" ${item.supplierId === s.id ? 'selected' : ''}>
+              ${escapeHtml(s.companyName || s.name)} ${s.country ? `(${escapeHtml(s.country)})` : ''}
+            </option>
+          `).join('')}
+          <option value="CUSTOM_OTHER">+ Nhà cung cấp khác (nhập tay)...</option>
+        </select>
+        <input type="text" id="ppUpdSupplierName" class="form-input" placeholder="Nhập tên Nhà Cung Cấp mới..." value="${escapeHtml(item.supplierName || '')}" style="width:100%; font-size:12.5px; padding:6px 10px; margin-top:5px; display:none;">
       </div>
 
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 14px;">
@@ -697,11 +773,39 @@ window.xnkOpenUpdatePurchaseModal = async function(id) {
 
   openModal(`Điều Chỉnh Giá Mua Vào: ${item.productSku}`, content);
 
+  const supUpdSel = document.getElementById('ppUpdSupplierSelect');
+  const supUpdCustomInp = document.getElementById('ppUpdSupplierName');
+
+  supUpdSel?.addEventListener('change', () => {
+    if (supUpdSel.value === 'CUSTOM_OTHER') {
+      supUpdCustomInp.style.display = 'block';
+      supUpdCustomInp.focus();
+    } else {
+      supUpdCustomInp.style.display = 'none';
+      const opt = supUpdSel.options[supUpdSel.selectedIndex];
+      if (opt && opt.value) {
+        supUpdCustomInp.value = opt.getAttribute('data-name') || opt.text.trim();
+      }
+    }
+  });
+
   document.getElementById('btnConfirmUpdPurchase')?.addEventListener('click', async () => {
     const currency = document.getElementById('ppUpdCurrency').value;
     const unitPrice = parseFloat(document.getElementById('ppUpdUnitPrice').value);
     const effectiveDate = document.getElementById('ppUpdEffectiveDate').value;
     const notes = document.getElementById('ppUpdNotes').value;
+
+    const isCustomSup = supUpdSel?.value === 'CUSTOM_OTHER';
+    let supplierId = item.supplierId;
+    let supplierName = item.supplierName;
+
+    if (isCustomSup) {
+      supplierId = null;
+      supplierName = supUpdCustomInp?.value.trim() || item.supplierName;
+    } else if (supUpdSel?.value) {
+      supplierId = supUpdSel.value;
+      supplierName = supUpdSel.options[supUpdSel.selectedIndex]?.getAttribute('data-name') || supUpdSel.options[supUpdSel.selectedIndex]?.text.trim();
+    }
 
     if (isNaN(unitPrice) || unitPrice < 0) {
       showToast('Đơn giá mua mới không hợp lệ', 'warning');
@@ -711,6 +815,8 @@ window.xnkOpenUpdatePurchaseModal = async function(id) {
     try {
       await api.post('/api/purchase-prices', {
         productId: item.productId,
+        supplierId,
+        supplierName: supplierName || null,
         currency,
         unitPrice,
         notes: notes.trim() || `Điều chỉnh từ ${item.unitPrice} sang ${unitPrice}`,
@@ -778,6 +884,7 @@ window.xnkOpenPurchaseHistoryModal = async function(id) {
                   </div>
                   <div class="timeline-meta">
                     <span>📅 <strong>Ngày hiệu lực:</strong> ${formatDate(h.effectiveDate)}</span>
+                    ${h.supplierName ? `<span>🏢 <strong>Đối tác (NCC):</strong> ${escapeHtml(h.supplierName)}</span>` : ''}
                     <span>👤 <strong>Người cập nhật:</strong> ${escapeHtml(h.createdBy || 'Hệ thống')}</span>
                     <span>🕒 <strong>Thời điểm lưu:</strong> ${formatDate(h.createdAt)}</span>
                   </div>
@@ -997,6 +1104,7 @@ function applySaleFilters() {
         it.inputProductSku,
         it.inputProductName,
         it.inputCountryOfOrigin,
+        it.inputSupplierName,
         it.outputSku,
         it.outputProductName,
         it.customerName,
@@ -1103,6 +1211,11 @@ function renderSaleTable(items) {
               ${formatCountryBadge(it.inputCountryOfOrigin)}
             </div>
             <span style="font-size:12px; color:#475569; font-weight:500;">${escapeHtml(it.inputProductName || '---')}</span>
+            ${it.inputSupplierName ? `
+              <span style="font-size:11px; color:#0284c7; font-weight:600; display:inline-flex; align-items:center; gap:3px;">
+                <span>🏢 NCC:</span> <span>${escapeHtml(it.inputSupplierName)}</span>
+              </span>
+            ` : ''}
           </div>
         </td>
         <td style="text-align:right;">
@@ -1202,6 +1315,7 @@ function exportSaleToExcel() {
     "Mã SP Mua Vào", 
     "Tên SP Mua Vào", 
     "Nước Nhập Khẩu", 
+    "NCC (Nhà Cung Cấp)",
     "Giá Mua Nguồn", 
     "Tiền Tệ Mua", 
     "Mã Xuất Khẩu (Output)", 
@@ -1220,6 +1334,7 @@ function exportSaleToExcel() {
     it.inputProductSku || '',
     it.inputProductName || '',
     it.inputCountryOfOrigin || '',
+    it.inputSupplierName || '',
     it.inputUnitPrice || 0,
     it.inputCurrency || 'USD',
     it.outputSku || '',
@@ -1278,8 +1393,8 @@ async function openAddSaleModal() {
         <select id="spAddPurchaseSelect" class="form-select" style="width:100%; font-size:13.5px; padding:8px 10px;">
           <option value="">-- Chọn sản phẩm mua vào đã có giá --</option>
           ${purchases.map(p => `
-            <option value="${p.id}" data-curr="${p.currency}" data-price="${p.unitPrice}" data-sku="${escapeHtml(p.productSku)}" data-country="${escapeHtml(p.countryOfOrigin || '')}">
-              [${escapeHtml(p.productSku)}] ${escapeHtml(p.productName)} — ${p.countryOfOrigin ? `(Xuất xứ: ${p.countryOfOrigin})` : ''} — Giá mua: ${p.currency === 'VND' ? `${Number(p.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(p.unitPrice).toFixed(2)}`}
+            <option value="${p.id}" data-curr="${p.currency}" data-price="${p.unitPrice}" data-sku="${escapeHtml(p.productSku)}" data-name="${escapeHtml(p.productName)}" data-country="${escapeHtml(p.countryOfOrigin || '')}" data-supplier="${escapeHtml(p.supplierName || '')}">
+              [${escapeHtml(p.productSku)}] ${escapeHtml(p.productName)} ${p.supplierName ? `• NCC: ${escapeHtml(p.supplierName)}` : ''} ${p.countryOfOrigin ? `(${p.countryOfOrigin})` : ''} — Giá mua: ${p.currency === 'VND' ? `${Number(p.unitPrice).toLocaleString('vi-VN')} ₫` : `$${Number(p.unitPrice).toFixed(2)}`}
             </option>
           `).join('')}
         </select>
@@ -1443,9 +1558,11 @@ async function openAddSaleModal() {
     const inPrice = parseFloat(opt.getAttribute('data-price') || '0');
     const inCountry = opt.getAttribute('data-country') || '';
     const inSku = opt.getAttribute('data-sku') || '';
+    const inSupplier = opt.getAttribute('data-supplier') || '';
+    const inName = opt.getAttribute('data-name') || '';
 
     inputInfo.style.display = 'block';
-    inputBadge.innerHTML = `Đã chọn: <strong>[${escapeHtml(inSku)}]</strong> • Nước nhập: ${formatCountryBadge(inCountry)} • Giá vốn gốc: <strong>${inCurr === 'VND' ? `${inPrice.toLocaleString('vi-VN')} ₫` : `$${inPrice.toFixed(2)}`}</strong>`;
+    inputBadge.innerHTML = `Đã chọn: <strong>[${escapeHtml(inSku)}]</strong> ${escapeHtml(inName)} ${inSupplier ? `• NCC: <strong style="color:#0284c7;">${escapeHtml(inSupplier)}</strong>` : ''} • Nước nhập: ${formatCountryBadge(inCountry)} • Giá vốn gốc: <strong>${inCurr === 'VND' ? `${inPrice.toLocaleString('vi-VN')} ₫` : `$${inPrice.toFixed(2)}`}</strong>`;
 
     const outCurr = currencySel.value;
     const isCross = inCurr !== outCurr;
@@ -1615,6 +1732,7 @@ window.xnkOpenUpdateSaleModal = async function(id) {
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
           <span class="sku-badge">📦 Mua vào: ${escapeHtml(item.inputProductSku)}</span>
           ${formatCountryBadge(item.inputCountryOfOrigin)}
+          ${item.inputSupplierName ? `<span style="font-size:12px; font-weight:600; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">🏢 NCC: ${escapeHtml(item.inputSupplierName)}</span>` : ''}
           <span class="mapping-arrow">➔</span>
           <span class="sku-output-badge">🏷️ Xuất khẩu: ${escapeHtml(item.outputSku)}</span>
         </div>
@@ -1753,6 +1871,7 @@ window.xnkOpenSaleHistoryModal = async function(id) {
             <div style="display:flex; align-items:center; gap:8px; margin-top:2px; font-size:14px; font-weight:700;">
               <span class="sku-badge">📦 ${escapeHtml(item.inputProductSku)}</span>
               ${formatCountryBadge(item.inputCountryOfOrigin)}
+              ${item.inputSupplierName ? `<span style="font-size:12px; font-weight:600; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">🏢 NCC: ${escapeHtml(item.inputSupplierName)}</span>` : ''}
               <span class="mapping-arrow">➔</span>
               <span class="sku-output-badge">🏷️ ${escapeHtml(item.outputSku)}</span>
             </div>

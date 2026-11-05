@@ -112,6 +112,8 @@ public class PricingController : ControllerBase
 
         // Reload with navigation
         await _db.Entry(entry).Reference(e => e.Product).LoadAsync();
+        if (entry.SupplierId.HasValue)
+            await _db.Entry(entry).Reference(e => e.Supplier).LoadAsync();
         return Ok(ApiResponse<ProductPurchasePriceDto>.Ok(MapPurchase(entry), "Tạo giá mua vào thành công"));
     }
 
@@ -157,6 +159,8 @@ public class PricingController : ControllerBase
         var query = _db.ProductSalePrices
             .Include(s => s.PurchasePrice)
                 .ThenInclude(pp => pp.Product)
+            .Include(s => s.PurchasePrice)
+                .ThenInclude(pp => pp.Supplier)
             .Where(s => s.IsActive && !s.IsDeleted && s.PurchasePrice.IsActive);
 
         if (purchasePriceId.HasValue)
@@ -178,6 +182,8 @@ public class PricingController : ControllerBase
         var item = await _db.ProductSalePrices
             .Include(s => s.PurchasePrice)
                 .ThenInclude(pp => pp.Product)
+            .Include(s => s.PurchasePrice)
+                .ThenInclude(pp => pp.Supplier)
             .FirstOrDefaultAsync(s => s.Id == id && !s.IsDeleted);
 
         if (item == null)
@@ -190,6 +196,8 @@ public class PricingController : ControllerBase
         var historyQuery = _db.ProductSalePrices
             .Include(s => s.PurchasePrice)
                 .ThenInclude(pp => pp.Product)
+            .Include(s => s.PurchasePrice)
+                .ThenInclude(pp => pp.Supplier)
             .Where(s => s.PurchasePrice.ProductId == rawProductId
                      && s.OutputSku == item.OutputSku
                      && !s.IsDeleted);
@@ -234,13 +242,20 @@ public class PricingController : ControllerBase
             prev.UpdatedBy = User.Identity?.Name;
         }
 
+        string? customerName = dto.CustomerName;
+        if (dto.CustomerId.HasValue && string.IsNullOrWhiteSpace(customerName))
+        {
+            var cust = await _db.Customers.FindAsync(dto.CustomerId.Value);
+            customerName = cust?.CompanyName;
+        }
+
         var entry = new ProductSalePrice
         {
             PurchasePriceId = dto.PurchasePriceId,
             OutputSku = dto.OutputSku,
             OutputProductName = dto.OutputProductName,
             CustomerId = dto.CustomerId,
-            CustomerName = dto.CustomerName,
+            CustomerName = customerName,
             CustomerType = dto.CustomerType,
             DestinationCountry = dto.DestinationCountry,
             Currency = dto.Currency,
@@ -258,6 +273,8 @@ public class PricingController : ControllerBase
         // Reload navigation
         await _db.Entry(entry).Reference(e => e.PurchasePrice).LoadAsync();
         await _db.Entry(entry.PurchasePrice).Reference(e => e.Product).LoadAsync();
+        if (entry.PurchasePrice.SupplierId.HasValue)
+            await _db.Entry(entry.PurchasePrice).Reference(e => e.Supplier).LoadAsync();
 
         return Ok(ApiResponse<ProductSalePriceDto>.Ok(MapSale(entry), "Tạo giá bán ra thành công"));
     }
@@ -324,6 +341,8 @@ public class PricingController : ControllerBase
         InputProductSku = s.PurchasePrice?.Product?.SKU ?? string.Empty,
         InputProductName = s.PurchasePrice?.Product?.Name ?? string.Empty,
         InputCountryOfOrigin = s.PurchasePrice?.Product?.CountryOfOrigin ?? string.Empty,
+        InputSupplierId = s.PurchasePrice?.SupplierId,
+        InputSupplierName = s.PurchasePrice?.SupplierName ?? s.PurchasePrice?.Supplier?.CompanyName ?? string.Empty,
         InputCurrency = s.PurchasePrice?.Currency ?? "USD",
         InputUnitPrice = s.PurchasePrice?.UnitPrice ?? 0,
         OutputSku = s.OutputSku,
