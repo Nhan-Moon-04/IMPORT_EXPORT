@@ -942,3 +942,390 @@
   background-color: #ffffff;
   outline: none;
 }
+
+
+/* =========================================================
+   TRANG DANH SÁCH TỜ KHAI — giao diện tối giản giống trang Lô hàng
+   (scoped dưới .cd-page để không ảnh hưởng trang khác)
+   ========================================================= */
+.cd-page .amis-col-picker-wrap,
+.cd-page .ph-date-range,
+.cd-page .ph-filter-select {
+  height: 30px;
+}
+
+.cd-page .ph-filter-select,
+.cd-page .ph-date-input {
+  font-size: 13px;
+  color: #374151;
+}
+
+.cd-page .amis-table-container {
+  flex: 1;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.cd-page .cd-table {
+  font-size: 13px;
+}
+
+.cd-page .cd-table th {
+  background: #f9fafb;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 12.5px;
+  height: 36px;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #f3f4f6;
+}
+
+.cd-page .cd-table th:last-child {
+  border-right: none;
+}
+
+.cd-page .cd-table .sortable-header:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.cd-page .cd-table td {
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #1f2937;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #f9fafb;
+  background: #fff;
+}
+
+.cd-page .cd-table td:last-child {
+  border-right: none;
+}
+
+.cd-page .cd-table tbody tr {
+  cursor: pointer;
+}
+
+.cd-page .cd-table tbody tr:hover td {
+  background: #f5f8ff !important;
+}
+
+.cd-page .cd-table tbody tr.selected td {
+  background: #eef4fb !important;
+}
+
+.cd-page .cd-sticky-check {
+  position: sticky !important;
+  left: 0 !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  z-index: 5;
+  background: #fff;
+  text-align: center;
+  border-right: 1px solid #f3f4f6;
+}
+
+.cd-page thead .cd-sticky-check {
+  z-index: 25 !important;
+  background: #f9fafb !important;
+}
+
+.cd-page .cd-sticky-col-2 {
+  position: sticky !important;
+  left: 44px !important;
+  width: 155px;
+  min-width: 155px;
+  z-index: 5;
+  background: #fff;
+  border-right: 1px solid #e5e7eb !important;
+  box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.06);
+}
+
+.cd-page thead .cd-sticky-col-2 {
+  z-index: 25 !important;
+  background: #f9fafb !important;
+}
+
+.cd-page .cd-sticky-actions {
+  position: sticky !important;
+  right: 0 !important;
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  z-index: 5;
+  background: #fff;
+  border-left: 1px solid #e5e7eb !important;
+  box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.06);
+}
+
+.cd-page thead .cd-sticky-actions {
+  z-index: 25 !important;
+  background: #f9fafb !important;
+}
+
+.cd-page .cd-table input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #0266b3;
+}
+
+.cd-page .cd-sort-icon {
+  margin-left: 2px;
+  font-size: 9px;
+  color: #0266b3;
+}
+
+.cd-page .cd-link {
+  color: #0266b3;
+  text-decoration: none;
+}
+
+.cd-page .cd-link:hover {
+  text-decoration: underline;
+}
+
+.cd-page .cd-strong {
+  font-weight: 500;
+}
+
+.cd-page .cd-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cd-page .cd-muted {
+  color: #9ca3af;
+}
+
+.cd-page .cd-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+}
+
+.cd-page .cd-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cd-page .amis-icon-btn {
+  color: #6b7280;
+}
+
+.cd-page .amis-pagination-wrap {
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.cd-page .amis-page-info strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .cd-page .cd-table th,
+[data-theme="dark"] .cd-page thead .cd-sticky-check,
+[data-theme="dark"] .cd-page thead .cd-sticky-col-2,
+[data-theme="dark"] .cd-page thead .cd-sticky-actions {
+  background: #253346 !important;
+  color: #94a3b8;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .cd-page .cd-table td,
+[data-theme="dark"] .cd-page .cd-sticky-check,
+[data-theme="dark"] .cd-page .cd-sticky-col-2,
+[data-theme="dark"] .cd-page .cd-sticky-actions {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .cd-page .cd-channel {
+  color: #e2e8f0;
+}
+
+
+/* ── FORM KHAI BÁO / SỬA TỜ KHAI (tối giản) ── */
+.cdf-form {
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.cdf-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cdf-scope {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cdf-topbar-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cdf-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  color: #111827;
+}
+
+.cdf-radio input {
+  accent-color: #0266b3;
+  cursor: pointer;
+}
+
+.cdf-excel-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cdf-parse-status {
+  font-size: 12px;
+  color: #0266b3;
+}
+
+.cdf-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 14px;
+}
+
+.cdf-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+}
+
+.cdf-form .form-group {
+  margin-bottom: 0;
+}
+
+.cdf-form .form-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.cdf-form .form-control {
+  height: 32px;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  border-color: #d1d5db;
+}
+
+.cdf-form input[type="file"].form-control {
+  padding: 3px 6px;
+}
+
+.cdf-readonly {
+  background: #f9fafb !important;
+  color: #111827;
+}
+
+.cdf-section {
+  margin: 14px 0;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cdf-section-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+.cdf-tax-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+}
+
+.cdf-tax-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #374151;
+}
+
+.cdf-tax-field .form-control {
+  width: 72px;
+  height: 28px;
+  text-align: right;
+}
+
+.cdf-tax-eq {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.cdf-tax-eq strong {
+  color: #111827;
+  font-weight: 500;
+}
+
+.cdf-tax-total {
+  margin-left: auto;
+  font-size: 13px;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+}
+
+.cdf-tax-total strong {
+  color: #111827;
+  font-weight: 600;
+  font-size: 14px;
+  margin-left: 4px;
+}
+
+.cdf-hint {
+  font-size: 11.5px;
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+.cdf-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+[data-theme="dark"] .cdf-form,
+[data-theme="dark"] .cdf-radio,
+[data-theme="dark"] .cdf-tax-eq strong,
+[data-theme="dark"] .cdf-tax-total strong { color: #e2e8f0; }
+[data-theme="dark"] .cdf-topbar,
+[data-theme="dark"] .cdf-section,
+[data-theme="dark"] .cdf-footer { border-color: #334155; }
+[data-theme="dark"] .cdf-tax-row,
+[data-theme="dark"] .cdf-readonly { background: #1e293b !important; border-color: #334155; }

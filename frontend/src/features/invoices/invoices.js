@@ -539,29 +539,47 @@ async function viewInvoiceDetail(id) {
 
 // ─── Create modal ──────────────────────────────────────────────────────────────
 window.xnkCreateInvoiceModal = openCreateInvoiceModal;
-export async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null) {
-  let shipments = [], products = [];
+export async function openCreateInvoiceModal(defaultShipmentId = null, forceType = null, onSuccessCallback = null) {
+  let shipments = [], products = [], existingInvoices = [];
   try {
-    const [s, p] = await Promise.all([
+    const [s, p, invRes] = await Promise.all([
       api.get('/api/shipments?pageSize=200'),
-      api.get('/api/products?pageSize=200')
+      api.get('/api/products?pageSize=200'),
+      api.get('/api/invoices?pageSize=500').catch(() => ({ data: [] }))
     ]);
     shipments = s.data?.items || s.data || [];
     products  = p.data?.items || p.data || [];
+    existingInvoices = invRes.data?.items || invRes.data || [];
   } catch {}
-
-  // Kiểm tra nếu lô hàng mặc định đã hoàn thành / khóa
-  if (defaultShipmentId) {
-    const target = shipments.find(s => s.id === defaultShipmentId);
-    if (target && (target.status === 'Completed' || target.status === 'Cancelled')) {
-      toast(`Lô hàng ${target.shipmentCode} đã [${target.status === 'Completed' ? 'Hoàn thành' : 'Hủy'}] và bị KHÓA. Không thể thêm chứng từ mới!`, 'warning');
-      return;
-    }
-  }
 
   const docToCreate = forceType || currentDocType;
   const isPacking   = docToCreate === 'PackingList';
   const isSales     = docToCreate === 'SalesContract';
+  const docLabel    = isPacking ? 'Packing List' : isSales ? 'Hợp đồng (Sales Contract)' : 'Hóa đơn (Invoice)';
+
+  const hasExistingDocForShipment = (shipId, checkType) => {
+    const sid = String(shipId || '').toLowerCase();
+    if (!sid) return false;
+    return existingInvoices.some(i => {
+      if (String(i.shipmentId || '').toLowerCase() !== sid) return false;
+      if (checkType === 'SalesContract') return i.type === 'SalesContract';
+      if (checkType === 'PackingList') return i.type === 'PackingList';
+      return i.type !== 'PackingList' && i.type !== 'SalesContract' && i.type !== 'BillOfLading';
+    });
+  };
+
+  // Kiểm tra nếu lô hàng mặc định đã hoàn thành / khóa hoặc đã có đủ 1 chứng từ loại này
+  if (defaultShipmentId) {
+    const target = shipments.find(s => String(s.id).toLowerCase() === String(defaultShipmentId).toLowerCase());
+    if (target && (target.status === 'Completed' || target.status === 'Cancelled')) {
+      toast(`Lô hàng ${target.shipmentCode} đã [${target.status === 'Completed' ? 'Hoàn thành' : 'Hủy'}] và bị KHÓA. Không thể thêm chứng từ mới!`, 'warning');
+      return;
+    }
+    if (hasExistingDocForShipment(defaultShipmentId, docToCreate)) {
+      toast(`Mỗi lô hàng chỉ được phép có 1 ${docLabel}! Vui lòng xóa chứng từ hiện tại nếu muốn lập lại.`, 'warning');
+      return;
+    }
+  }
 
   const numLabel = isPacking ? 'Số Packing List' : isSales ? 'Số Hợp Đồng' : 'Số Invoice';
   const numPH    = isPacking ? 'PL-2026-0001' : isSales ? 'SC-2026-0001' : 'INV-2026-0001';
@@ -573,14 +591,15 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
        <option value="ProformaInvoice">Proforma Invoice</option>
        <option value="DebitNote">Debit Note</option>`;
 
-  // Lọc ẩn hoàn toàn các lô hàng đã hoàn thành hoặc đã hủy (chỉ hiển thị lô đang xử lý)
+  // Lọc ẩn các lô hàng đã hoàn thành/hủy hoặc đã có chứng từ loại này (ràng buộc 1 chứng từ/lô)
   const activeShipments = shipments.filter(s => {
-    if (s.id === defaultShipmentId) return true;
-    return s.status !== 'Completed' && s.status !== 'Cancelled';
+    if (defaultShipmentId && String(s.id).toLowerCase() === String(defaultShipmentId).toLowerCase()) return true;
+    if (s.status === 'Completed' || s.status === 'Cancelled') return false;
+    return !hasExistingDocForShipment(s.id, docToCreate);
   });
 
   const shipOpts = activeShipments.map(s => `
-    <option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>
+    <option value="${s.id}" ${defaultShipmentId && String(s.id).toLowerCase() === String(defaultShipmentId).toLowerCase() ? 'selected' : ''}>
       ${s.shipmentCode} – ${s.supplierName || s.customerName || ''} (${s.type === 'Export' ? 'Xuất khẩu' : 'Nhập khẩu'})
     </option>
   `).join('');
@@ -608,9 +627,9 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
         </div>
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label">Lô Hàng Liên Quan</label>
-            <select id="inv-shipment" class="form-select" ${defaultShipmentId ? 'disabled' : ''}>
-              <option value="">-- Chọn lô hàng (tuỳ chọn) --</option>
+            <label class="form-label required">Lô Hàng Liên Quan (Tối đa 1 ${docLabel}/lô)</label>
+            <select id="inv-shipment" class="form-select" required ${defaultShipmentId ? 'disabled' : ''}>
+              <option value="">-- Chọn lô hàng (chỉ hiện lô chưa có ${docLabel}) --</option>
               ${shipOpts}
             </select>
           </div>
@@ -674,7 +693,7 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
       return;
     }
 
-    const ship = shipments.find(s => s.id === shipId);
+    const ship = shipments.find(s => String(s.id).toLowerCase() === String(shipId).toLowerCase());
     if (ship && (ship.status === 'Completed' || ship.status === 'Cancelled')) {
       if (lockedHint) {
         lockedHint.style.display = 'block';
@@ -735,13 +754,21 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
   document.getElementById('create-invoice-form')?.addEventListener('submit', async e => {
     e.preventDefault();
 
-    const selectedShipId = document.getElementById('inv-shipment')?.value;
-    if (selectedShipId) {
-      const ship = shipments.find(s => s.id === selectedShipId);
-      if (ship && (ship.status === 'Completed' || ship.status === 'Cancelled')) {
-        toast(`Lô hàng ${ship.shipmentCode} đã hoàn thành (đã khóa). Không thể lập chứng từ!`, 'error');
-        return;
-      }
+    const selectedShipId = defaultShipmentId || document.getElementById('inv-shipment')?.value;
+    if (!selectedShipId) {
+      toast('Vui lòng chọn lô hàng liên kết!', 'warning');
+      return;
+    }
+
+    const chosenType = document.getElementById('inv-type').value;
+    const ship = shipments.find(s => String(s.id).toLowerCase() === String(selectedShipId).toLowerCase());
+    if (ship && (ship.status === 'Completed' || ship.status === 'Cancelled')) {
+      toast(`Lô hàng ${ship.shipmentCode} đã hoàn thành (đã khóa). Không thể lập chứng từ!`, 'error');
+      return;
+    }
+    if (hasExistingDocForShipment(selectedShipId, chosenType)) {
+      toast(`Mỗi lô hàng chỉ được phép có 1 ${docLabel}!`, 'warning');
+      return;
     }
 
     const rows  = document.querySelectorAll('#inv-items-body tr[data-productid]');
@@ -763,9 +790,9 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
     const payload = {
       invoiceNumber: document.getElementById('inv-num').value.trim(),
       invoiceDate:   new Date(document.getElementById('inv-date').value).toISOString(),
-      type:          document.getElementById('inv-type').value,
-      currency:      'USD',
-      shipmentId:    selectedShipId || null,
+      type:          chosenType,
+      currency:      ship?.currency || 'USD',
+      shipmentId:    selectedShipId,
       items,
     };
 
@@ -776,16 +803,21 @@ export async function openCreateInvoiceModal(defaultShipmentId = null, forceType
       if (fileInput?.files.length && invoiceId) {
         const fd = new FormData();
         fd.append('File', fileInput.files[0]);
-        fd.append('Category', 'Invoice');
+        fd.append('Category', isPacking ? 'PackingList' : isSales ? 'SalesContract' : 'CommercialInvoice');
         fd.append('EntityType', 'Invoice');
         fd.append('EntityId', invoiceId);
         if (payload.shipmentId) fd.append('ShipmentId', payload.shipmentId);
         await api.upload('/api/documents/upload', fd);
       }
-      toast('Tạo chứng từ thành công!', 'success');
+      toast(`Tạo ${docLabel} thành công!`, 'success');
       if (typeof window.closeModal === 'function') window.closeModal();
       else if (typeof window.closeGlobalModal === 'function') window.closeGlobalModal();
-      await loadInvoices();
+      if (typeof onSuccessCallback === 'function') {
+        await onSuccessCallback(created?.data);
+      }
+      if (document.getElementById('invoices-table-body')) {
+        await loadInvoices();
+      }
     } catch (err) {
       toast(`Lỗi: ${err.message}`, 'error');
     }

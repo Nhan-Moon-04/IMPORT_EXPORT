@@ -211,11 +211,11 @@ async function loadBLsData() {
         if (inv.notes && inv.notes.startsWith('{')) meta = JSON.parse(inv.notes);
       } catch (e) {}
 
-      // Find matching document file
+      // Find matching document file strictly belonging to this B/L or shipment
       const doc = blDocs.find(d => 
-        (d.entityId && d.entityId.toLowerCase() === inv.id.toLowerCase()) ||
-        (d.shipmentId && inv.shipmentId && d.shipmentId.toLowerCase() === inv.shipmentId.toLowerCase()) ||
-        (inv.invoiceNumber && d.fileName && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
+        (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase()) ||
+        (d.shipmentId && inv.shipmentId && String(d.shipmentId).toLowerCase() === String(inv.shipmentId).toLowerCase() &&
+          (!d.entityId || String(d.entityId).toLowerCase() === String(inv.id).toLowerCase()))
       );
 
       const shp = shipments.find(s => s.id === inv.shipmentId);
@@ -230,12 +230,12 @@ async function loadBLsData() {
         shipmentType: inv.shipmentType || shp?.type || 'Import',
         totalPackages: meta.packages || shp?.totalPackages || 0,
         grossWeight: meta.grossWeight || shp?.totalGrossWeight || 0,
-        shippingLine: meta.shippingLine || 'COSCO SHIPPING',
-        vesselVoyage: meta.vesselVoyage || (meta.vessel ? `${meta.vessel} / ${meta.voyage || ''}` : 'COSCO PRIDE / 024E'),
-        pol: meta.pol || shp?.portOfLoading || 'Shanghai Port, China',
-        pod: meta.pod || shp?.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
-        containerNo: meta.containerNo || 'TGHU9843210',
-        sealNo: meta.sealNo || 'SL-88992',
+        shippingLine: meta.shippingLine || '---',
+        vesselVoyage: meta.vesselVoyage || (meta.vessel ? `${meta.vessel} / ${meta.voyage || ''}` : '---'),
+        pol: meta.pol || shp?.portOfLoading || '---',
+        pod: meta.pod || shp?.portOfDischarge || '---',
+        containerNo: meta.containerNo || '---',
+        sealNo: meta.sealNo || '---',
         blType: meta.blType || 'Master B/L',
         freightTerm: inv.paymentTerms || meta.freightTerm || (shp?.deliveryTerm === 'CIF' ? 'Freight Prepaid' : 'Freight Collect'),
         status: meta.status || 'Original',
@@ -244,67 +244,6 @@ async function loadBLsData() {
         notes: meta.notes || (inv.notes && !inv.notes.startsWith('{') ? inv.notes : '')
       };
     });
-
-    // Surface document records
-    blDocs.forEach(d => {
-      const alreadyLinked = blList.some(b => b.docId === d.id || (b.shipmentId && d.shipmentId && b.shipmentId.toLowerCase() === d.shipmentId.toLowerCase()));
-      if (!alreadyLinked && d.shipmentCode) {
-        const shp = shipments.find(s => s.id === d.shipmentId || s.shipmentCode === d.shipmentCode);
-        blList.push({
-          id: d.id,
-          isDocVirtual: true,
-          blNumber: `BL-${d.shipmentCode}-01`,
-          issueDate: d.createdAt,
-          shipmentId: d.shipmentId,
-          shipmentCode: d.shipmentCode,
-          partnerName: shp?.supplierName || shp?.customerName || 'LONG CHENG WU TEXTILE CO., LTD',
-          shipmentType: shp?.type || 'Import',
-          totalPackages: shp?.totalPackages || 222,
-          grossWeight: shp?.totalGrossWeight || 22,
-          shippingLine: 'COSCO SHIPPING',
-          vesselVoyage: 'WAN HAI 311 / S204',
-          pol: shp?.portOfLoading || 'Cat Lai Port, Ho Chi Minh City',
-          pod: shp?.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
-          containerNo: 'WHLU9843210',
-          sealNo: 'SL-68901',
-          blType: 'Master B/L',
-          freightTerm: 'Freight Prepaid',
-          status: 'Surrendered',
-          docId: d.id,
-          docName: d.originalFileName || d.fileName,
-          notes: d.description || 'Được đồng bộ từ file chứng từ kho'
-        });
-      }
-    });
-
-    // Sample fallback
-    if (blList.length === 0 && shipments.length > 0) {
-      const shp = shipments[0];
-      blList.push({
-        id: 'sample-bl-01',
-        isSample: true,
-        blNumber: 'COSU63289104',
-        issueDate: shp.createdAt || new Date().toISOString(),
-        shipmentId: shp.id,
-        shipmentCode: shp.shipmentCode,
-        partnerName: shp.supplierName || 'LONG CHENG WU TEXTILE CO., LTD',
-        shipmentType: shp.type || 'Import',
-        totalPackages: shp.totalPackages || 222,
-        grossWeight: shp.totalGrossWeight || 22,
-        shippingLine: 'COSCO SHIPPING',
-        vesselVoyage: 'COSCO PRIDE / 024E',
-        pol: shp.portOfLoading || 'Shanghai Port, China',
-        pod: shp.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
-        containerNo: 'TGHU9843210',
-        sealNo: 'SL-88992',
-        blType: 'Master B/L',
-        freightTerm: 'Freight Prepaid',
-        status: 'Original',
-        docId: null,
-        docName: null,
-        notes: 'Vận đơn đường biển hàng nguyên Container (FCL)'
-      });
-    }
 
     currentBLs = blList;
     filterBLsData();
@@ -1045,20 +984,37 @@ window.editBL = function(blId) {
  */
 export async function openBLModal(bl = null, onSaved = null, defaultShipmentId = null) {
   const isEdit = !!bl;
-  let shipments = [];
+  let shipments = [], existingBLs = [];
   try {
-    const res = await api.get('/api/shipments');
+    const [res, invRes] = await Promise.all([
+      api.get('/api/shipments?pageSize=200'),
+      api.get('/api/invoices?pageSize=500').catch(() => ({ data: [] }))
+    ]);
     shipments = res.data?.items || res.data || [];
+    const allInvs = invRes.data?.items || invRes.data || [];
+    existingBLs = allInvs.filter(i => i.type === 'BillOfLading');
   } catch (e) {}
 
+  const hasExistingBL = (shipId) => {
+    const sid = String(shipId || '').toLowerCase();
+    if (!sid) return false;
+    return existingBLs.some(i => String(i.shipmentId || '').toLowerCase() === sid && (!isEdit || String(i.id || '').toLowerCase() !== String(bl?.id || '').toLowerCase()));
+  };
+
   const targetShipmentId = bl?.shipmentId || defaultShipmentId;
+  if (!isEdit && targetShipmentId && hasExistingBL(targetShipmentId)) {
+    toast('Mỗi lô hàng chỉ được phép có 1 Vận đơn (B/L)! Vui lòng xóa vận đơn hiện tại nếu muốn tạo lại.', 'warning');
+    return;
+  }
+
   const activeShipments = shipments.filter(s => {
-    if (s.id === targetShipmentId) return true;
-    return s.status !== 'Completed' && s.status !== 'Cancelled';
+    if (targetShipmentId && String(s.id).toLowerCase() === String(targetShipmentId).toLowerCase()) return true;
+    if (s.status === 'Completed' || s.status === 'Cancelled') return false;
+    return !hasExistingBL(s.id);
   });
 
   const shpOptions = activeShipments.map(s => `
-    <option value="${s.id}" ${s.id === targetShipmentId ? 'selected' : ''} 
+    <option value="${s.id}" ${targetShipmentId && String(s.id).toLowerCase() === String(targetShipmentId).toLowerCase() ? 'selected' : ''} 
       data-code="${s.shipmentCode}" 
       data-pol="${s.portOfLoading || ''}" 
       data-pod="${s.portOfDischarge || ''}" 
@@ -1075,8 +1031,8 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
     <form id="form-bl" style="display: flex; flex-direction: column; gap: 14px; max-width: 820px;">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div>
-          <label class="form-label" style="font-weight: 600;">Lô Hàng Liên Kết *</label>
-          <select id="bl-shipment-id" class="form-input" required style="width: 100%;">
+          <label class="form-label" style="font-weight: 600;">Lô Hàng Liên Kết (Tối đa 1 B/L/lô) *</label>
+          <select id="bl-shipment-id" class="form-input" required style="width: 100%;" ${defaultShipmentId ? 'disabled' : ''}>
             <option value="">-- Chọn lô hàng liên kết --</option>
             ${shpOptions}
           </select>
@@ -1217,10 +1173,14 @@ export async function openBLModal(bl = null, onSaved = null, defaultShipmentId =
   document.getElementById('form-bl')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const shipmentId = document.getElementById('bl-shipment-id').value;
+    const shipmentId = defaultShipmentId || document.getElementById('bl-shipment-id').value;
     const blNumber = document.getElementById('bl-number').value.trim();
     if (!shipmentId) { toast('Vui lòng chọn lô hàng liên kết!', 'warning'); return; }
     if (!blNumber) { toast('Vui lòng nhập số vận đơn B/L!', 'warning'); return; }
+    if (!isEdit && hasExistingBL(shipmentId)) {
+      toast('Mỗi lô hàng chỉ được phép có 1 Vận đơn (B/L)!', 'warning');
+      return;
+    }
 
     const meta = {
       blType: document.getElementById('bl-type').value,

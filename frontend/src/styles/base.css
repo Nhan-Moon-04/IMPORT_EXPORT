@@ -1,41 +1,53 @@
-/* =========================================================
-   BASE STYLES & RESET
-   ========================================================= */
-
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-body {
+html, body {
+  height: 100%;
   font-family: var(--font-family);
-  background-color: var(--bg-app);
-  color: var(--text-main);
   font-size: 13px;
   line-height: 1.45;
-  height: 100vh;
+  color: var(--text-main);
+  background-color: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
-input, button, select, textarea {
-  font-family: inherit;
-  font-size: inherit;
-}
-
 a {
-  color: var(--misa-blue);
+  color: var(--amis-blue);
   text-decoration: none;
+  transition: var(--transition);
 }
 
 a:hover {
-  text-decoration: underline;
+  color: var(--amis-blue-hover);
 }
 
-/* Scrollbar */
+ul, ol {
+  list-style: none;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Tabular numbers for financial & logistics figures */
+.mono,
+.tabular-nums,
+code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -43,10 +55,14 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.8);
+  background: #94a3b8;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #475569;
 }

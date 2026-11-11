@@ -252,36 +252,46 @@ function setupEvents() {
 }
 
 window.xnkUploadDocumentModal = openUploadDocumentModal;
-export function openUploadDocumentModal(defaultShipmentId = null) {
+export async function openUploadDocumentModal(defaultShipmentId = null, onUploaded = null) {
+  if (!shipments || shipments.length === 0) {
+    try {
+      const res = await api.get("/api/shipments?pageSize=200");
+      shipments = res.data?.items || res.data || [];
+    } catch (_) {}
+  }
+
   const content = `
-    <div style="padding: 10px 0;">
-      <div class="dropzone" id="modalDocumentDropzone" style="cursor: pointer; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 30px; text-align: center; transition: all 0.2s;">
-        <div class="dropzone-icon" style="margin-bottom: 12px; color: #94a3b8;">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><polyline points="9 14 12 11 15 14"></polyline></svg>
+    <div style="padding: 6px 0;">
+      <div class="dropzone" id="modalDocumentDropzone" style="cursor: pointer; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 6px; padding: 24px 16px; text-align: center; transition: all 0.15s;">
+        <div style="margin-bottom: 8px; color: #64748b;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
         </div>
-        <div style="font-weight: 700; font-size: 15px; color: var(--misa-blue);">Kéo thả file chứng từ vào đây hoặc bấm để chọn tệp</div>
-        <div style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">Hỗ trợ: PDF, Excel, Word, Ảnh (Tối đa 50MB)</div>
+        <div style="font-weight: 600; font-size: 13.5px; color: #0f172a;">Chọn tệp hoặc kéo thả chứng từ vào đây</div>
+        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Hỗ trợ: PDF, Excel, Word, Ảnh (Tối đa 50MB)</div>
         <input type="file" id="modalFilePickerInput" style="display: none;">
       </div>
 
-      <div id="modalFileUploadForm" style="display: none; margin-top: 20px;">
-        <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 12px 16px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+      <div id="modalFileUploadForm" style="display: none; margin-top: 14px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0266b3" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
             <div>
-              <div style="font-weight: 700; font-size: 14px; color: #3730a3;" id="modalSelectedFileName">document.pdf</div>
-              <div style="font-size: 12px; color: #6366f1;" id="modalSelectedFileSize">1.2 MB</div>
+              <div style="font-weight: 600; font-size: 13px; color: #0f172a;" id="modalSelectedFileName">document.pdf</div>
+              <div style="font-size: 11.5px; color: #64748b;" id="modalSelectedFileSize">1.2 MB</div>
             </div>
           </div>
-          <button type="button" id="btnCancelFile" class="btn btn-default btn-sm" style="background: white; border-color: #c7d2fe; color: #4f46e5;">Đổi file khác</button>
+          <button type="button" id="btnCancelFile" class="btn btn-default btn-sm">Chọn tệp khác</button>
         </div>
 
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label required">Phân Loại Chứng Từ</label>
+            <label class="form-label required">Phân loại chứng từ</label>
             <select id="modalDocCategory" class="form-select">
-              <option value="BillOfLading">Vận đơn đường biển (Bill of Lading - B/L)</option>
+              <option value="SalesContract">Hợp đồng ngoại thương (Sales Contract)</option>
+              <option value="CommercialInvoice">Hóa đơn thương mại (Commercial Invoice)</option>
               <option value="PackingList">Phiếu đóng gói (Packing List)</option>
+              <option value="BillOfLading">Vận đơn đường biển (Bill of Lading - B/L)</option>
+              <option value="Customs">Tờ khai hải quan (Customs Declaration)</option>
               <option value="CertificateOfOrigin">Chứng nhận xuất xứ (C/O)</option>
               <option value="Insurance">Chứng từ bảo hiểm hàng hải</option>
               <option value="InspectionCertificate">Chứng thư kiểm định / Giám định</option>
@@ -289,32 +299,31 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Liên Kết Lô Hàng (Shipment)</label>
-            <select id="modalDocShipmentId" class="form-select">
+            <label class="form-label">Lô hàng liên kết</label>
+            <select id="modalDocShipmentId" class="form-select" ${defaultShipmentId ? 'disabled' : ''}>
               <option value="">-- Không liên kết --</option>
               ${(shipments || [])
-              .filter(s => s.id === defaultShipmentId || (s.status !== 'Completed' && s.status !== 'Cancelled'))
-              .map(s => `<option value="${s.id}" ${s.id === defaultShipmentId ? 'selected' : ''}>${s.shipmentCode} (${s.type === 'Export' ? 'Xuất' : 'Nhập'})</option>`).join('')}
+              .filter(s => (defaultShipmentId && String(s.id).toLowerCase() === String(defaultShipmentId).toLowerCase()) || (s.status !== 'Completed' && s.status !== 'Cancelled'))
+              .map(s => `<option value="${s.id}" ${defaultShipmentId && String(s.id).toLowerCase() === String(defaultShipmentId).toLowerCase() ? 'selected' : ''}>${s.shipmentCode} (${s.type === 'Export' ? 'Xuất' : 'Nhập'})</option>`).join('')}
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Mô Tả Ghi Chú</label>
-          <input type="text" id="modalDocDesc" class="form-input" placeholder="VD: Vận đơn gốc surrender có ký điện tử">
+          <label class="form-label">Ghi chú / Mô tả</label>
+          <input type="text" id="modalDocDesc" class="form-input" placeholder="VD: Bản scan có dấu xác nhận...">
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-          <button type="button" class="btn btn-default" onclick="closeModal()">Hủy Bỏ</button>
-          <button type="button" id="btnStartModalUpload" class="btn btn-primary" style="padding: 0 24px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 
-            Tải Lên Chứng Từ
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+          <button type="button" class="btn btn-default" onclick="closeModal()">Hủy</button>
+          <button type="button" id="btnStartModalUpload" class="btn btn-primary" style="padding: 0 20px;">
+            Tải lên tệp
           </button>
         </div>
       </div>
     </div>
   `;
 
-  openModal('Tải Lên Chứng Từ XNK', content);
+  openModal('Đính kèm tệp chứng từ', content);
 
   // Setup modal events
   const dropzone = document.getElementById("modalDocumentDropzone");
@@ -326,8 +335,8 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
 
   dropzone.addEventListener("dragover", (e) => {
     e.preventDefault();
-    dropzone.style.borderColor = "var(--misa-blue)";
-    dropzone.style.background = "#eff6ff";
+    dropzone.style.borderColor = "#0266b3";
+    dropzone.style.background = "#f1f5f9";
   });
 
   dropzone.addEventListener("dragleave", () => {
@@ -363,9 +372,13 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
     // Auto-select category based on file name or ext
     const nameLow = file.name.toLowerCase();
     const selectCat = document.getElementById("modalDocCategory");
-    if (nameLow.includes("packing") || nameLow.includes("pk") || nameLow.includes("pl")) selectCat.value = "PackingList";
+    if (nameLow.includes("contract") || nameLow.includes("hd") || nameLow.includes("sc")) selectCat.value = "SalesContract";
+    else if (nameLow.includes("inv") || nameLow.includes("invoice")) selectCat.value = "CommercialInvoice";
+    else if (nameLow.includes("packing") || nameLow.includes("pk") || nameLow.includes("pl")) selectCat.value = "PackingList";
     else if (nameLow.includes("bl") || nameLow.includes("bill of lading") || nameLow.includes("surrender")) selectCat.value = "BillOfLading";
+    else if (nameLow.includes("tk") || nameLow.includes("customs") || nameLow.includes("tokhai")) selectCat.value = "Customs";
     else if (nameLow.includes("co") || nameLow.includes("certificate of origin")) selectCat.value = "CertificateOfOrigin";
+    else selectCat.value = "Other";
   }
 
   document.getElementById("btnCancelFile").addEventListener("click", () => {
@@ -380,25 +393,30 @@ export function openUploadDocumentModal(defaultShipmentId = null) {
     
     const btnSubmit = document.getElementById("btnStartModalUpload");
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '<div class="spinner" style="width:16px; height:16px; border-width:2px; border-top-color:white;"></div> Đang tải lên...';
+    btnSubmit.textContent = 'Đang tải lên...';
 
     const formData = new FormData();
     formData.append("file", selectedFile);
     formData.append("category", document.getElementById("modalDocCategory").value);
-    const shpId = document.getElementById("modalDocShipmentId").value;
+    const shpId = defaultShipmentId || document.getElementById("modalDocShipmentId")?.value;
     if (shpId) formData.append("shipmentId", shpId);
     const desc = document.getElementById("modalDocDesc").value.trim();
     if (desc) formData.append("description", desc);
 
     try {
       await api.upload("/api/documents/upload", formData);
-      showToast("Tải lên chứng từ thành công!", "success");
+      showToast("Đã tải lên tệp đính kèm thành công!", "success");
       closeModal();
-      await loadDocumentsData();
+      if (typeof onUploaded === 'function') {
+        await onUploaded();
+      }
+      if (document.getElementById("docsTbody")) {
+        await loadDocumentsData();
+      }
     } catch (err) {
       showToast("Lỗi tải lên: " + err.message, "error");
       btnSubmit.disabled = false;
-      btnSubmit.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Tải Lên Chứng Từ';
+      btnSubmit.textContent = 'Tải lên tệp';
     }
   });
 }

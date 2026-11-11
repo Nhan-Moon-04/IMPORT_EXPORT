@@ -49,7 +49,7 @@ const ROUTE_TITLES = {
   'containers': 'Quản Lý Container & Số Chì (Seal)',
   'tracking': 'Theo Dõi Hải Trình Tàu / ETD / ETA',
   'customs-accounts': 'Tài Khoản Hải Quan & Token Điện Tử',
-  'customs-declarations': 'Tờ Khai Hải Quan Điện Tử (VNACCS)',
+  'customs-declarations': 'Tờ Khai Hải Quan',
   'customs-taxes': 'Thuế Hải Quan & C/O Form E',
   'partners-suppliers': 'Danh Bạ Nhà Cung Cấp',
   'partners-customers': 'Danh Bạ Khách Hàng',

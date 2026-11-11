@@ -144,7 +144,9 @@ const STATUS_LABEL = {
   Cancelled: 'Đã hủy',
 };
 
-export async function renderShipmentDetail(container, shipmentId) {
+export async function renderShipmentDetail(container, shipmentId, activePane = null) {
+  const currentPane = activePane || container.querySelector('.sd-tab.active')?.dataset?.pane || 'items';
+
   container.innerHTML = `
     <div class="sd-misa-page">
       <div style="padding:40px;text-align:center;">
@@ -160,21 +162,30 @@ export async function renderShipmentDetail(container, shipmentId) {
 
     const [shpRes, invRes, docRes, prodRes, invDocsRes, blDocsRes] = await Promise.all([
       api.get(`/api/shipments/${shipmentId}`).catch(() => null),
-      api.get(`/api/invoices?shipmentId=${shipmentId}`).catch(() => ({ data: [] })),
-      api.get(`/api/documents?shipmentId=${shipmentId}`).catch(() => ({ data: [] })),
+      api.get(`/api/invoices?shipmentId=${shipmentId}&pageSize=100`).catch(() => ({ data: [] })),
+      api.get(`/api/documents?shipmentId=${shipmentId}&pageSize=100`).catch(() => ({ data: [] })),
       api.get(`/api/products?pageSize=500`).catch(() => ({ data: { items: [] } })),
       api.get(`/api/documents?entityType=Invoice&pageSize=500`).catch(() => ({ data: [] })),
-      api.get(`/api/documents?category=BillOfLading`).catch(() => ({ data: [] })),
+      api.get(`/api/documents?category=BillOfLading&pageSize=200`).catch(() => ({ data: [] })),
     ]);
 
     shipment = shpRes?.data;
-    invoices = (invRes?.data?.items || invRes?.data || []).filter(i => i.shipmentId === shipmentId);
-    documents = (docRes?.data?.items || docRes?.data || []).filter(d => d.shipmentId === shipmentId);
+    const shipmentIdStr = String(shipmentId).toLowerCase();
+    invoices = (invRes?.data?.items || invRes?.data || []).filter(i => String(i.shipmentId || '').toLowerCase() === shipmentIdStr);
+    documents = (docRes?.data?.items || docRes?.data || []).filter(d => String(d.shipmentId || '').toLowerCase() === shipmentIdStr);
     const invoiceDocs = invDocsRes?.data?.items || invDocsRes?.data || [];
     const blDocs = blDocsRes?.data?.items || blDocsRes?.data || [];
+    const validInvoiceIds = new Set(invoices.map(i => String(i.id || '').toLowerCase()).filter(Boolean));
+    const validCustomsIds = new Set((shipment?.customsDeclarations || []).map(c => String(c.id || '').toLowerCase()).filter(Boolean));
     const combinedDocs = [...documents];
     [...invoiceDocs, ...blDocs].forEach(d => {
-      if (!combinedDocs.some(x => x.id === d.id)) combinedDocs.push(d);
+      const docShpId = String(d.shipmentId || '').toLowerCase();
+      const docEntId = String(d.entityId || '').toLowerCase();
+      const belongsToShipment = (docShpId && docShpId === shipmentIdStr) ||
+        (docEntId && (docEntId === shipmentIdStr || validInvoiceIds.has(docEntId) || validCustomsIds.has(docEntId)));
+      if (belongsToShipment && !combinedDocs.some(x => x.id === d.id)) {
+        combinedDocs.push(d);
+      }
     });
 
     const allProducts = prodRes?.data?.items || prodRes?.data || [];
@@ -264,15 +275,16 @@ export async function renderShipmentDetail(container, shipmentId) {
     const supplierTitle = shipment.supplierName || shipment.customerName || '---';
     const partnerCodeDisplay = (partnerCode || shipment.supplierCode || shipment.customerCode || '---').toUpperCase();
 
-    const trueInvoices = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract' && i.type !== 'BillOfLading');
-    const salesContracts = invoices.filter(i => i.type === 'SalesContract');
-    const blInvoices = invoices.filter(i => i.type === 'BillOfLading');
+    // Ràng buộc tối đa 1 chứng từ mỗi loại cho mỗi lô hàng
+    const trueInvoices = invoices.filter(i => i.type !== 'PackingList' && i.type !== 'SalesContract' && i.type !== 'BillOfLading').slice(0, 1);
+    const salesContracts = invoices.filter(i => i.type === 'SalesContract').slice(0, 1);
+    const blInvoices = invoices.filter(i => i.type === 'BillOfLading').slice(0, 1);
     const packingListsFromInv = invoices.filter(i => i.type === 'PackingList');
     const packingListsFromShp = shipment.packingLists || [];
-    const packingLists = [...packingListsFromInv];
+    const rawPackingLists = [...packingListsFromInv];
     packingListsFromShp.forEach(pl => {
-      if (!packingLists.some(p => p.id === pl.id || (p.invoiceNumber && (p.invoiceNumber === pl.packingListNumber || p.invoiceNumber === pl.invoiceNumber)))) {
-        packingLists.push({
+      if (!rawPackingLists.some(p => p.id === pl.id || (p.invoiceNumber && (p.invoiceNumber === pl.packingListNumber || p.invoiceNumber === pl.invoiceNumber)))) {
+        rawPackingLists.push({
           ...pl,
           invoiceNumber: pl.packingListNumber || pl.invoiceNumber,
           invoiceDate: pl.packingListDate || pl.invoiceDate || pl.createdAt,
@@ -283,15 +295,15 @@ export async function renderShipmentDetail(container, shipmentId) {
         });
       }
     });
+    const packingLists = rawPackingLists.slice(0, 1);
 
-    // Parse B/L items
+    // Parse B/L items (chỉ lấy tối đa 1 vận đơn thực sự thuộc lô hàng này)
     const blList = blInvoices.map(inv => {
       let meta = {};
       try { if (inv.notes && inv.notes.startsWith('{')) meta = JSON.parse(inv.notes); } catch (e) { }
 
       const doc = combinedDocs.find(d =>
         (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase()) ||
-        (d.category === 'BillOfLading' && d.shipmentId && String(d.shipmentId).toLowerCase() === String(shipmentId).toLowerCase()) ||
         (inv.invoiceNumber && d.fileName && d.fileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase())) ||
         (inv.invoiceNumber && d.originalFileName && d.originalFileName.toLowerCase().includes(inv.invoiceNumber.toLowerCase()))
       );
@@ -303,10 +315,10 @@ export async function renderShipmentDetail(container, shipmentId) {
         shipmentId: inv.shipmentId,
         shipmentCode: shpCode,
         partnerName: inv.partnerName || supplierTitle,
-        shippingLine: meta.shippingLine || 'COSCO SHIPPING',
-        vesselVoyage: meta.vesselVoyage || (meta.vessel ? `${meta.vessel} / ${meta.voyage || ''}` : 'COSCO PRIDE / 024E'),
-        pol: meta.pol || shipment.portOfLoading || 'Shanghai Port, China',
-        pod: meta.pod || shipment.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
+        shippingLine: meta.shippingLine || '---',
+        vesselVoyage: meta.vesselVoyage || (meta.vessel ? `${meta.vessel} / ${meta.voyage || ''}` : '---'),
+        pol: meta.pol || shipment.portOfLoading || '---',
+        pod: meta.pod || shipment.portOfDischarge || '---',
         containerNo: meta.containerNo || '---',
         sealNo: meta.sealNo || '---',
         totalPackages: meta.packages || totalPackages,
@@ -320,42 +332,14 @@ export async function renderShipmentDetail(container, shipmentId) {
       };
     });
 
-    combinedDocs.forEach(d => {
-      if (d.category === 'BillOfLading' && !blList.some(b => b.docId === d.id || b.id === d.entityId)) {
-        blList.push({
-          id: d.id,
-          isDocVirtual: true,
-          blNumber: shipment.blNumber || `BL-${shpCode}`,
-          issueDate: d.createdAt,
-          shipmentId: shipmentId,
-          shipmentCode: shpCode,
-          partnerName: supplierTitle,
-          shippingLine: 'COSCO SHIPPING',
-          vesselVoyage: 'COSCO PRIDE / 024E',
-          pol: shipment.portOfLoading || 'Shanghai Port, China',
-          pod: shipment.portOfDischarge || 'Cat Lai Port, Ho Chi Minh City',
-          containerNo: '---',
-          sealNo: '---',
-          totalPackages: totalPackages,
-          grossWeight: totalGrossWeight,
-          blType: 'Master B/L',
-          freightTerm: shipment.deliveryTerm === 'CIF' ? 'Freight Prepaid' : 'Freight Collect',
-          status: 'Original',
-          docId: d.id,
-          docName: d.originalFileName || d.fileName,
-          notes: d.description || ''
-        });
-      }
-    });
-
     const primaryBL = blList[0];
     const primaryInvoiceNumber = trueInvoices[0]?.invoiceNumber || '---';
     const primaryContractNumber = salesContracts[0]?.invoiceNumber || '---';
-    const primaryDeclarationNumber = shipment.customsDeclarations?.[0]?.declarationNumber || '---';
+    const customs = (shipment.customsDeclarations || []).slice(0, 1);
+    const primaryDeclarationNumber = customs[0]?.declarationNumber || '---';
 
     const bookings = shipment.bookings || [];
     const containers = shipment.containers || [];
-    const customs = shipment.customsDeclarations || [];
 
     const isCompleted = shipment.status === 'Completed';
     const statusClass = STATUS_CLASS[shipment.status] || 'chip chip-slate';
@@ -526,15 +510,14 @@ export async function renderShipmentDetail(container, shipmentId) {
         <div class="sd-customs-card" style="margin-bottom:14px;">
           <div class="sd-customs-card-header">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-weight:700; color:#0f172a; font-size:13.5px;">📋 Tờ Khai Hải Quan Điện Tử (VNACCS)</span>
+              <span style="font-weight:700; color:#0f172a; font-size:13.5px;">📋 Tờ Khai Hải Quan</span>
               ${st}
               ${isCdDomestic ? '<span class="customs-scope-badge domestic">🏠 Trong nước (VNĐ)</span>' : '<span class="customs-scope-badge foreign">🌐 Nước ngoài (USD)</span>'}
             </div>
             <div style="display:flex;gap:6px;">
-              <button class="sd-btn-sm btn-secondary" onclick="window.viewCustomsVNACCS('${cd.id}')" title="Xem tờ khai chuẩn A4 VNACCS">Bản VNACCS</button>
               <button class="sd-btn-sm btn-secondary" onclick="window.viewCustomsDoc('${cd.id}')" title="Xem hoặc tải file đính kèm tờ khai (.xlsx / PDF)">📥 File Đính Kèm</button>
-              <button class="sd-btn-sm btn-primary" onclick="window.editCustomsDeclaration('${cd.id}', () => { document.getElementById('sd-back-link').click(); setTimeout(() => window.appNavigateTo('shipment-detail?id=${shipmentId}'), 100); })">Sửa</button>
-              <button class="sd-btn-sm btn-danger" onclick="window.deleteCustomsDeclaration('${cd.id}', () => { document.getElementById('sd-back-link').click(); setTimeout(() => window.appNavigateTo('shipment-detail?id=${shipmentId}'), 100); })">Xóa</button>
+              <button class="sd-btn-sm btn-primary" onclick="window.editCustomsDeclaration('${cd.id}', () => window.refreshCurrentShipmentDetail?.('customs'))">Sửa</button>
+              <button class="sd-btn-sm btn-danger" onclick="window.deleteCustomsDeclaration('${cd.id}', () => window.refreshCurrentShipmentDetail?.('customs'))">Xóa</button>
             </div>
           </div>
           <div class="sd-customs-card-body">
@@ -765,7 +748,7 @@ export async function renderShipmentDetail(container, shipmentId) {
               <div class="sd-form-row">
                 <div class="sd-form-label">Mã số thuế & Địa chỉ</div>
                 <div class="sd-form-control">
-                  MST: ${shipment.partnerTaxCode || '3901239938'} • ${shipment.partnerAddress || 'Khu Công Nghiệp Phước Đông, Tây Ninh, Việt Nam'}
+                  MST: ${shipment.partnerTaxCode || '---'} • ${shipment.partnerAddress || '---'}
                 </div>
               </div>
               <div class="sd-form-row-2col">
@@ -781,11 +764,11 @@ export async function renderShipmentDetail(container, shipmentId) {
               <div class="sd-form-row-2col">
                 <div class="sd-form-group">
                   <div class="sd-form-label">Hãng vận tải / Đại lý biển</div>
-                  <div class="sd-form-control">${primaryBL?.shippingLine || 'COSCO SHIPPING'}</div>
+                  <div class="sd-form-control">${primaryBL?.shippingLine || '---'}</div>
                 </div>
                 <div class="sd-form-group">
                   <div class="sd-form-label">Tên tàu / Số chuyến (Vessel/Voyage)</div>
-                  <div class="sd-form-control">${primaryBL?.vesselVoyage || 'COSCO PRIDE / 024E'}</div>
+                  <div class="sd-form-control">${primaryBL?.vesselVoyage || '---'}</div>
                 </div>
               </div>
             </div>
@@ -802,7 +785,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                 <div class="sd-form-group">
                   <div class="sd-form-label">Số Hợp đồng ngoại thương</div>
                   <div class="sd-form-control" style="font-weight:600;">
-                    ${primaryContractNumber !== '---' ? primaryContractNumber : 'SC-2026-XNK'}
+                    ${primaryContractNumber}
                   </div>
                 </div>
               </div>
@@ -810,7 +793,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                 <div class="sd-form-group">
                   <div class="sd-form-label">Số Commercial Invoice</div>
                   <div class="sd-form-control" style="font-weight:600;color:#0266b3;">
-                    ${primaryInvoiceNumber !== '---' ? primaryInvoiceNumber : 'INV-2026-001'}
+                    ${primaryInvoiceNumber}
                   </div>
                 </div>
                 <div class="sd-form-group">
@@ -822,7 +805,7 @@ export async function renderShipmentDetail(container, shipmentId) {
               </div>
               <div class="sd-form-row-2col">
                 <div class="sd-form-group">
-                  <div class="sd-form-label">Số tờ khai HQ (VNACCS)</div>
+                  <div class="sd-form-label">Số tờ khai HQ</div>
                   <div class="sd-form-control" style="font-family:monospace;">
                     ${primaryDeclarationNumber !== '---' ? primaryDeclarationNumber : 'Chưa đăng ký tờ khai'}
                   </div>
@@ -830,7 +813,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                 <div class="sd-form-group">
                   <div class="sd-form-label">Container & Số chì (Seal)</div>
                   <div class="sd-form-control" style="font-family:monospace;">
-                    ${primaryBL?.containerNo || 'TGHU9843210'} / ${primaryBL?.sealNo || 'SL-88992'}
+                    ${primaryBL?.containerNo || '---'} / ${primaryBL?.sealNo || '---'}
                   </div>
                 </div>
               </div>
@@ -851,31 +834,31 @@ export async function renderShipmentDetail(container, shipmentId) {
         <!-- MISA TABS NAVIGATION BAR -->
         <div class="sd-misa-tabs-bar">
           <div class="sd-misa-tab-list">
-            <button class="sd-tab active" data-pane="items">
+            <button class="sd-tab ${currentPane === 'items' ? 'active' : ''}" data-pane="items">
               Hàng tiền <span class="sd-tab-count">${displayItems.length}</span>
             </button>
-            <button class="sd-tab" data-pane="logistics">
-              Vận tải & B/L <span class="sd-tab-count">${docCounts.bl || 1}</span>
+            <button class="sd-tab ${currentPane === 'logistics' ? 'active' : ''}" data-pane="logistics">
+              Vận tải & B/L <span class="sd-tab-count">${docCounts.bl}/1</span>
             </button>
-            <button class="sd-tab" data-pane="contracts">
-              Hợp đồng <span class="sd-tab-count">${docCounts.contracts}</span>
+            <button class="sd-tab ${currentPane === 'contracts' ? 'active' : ''}" data-pane="contracts">
+              Hợp đồng <span class="sd-tab-count">${docCounts.contracts}/1</span>
             </button>
-            <button class="sd-tab" data-pane="invoices">
-              Hóa đơn <span class="sd-tab-count">${docCounts.invoices}</span>
+            <button class="sd-tab ${currentPane === 'invoices' ? 'active' : ''}" data-pane="invoices">
+              Hóa đơn <span class="sd-tab-count">${docCounts.invoices}/1</span>
             </button>
-            <button class="sd-tab" data-pane="packing">
-              Packing List <span class="sd-tab-count">${docCounts.packingLists}</span>
+            <button class="sd-tab ${currentPane === 'packing' ? 'active' : ''}" data-pane="packing">
+              Packing List <span class="sd-tab-count">${docCounts.packingLists}/1</span>
             </button>
-            <button class="sd-tab" data-pane="customs">
-              Hải quan & Thuế <span class="sd-tab-count">${docCounts.customs}</span>
+            <button class="sd-tab ${currentPane === 'customs' ? 'active' : ''}" data-pane="customs">
+              Hải quan & Thuế <span class="sd-tab-count">${docCounts.customs}/1</span>
             </button>
-            <button class="sd-tab" data-pane="costs">
+            <button class="sd-tab ${currentPane === 'costs' ? 'active' : ''}" data-pane="costs">
               Chi phí & Landed Cost
             </button>
-            <button class="sd-tab" data-pane="documents">
+            <button class="sd-tab ${currentPane === 'documents' ? 'active' : ''}" data-pane="documents">
               Tệp đính kèm <span class="sd-tab-count">${combinedDocs.length}</span>
             </button>
-            <button class="sd-tab" data-pane="history">
+            <button class="sd-tab ${currentPane === 'history' ? 'active' : ''}" data-pane="history">
               Nhật ký xử lý
             </button>
           </div>
@@ -889,7 +872,7 @@ export async function renderShipmentDetail(container, shipmentId) {
         <div class="sd-pane-wrap">
 
           <!-- ═══ TAB: HÀNG TIỀN (ITEMS) ═══ -->
-          <div class="sd-pane active" id="sd-pane-items">
+          <div class="sd-pane ${currentPane === 'items' ? 'active' : ''}" id="sd-pane-items">
             <div class="sd-table-wrap">
               <table class="sd-table">
                 <thead>
@@ -1018,16 +1001,20 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: VẬN TẢI & B/L ═══ -->
-          <div class="sd-pane" id="sd-pane-logistics">
+          <div class="sd-pane ${currentPane === 'logistics' ? 'active' : ''}" id="sd-pane-logistics">
             <div class="sd-card">
               <div class="sd-card-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="sd-card-header-left" style="font-weight:700; color:var(--text-main); font-size:13.5px; display:flex; align-items:center; gap:8px;">
-                  📜 Danh sách Vận đơn đường biển (Bill of Lading - B/L)
-                  <span class="chip chip-blue" style="font-size:11px;">${blList.length}</span>
+                  Vận đơn đường biển (Bill of Lading - B/L)
+                  <span style="font-size:12px; font-weight:500; color:#64748b;">(${blList.length}/1)</span>
                 </div>
-                <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-bl" ${isCompleted ? 'style="display:none;"' : ''}>
-                  + Thêm Vận Đơn (B/L)
-                </button>
+                ${blList.length >= 1 ? `
+                  <span style="font-size:12px; color:#64748b;">Đã lập 1/1 vận đơn</span>
+                ` : `
+                  <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-bl" ${isCompleted ? 'style="display:none;"' : ''}>
+                    + Thêm Vận Đơn (B/L)
+                  </button>
+                `}
               </div>
               <div class="sd-table-wrap">
                 <table class="sd-table">
@@ -1061,9 +1048,9 @@ export async function renderShipmentDetail(container, shipmentId) {
                 </div>
                 <div class="sd-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12px;">
                   <div class="sd-info-row"><span class="sd-info-key">Số B/L</span><span class="sd-info-val" style="font-family:monospace; font-weight:700; color:var(--amis-blue);">${blNumberDisplay}</span></div>
-                  <div class="sd-info-row"><span class="sd-info-key">Hãng tàu</span><span class="sd-info-val">${primaryBL?.shippingLine || 'COSCO SHIPPING'}</span></div>
-                  <div class="sd-info-row"><span class="sd-info-key">Tàu (Vessel)</span><span class="sd-info-val">${primaryBL?.vesselVoyage?.split('/')[0]?.trim() || 'COSCO PRIDE'}</span></div>
-                  <div class="sd-info-row"><span class="sd-info-key">Voyage</span><span class="sd-info-val">${primaryBL?.vesselVoyage?.split('/')[1]?.trim() || '024E'}</span></div>
+                  <div class="sd-info-row"><span class="sd-info-key">Hãng tàu</span><span class="sd-info-val">${primaryBL?.shippingLine || '---'}</span></div>
+                  <div class="sd-info-row"><span class="sd-info-key">Tàu (Vessel)</span><span class="sd-info-val">${primaryBL?.vesselVoyage && primaryBL.vesselVoyage !== '---' ? (primaryBL.vesselVoyage.split('/')[0]?.trim() || '---') : '---'}</span></div>
+                  <div class="sd-info-row"><span class="sd-info-key">Voyage</span><span class="sd-info-val">${primaryBL?.vesselVoyage && primaryBL.vesselVoyage !== '---' ? (primaryBL.vesselVoyage.split('/')[1]?.trim() || '---') : '---'}</span></div>
                   <div class="sd-info-row"><span class="sd-info-key">Cảng bốc (POL)</span><span class="sd-info-val">${polDisplay}</span></div>
                   <div class="sd-info-row"><span class="sd-info-key">Cảng dỡ (POD)</span><span class="sd-info-val">${podDisplay}</span></div>
                   <div class="sd-info-row"><span class="sd-info-key">ETD</span><span class="sd-info-val">${etdDisplay}</span></div>
@@ -1076,13 +1063,13 @@ export async function renderShipmentDetail(container, shipmentId) {
                   <div class="sd-card-header-left">📦 Container & Niêm Chì (Seal)</div>
                 </div>
                 <div class="sd-card-body" style="font-size:12px;">
-                  <div class="sd-info-row"><span class="sd-info-key">Số Container</span><span class="sd-info-val" style="font-family:monospace; font-weight:600; color:var(--amis-blue);">${primaryBL?.containerNo || 'TGHU9843210'}</span></div>
-                  <div class="sd-info-row"><span class="sd-info-key">Số chì (Seal)</span><span class="sd-info-val">${primaryBL?.sealNo || 'SL-88992'}</span></div>
+                  <div class="sd-info-row"><span class="sd-info-key">Số Container</span><span class="sd-info-val" style="font-family:monospace; font-weight:600; color:var(--amis-blue);">${primaryBL?.containerNo || '---'}</span></div>
+                  <div class="sd-info-row"><span class="sd-info-key">Số chì (Seal)</span><span class="sd-info-val">${primaryBL?.sealNo || '---'}</span></div>
                   <div class="sd-info-row"><span class="sd-info-key">Tổng Gross Weight</span><span class="sd-info-val">${Number(primaryBL?.grossWeight || totalGrossWeight).toLocaleString()} kg</span></div>
                   <div class="sd-info-row"><span class="sd-info-key">Tổng số kiện</span><span class="sd-info-val">${primaryBL?.totalPackages || totalPackages} kiện</span></div>
-                  <div class="sd-info-row"><span class="sd-info-key">Điều kiện cước</span><span class="sd-info-val" style="color:#15803d; font-weight:600;">${primaryBL?.freightTerm || 'Freight Prepaid'}</span></div>
+                  <div class="sd-info-row"><span class="sd-info-key">Điều kiện cước</span><span class="sd-info-val" style="color:#15803d; font-weight:600;">${primaryBL?.freightTerm || '---'}</span></div>
                   <div class="sd-info-row"><span class="sd-info-key">Tình trạng</span>
-                    <span class="sd-info-val"><span class="chip chip-green">${primaryBL?.status ? `B/L ${primaryBL.status}` : 'Đã hạ bãi cảng'}</span></span>
+                    <span class="sd-info-val"><span class="chip chip-slate">${primaryBL?.status ? `B/L ${primaryBL.status}` : 'Chưa có vận đơn'}</span></span>
                   </div>
                 </div>
               </div>
@@ -1090,20 +1077,24 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: SALES CONTRACT ═══ -->
-          <div class="sd-pane" id="sd-pane-contracts">
+          <div class="sd-pane ${currentPane === 'contracts' ? 'active' : ''}" id="sd-pane-contracts">
             <div class="sd-card">
               <div class="sd-card-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="sd-card-header-left" style="font-weight:700;">
-                  📄 Danh sách Hợp đồng ngoại thương (Sales Contract)
+                  Hợp đồng ngoại thương (Sales Contract) <span style="font-size:12px; font-weight:500; color:#64748b;">(${salesContracts.length}/1)</span>
                 </div>
-                <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-contract" ${isCompleted ? 'style="display:none;"' : ''}>
-                  + Tạo Hợp Đồng
-                </button>
+                ${salesContracts.length >= 1 ? `
+                  <span style="font-size:12px; color:#64748b;">Đã lập 1/1 hợp đồng</span>
+                ` : `
+                  <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-contract" ${isCompleted ? 'style="display:none;"' : ''}>
+                    + Tạo Hợp Đồng
+                  </button>
+                `}
               </div>
               <div class="sd-table-wrap">
                 <table class="sd-table">
                   <thead><tr>
-                    <th>#</th><th>Số Hợp Đồng</th><th>Phân Loại</th>
+                    <th style="width:36px; text-align:center;">#</th><th>Số Hợp Đồng</th><th>Phân Loại</th>
                     <th>Ngày Lập</th>
                     <th style="text-align:right;">Tổng Giá Trị</th>
                     <th>Tiền Tệ</th><th>Trạng Thái</th><th style="text-align:center;">Thao Tác</th>
@@ -1112,7 +1103,7 @@ export async function renderShipmentDetail(container, shipmentId) {
                     ${salesContracts.length ? salesContracts.map((c, i) => {
                       const cDate = c.invoiceDate || c.issueDate || c.createdAt;
                       const cDateStr = cDate ? new Date(cDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
-                      const cVal = Number(c.totalValue ?? c.totalAmount ?? 0);
+                      const cVal = Number(c.totalValue ?? c.totalAmount ?? totalVal ?? 0);
 
                       const cDoc = combinedDocs.find(d =>
                         (d.entityId && String(d.entityId).toLowerCase() === String(c.id).toLowerCase())
@@ -1123,24 +1114,24 @@ export async function renderShipmentDetail(container, shipmentId) {
 
                       return `
                       <tr>
-                        <td>${i + 1}</td>
-                        <td style="font-weight:700;color:#15803d;">${c.invoiceNumber || '---'}</td>
-                        <td><span class="chip chip-green">Sales Contract</span></td>
+                        <td style="text-align:center; color:#64748b;">${i + 1}</td>
+                        <td style="font-weight:700;color:#15803d;">${escapeHtml(c.invoiceNumber || '---')}</td>
+                        <td>Sales Contract</td>
                         <td>${cDateStr}</td>
                         <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${cVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                         <td>${c.currency || 'USD'}</td>
-                        <td><span class="chip chip-green">${c.status || 'Hiệu lực'}</span></td>
+                        <td><span style="color:#15803d; font-weight:600;">${c.status || 'Hiệu lực'}</span></td>
                         <td style="text-align:center; white-space:nowrap;">
                           <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                            <button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')" title="Xem chi tiết hợp đồng">Xem</button>
                             ${hasFile ? `
-                              <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${c.id}', '${cDoc.id}', '${cDoc.originalFileName || cDoc.fileName}')" title="Tải file đính kèm" style="color:#15803d; border-color:#86efac; background:#f0fdf4;">📥 Tải file</button>
+                              <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${c.id}', '${cDoc.id}', '${escapeHtml(cDoc.originalFileName || cDoc.fileName)}')" title="Tải file đính kèm">Tải file</button>
                             ` : ''}
+                            <button class="sd-btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="window.deleteShipmentInvoice('${c.id}', '${escapeHtml(c.invoiceNumber || '')}', 'Hợp đồng', 'contracts')" ${isCompleted ? 'disabled' : ''}>Xóa</button>
                           </div>
                         </td>
                       </tr>
                       `;
-                    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có hợp đồng nào</td></tr>`}
+                    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Chưa có hợp đồng cho lô hàng này. Nhấn "+ Tạo Hợp Đồng" để lập.</td></tr>`}
                   </tbody>
                 </table>
               </div>
@@ -1148,31 +1139,34 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: INVOICE ═══ -->
-          <div class="sd-pane" id="sd-pane-invoices">
+          <div class="sd-pane ${currentPane === 'invoices' ? 'active' : ''}" id="sd-pane-invoices">
             <div class="sd-card">
               <div class="sd-card-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="sd-card-header-left" style="font-weight:700;">
-                  🧾 Danh sách Hóa đơn thương mại (Commercial Invoice)
+                  Hóa đơn thương mại (Commercial Invoice) <span style="font-size:12px; font-weight:500; color:#64748b;">(${trueInvoices.length}/1)</span>
                 </div>
-                <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-invoice" ${isCompleted ? 'style="display:none;"' : ''}>
-                  + Tạo Invoice
-                </button>
+                ${trueInvoices.length >= 1 ? `
+                  <span style="font-size:12px; color:#64748b;">Đã lập 1/1 hóa đơn</span>
+                ` : `
+                  <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-invoice" ${isCompleted ? 'style="display:none;"' : ''}>
+                    + Tạo Invoice
+                  </button>
+                `}
               </div>
               <div class="sd-table-wrap">
                 <table class="sd-table">
                   <thead><tr>
-                    <th>#</th><th>Số Chứng Từ</th><th>Phân Loại</th>
+                    <th style="width:36px; text-align:center;">#</th><th>Số Chứng Từ</th><th>Phân Loại</th>
                     <th>Ngày Lập</th>
                     <th style="text-align:right;">Tổng Giá Trị</th>
                     <th>Tiền Tệ</th><th>Trạng Thái</th><th style="text-align:center;">Thao Tác</th>
                   </tr></thead>
                   <tbody>
                     ${trueInvoices.length ? trueInvoices.map((inv, i) => {
-                      const displayType = inv.type === 'ProformaInvoice' ? 'Proforma' : inv.type === 'CommercialInvoice' ? 'Commercial' : inv.type === 'TaxInvoice' ? 'Tax' : (inv.type || 'Commercial');
-                      const typeClass = inv.type === 'ProformaInvoice' ? 'chip chip-purple' : inv.type === 'CommercialInvoice' ? 'chip chip-blue' : inv.type === 'TaxInvoice' ? 'chip chip-green' : 'chip chip-slate';
+                      const displayType = inv.type === 'ProformaInvoice' ? 'Proforma Invoice' : inv.type === 'CommercialInvoice' ? 'Commercial Invoice' : inv.type === 'TaxInvoice' ? 'Tax Invoice' : (inv.type || 'Commercial Invoice');
                       const invDate = inv.invoiceDate || inv.issueDate || inv.createdAt;
                       const invDateStr = invDate ? new Date(invDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
-                      const totalVal = Number(inv.totalValue ?? inv.totalAmount ?? 0);
+                      const invVal = Number(inv.totalValue ?? inv.totalAmount ?? totalVal ?? 0);
 
                       const invDoc = combinedDocs.find(d =>
                         (d.entityId && String(d.entityId).toLowerCase() === String(inv.id).toLowerCase())
@@ -1183,24 +1177,24 @@ export async function renderShipmentDetail(container, shipmentId) {
 
                       return `
                       <tr>
-                        <td>${i + 1}</td>
-                        <td style="font-weight:700;color:var(--amis-blue);">${inv.invoiceNumber || '---'}</td>
-                        <td><span class="${typeClass}">${displayType}</span></td>
+                        <td style="text-align:center; color:#64748b;">${i + 1}</td>
+                        <td style="font-weight:700;color:var(--amis-blue);">${escapeHtml(inv.invoiceNumber || '---')}</td>
+                        <td>${displayType}</td>
                         <td>${invDateStr}</td>
-                        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;font-weight:700;color:var(--amis-green);">$${invVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                         <td>${inv.currency || 'USD'}</td>
-                        <td><span class="chip chip-green">${inv.status || 'Đã duyệt'}</span></td>
+                        <td><span style="color:#15803d; font-weight:600;">${inv.status || 'Đã duyệt'}</span></td>
                         <td style="text-align:center; white-space:nowrap;">
                           <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                            <button class="sd-btn-sm" onclick="window.appNavigateTo('invoices')" title="Xem chi tiết hoá đơn">Xem</button>
                             ${hasFile ? `
-                              <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${inv.id}', '${invDoc.id}', '${invDoc.originalFileName || invDoc.fileName}')" title="Tải file đính kèm" style="color:var(--amis-blue); border-color:#93c5fd; background:#eff6ff;">📥 Tải file</button>
+                              <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${inv.id}', '${invDoc.id}', '${escapeHtml(invDoc.originalFileName || invDoc.fileName)}')" title="Tải file đính kèm">Tải file</button>
                             ` : ''}
+                            <button class="sd-btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="window.deleteShipmentInvoice('${inv.id}', '${escapeHtml(inv.invoiceNumber || '')}', 'Hóa đơn', 'invoices')" ${isCompleted ? 'disabled' : ''}>Xóa</button>
                           </div>
                         </td>
                       </tr>
                       `;
-                    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có hóa đơn nào</td></tr>`}
+                    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Chưa có hóa đơn cho lô hàng này. Nhấn "+ Tạo Invoice" để lập.</td></tr>`}
                   </tbody>
                 </table>
               </div>
@@ -1208,20 +1202,24 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: PACKING LIST ═══ -->
-          <div class="sd-pane" id="sd-pane-packing">
+          <div class="sd-pane ${currentPane === 'packing' ? 'active' : ''}" id="sd-pane-packing">
             <div class="sd-card">
               <div class="sd-card-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="sd-card-header-left" style="font-weight:700;">
-                  📦 Danh sách Bảng kê đóng gói (Packing List)
+                  Bảng kê đóng gói (Packing List) <span style="font-size:12px; font-weight:500; color:#64748b;">(${packingLists.length}/1)</span>
                 </div>
-                <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-packing" ${isCompleted ? 'style="display:none;"' : ''}>
-                  + Tạo Packing List
-                </button>
+                ${packingLists.length >= 1 ? `
+                  <span style="font-size:12px; color:#64748b;">Đã lập 1/1 Packing List</span>
+                ` : `
+                  <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-packing" ${isCompleted ? 'style="display:none;"' : ''}>
+                    + Tạo Packing List
+                  </button>
+                `}
               </div>
               <div class="sd-table-wrap">
                 <table class="sd-table">
                   <thead><tr>
-                    <th>#</th><th>Số Packing List</th><th>Ngày Lập</th>
+                    <th style="width:36px; text-align:center;">#</th><th>Số Packing List</th><th>Ngày Lập</th>
                     <th>Số Kiện</th>
                     <th style="text-align:right;">Net Weight (kg)</th>
                     <th style="text-align:right;">Gross Weight (kg)</th>
@@ -1241,24 +1239,24 @@ export async function renderShipmentDetail(container, shipmentId) {
 
                       return `
                       <tr>
-                        <td>${i + 1}</td>
-                        <td style="font-weight:700;color:var(--amis-blue);">${p.invoiceNumber || '---'}</td>
+                        <td style="text-align:center; color:#64748b;">${i + 1}</td>
+                        <td style="font-weight:700;color:var(--amis-blue);">${escapeHtml(p.invoiceNumber || '---')}</td>
                         <td>${pDateStr}</td>
-                        <td>${p.totalPackages || totalPackages} Pallets</td>
+                        <td>${p.totalPackages || totalPackages} kiện</td>
                         <td style="text-align:right;">${p.netWeight || totalNetWeight} kg</td>
                         <td style="text-align:right;">${p.grossWeight || totalGrossWeight} kg</td>
-                        <td>${p.packagingType || 'Palletized & shrink wrapped'}</td>
+                        <td>${p.packagingType || 'Đóng kiện tiêu chuẩn'}</td>
                         <td style="text-align:center; white-space:nowrap;">
                           <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                            <button class="sd-btn-sm" onclick="window.appNavigateTo('packing-lists')" title="Xem chi tiết Packing List">Chi tiết</button>
                             ${hasFile ? `
-                              <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${p.id}', '${pDoc.id}', '${pDoc.originalFileName || pDoc.fileName}')" title="Tải file đính kèm" style="color:var(--amis-blue); border-color:#93c5fd; background:#eff6ff;">📥 Tải file</button>
+                              <button class="sd-btn-sm" onclick="window.downloadInvoiceFile('${p.id}', '${pDoc.id}', '${escapeHtml(pDoc.originalFileName || pDoc.fileName)}')" title="Tải file đính kèm">Tải file</button>
                             ` : ''}
+                            <button class="sd-btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="window.deleteShipmentInvoice('${p.id}', '${escapeHtml(p.invoiceNumber || '')}', 'Packing List', 'packing')" ${isCompleted ? 'disabled' : ''}>Xóa</button>
                           </div>
                         </td>
                       </tr>
                       `;
-                    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Không có Packing List nào</td></tr>`}
+                    }).join('') : `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Chưa có Packing List cho lô hàng này. Nhấn "+ Tạo Packing List" để lập.</td></tr>`}
                   </tbody>
                 </table>
               </div>
@@ -1266,19 +1264,22 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: HẢI QUAN & THUẾ ═══ -->
-          <div class="sd-pane" id="sd-pane-customs">
+          <div class="sd-pane ${currentPane === 'customs' ? 'active' : ''}" id="sd-pane-customs">
             <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
-              <h3 style="font-size:15px; font-weight:700; margin:0; color:var(--text-color);">Danh Sách Tờ Khai Hải Quan Điện Tử</h3>
-              <div style="display:flex;gap:6px;">
-                <a href="https://customs.gov.vn/tra-cuu" target="_blank" class="sd-btn-sm" style="background:#0f172a;color:#fff;border:none;">🔗 Cổng Hải Quan</a>
-                <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-customs" ${isCompleted ? 'style="display:none;"' : ''}>+ Thêm tờ khai HQ</button>
+              <h3 style="font-size:14px; font-weight:700; margin:0; color:var(--text-color);">Tờ Khai Hải Quan <span style="font-size:12px; font-weight:500; color:#64748b;">(${customs.length}/1)</span></h3>
+              <div style="display:flex;gap:6px;align-items:center;">
+                ${customs.length >= 1 ? `
+                  <span style="font-size:12px; color:#64748b;">Đã khai báo 1/1 tờ khai</span>
+                ` : `
+                  <button class="sd-btn-sm sd-btn-primary" id="sd-btn-add-customs" ${isCompleted ? 'style="display:none;"' : ''}>+ Thêm tờ khai HQ</button>
+                `}
               </div>
             </div>
             ${customsHtml}
           </div>
 
           <!-- ═══ TAB: CHI PHÍ & LANDED COST ═══ -->
-          <div class="sd-pane" id="sd-pane-costs">
+          <div class="sd-pane ${currentPane === 'costs' ? 'active' : ''}" id="sd-pane-costs">
             <div class="sd-card">
               <div class="sd-card-header">
                 <div class="sd-card-header-left" style="font-weight:700;">
@@ -1346,18 +1347,16 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: TỆP ĐÍNH KÈM (DOCUMENTS) ═══ -->
-          <div class="sd-pane" id="sd-pane-documents">
+          <div class="sd-pane ${currentPane === 'documents' ? 'active' : ''}" id="sd-pane-documents">
             <div class="sd-card">
               <div class="sd-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <div class="sd-card-header-left" style="font-weight:700;">
-                  📎 Danh mục Tệp Chứng Từ Lô Hàng
+                <div class="sd-card-header-left" style="font-weight:700; display:flex; align-items:center; gap:8px;">
+                  <span>Tệp đính kèm lô hàng</span>
+                  <span style="font-size:12px; font-weight:500; color:#64748b;">(${combinedDocs.length} tệp)</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
-                  <button class="sd-btn-sm sd-btn-primary" onclick="document.getElementById('sd-btn-upload-doc')?.click()">
-                    + Tải lên tệp
-                  </button>
-                  <button class="sd-btn-sm" onclick="window.appNavigateTo('documents')">
-                    Xem trung tâm chứng từ →
+                  <button class="sd-btn-sm sd-btn-primary" id="sd-btn-pane-upload-doc" ${isCompleted ? 'style="display:none;"' : ''}>
+                    + Đính kèm tệp
                   </button>
                 </div>
               </div>
@@ -1365,38 +1364,64 @@ export async function renderShipmentDetail(container, shipmentId) {
                 <table class="sd-table">
                   <thead>
                     <tr>
-                      <th style="width:36px; text-align:center;">#</th>
-                      <th>Tên tệp</th>
-                      <th>Phân loại</th>
-                      <th>Dung lượng</th>
-                      <th>Ngày tải lên</th>
-                      <th style="text-align:center;">Thao tác</th>
+                      <th style="width:40px; text-align:center;">#</th>
+                      <th>Tên tệp chứng từ</th>
+                      <th style="width:200px;">Phân loại</th>
+                      <th>Ghi chú / Mô tả</th>
+                      <th style="width:110px; text-align:right;">Dung lượng</th>
+                      <th style="width:120px;">Ngày tải lên</th>
+                      <th style="width:140px; text-align:center;">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${combinedDocs.length ? combinedDocs.map((doc, idx) => {
                       const fName = doc.originalFileName || doc.fileName || 'Chung_tu.pdf';
-                      const fSize = doc.fileSize ? `${Math.round(doc.fileSize / 1024)} KB` : '---';
+                      const fSize = doc.fileSize
+                        ? (doc.fileSize >= 1024 * 1024 ? `${(doc.fileSize / (1024 * 1024)).toFixed(2)} MB` : `${Math.max(1, Math.round(doc.fileSize / 1024))} KB`)
+                        : '---';
                       const fDate = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('vi-VN') : '---';
-                      const fCat = doc.category || (fName.toLowerCase().includes('bl') ? 'Vận đơn B/L' : fName.toLowerCase().includes('inv') ? 'Hóa đơn' : fName.toLowerCase().includes('pk') || fName.toLowerCase().includes('pack') ? 'Packing List' : 'Chứng từ khác');
+                      const catMap = {
+                        SalesContract: 'Hợp đồng ngoại thương',
+                        CommercialInvoice: 'Hóa đơn thương mại',
+                        Invoice: 'Hóa đơn thương mại',
+                        PackingList: 'Phiếu đóng gói (Packing List)',
+                        BillOfLading: 'Vận đơn đường biển (B/L)',
+                        Customs: 'Tờ khai Hải quan',
+                        CustomsDeclaration: 'Tờ khai Hải quan',
+                        CertificateOfOrigin: 'Chứng nhận xuất xứ (C/O)',
+                        Insurance: 'Bảo hiểm hàng hải',
+                        InspectionCertificate: 'Chứng thư kiểm định',
+                        Other: 'Chứng từ khác'
+                      };
+                      const rawCat = doc.category || '';
+                      const fCat = catMap[rawCat] || (fName.toLowerCase().includes('bl') ? 'Vận đơn đường biển (B/L)' : fName.toLowerCase().includes('inv') ? 'Hóa đơn thương mại' : (fName.toLowerCase().includes('pk') || fName.toLowerCase().includes('pack')) ? 'Phiếu đóng gói (Packing List)' : (fName.toLowerCase().includes('sc') || fName.toLowerCase().includes('hd')) ? 'Hợp đồng ngoại thương' : 'Chứng từ khác');
+                      const fDesc = doc.description || 'Đính kèm theo lô hàng';
                       return `
                         <tr>
                           <td style="text-align:center; color:#64748b;">${idx + 1}</td>
-                          <td style="font-weight:600; color:#0266b3;">${fName}</td>
-                          <td><span class="chip chip-blue">${fCat}</span></td>
-                          <td>${fSize}</td>
-                          <td>${fDate}</td>
-                          <td style="text-align:center;">
-                            <button class="sd-btn-sm" onclick="window.downloadGeneralDoc('${doc.id}', '${fName}')" title="Tải xuống tệp">
-                              📥 Tải file
-                            </button>
+                          <td>
+                            <span style="font-weight:600; color:#0266b3; cursor:pointer;" onclick="window.downloadGeneralDoc('${doc.id}', '${escapeHtml(fName)}')" title="Nhấn để tải tệp">${escapeHtml(fName)}</span>
+                          </td>
+                          <td style="color:#334155;">${escapeHtml(fCat)}</td>
+                          <td style="color:#64748b; font-size:12px;">${escapeHtml(fDesc)}</td>
+                          <td style="text-align:right; color:#475569; font-family:monospace; font-size:12px;">${fSize}</td>
+                          <td style="color:#475569;">${fDate}</td>
+                          <td style="text-align:center; white-space:nowrap;">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                              <button class="sd-btn-sm" onclick="window.downloadGeneralDoc('${doc.id}', '${escapeHtml(fName)}')" title="Tải xuống tệp">
+                                Tải xuống
+                              </button>
+                              <button class="sd-btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="window.deleteShipmentDoc('${doc.id}', '${escapeHtml(fName)}')" title="Xóa tệp đính kèm" ${isCompleted ? 'disabled' : ''}>
+                                Xóa
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       `;
                     }).join('') : `
                       <tr>
-                        <td colspan="6" style="text-align:center; padding:32px 16px; color:#64748b;">
-                          Chưa có tệp đính kèm nào được tải lên cho lô hàng này. Nhấn nút "+ Tải lên tệp" bên trên để thêm mới.
+                        <td colspan="7" style="text-align:center; padding:32px 16px; color:#64748b;">
+                          Chưa có tệp đính kèm nào cho lô hàng này. Nhấn <strong>"+ Đính kèm tệp"</strong> để tải lên chứng từ.
                         </td>
                       </tr>
                     `}
@@ -1407,7 +1432,7 @@ export async function renderShipmentDetail(container, shipmentId) {
           </div>
 
           <!-- ═══ TAB: NHẬT KÝ XỬ LÝ (HISTORY) ═══ -->
-          <div class="sd-pane" id="sd-pane-history">
+          <div class="sd-pane ${currentPane === 'history' ? 'active' : ''}" id="sd-pane-history">
             <div class="sd-card">
               <div class="sd-card-header"><div class="sd-card-header-left" style="font-weight:700;">⏱️ Nhật ký thao tác (Audit Trail)</div></div>
               <div class="sd-card-body">
@@ -1578,8 +1603,12 @@ export async function renderShipmentDetail(container, shipmentId) {
       });
     };
 
+    window.openEditShipmentMasterModal = () => {
+      openShipmentForm(shipment.id);
+    };
+
     container.querySelector('#sd-btn-edit')?.addEventListener('click', () => {
-      window.openEditShipmentMasterModal();
+      openShipmentForm(shipment.id);
     });
 
     // Print
@@ -1704,7 +1733,7 @@ export async function renderShipmentDetail(container, shipmentId) {
               <tr>
                 <td><strong>6. Tờ khai Hải quan</strong></td>
                 <td>${primaryDeclarationNumber !== '---' ? primaryDeclarationNumber : 'Chưa đăng ký'}</td>
-                <td>${customs.length ? '<span class="val-match">✓ Đã khai báo VNACCS</span>' : '<span class="val-warning">⏳ Chờ mở tờ khai HQ</span>'}</td>
+                <td>${customs.length ? '<span class="val-match">✓ Đã khai báo</span>' : '<span class="val-warning">⏳ Chờ mở tờ khai HQ</span>'}</td>
                 <td>${customs.length ? (customs[0].status === 1 ? 'Luồng Xanh - Miễn kiểm tra hồ sơ' : 'Luồng Vàng - Nộp hồ sơ điện tử') : 'Cần chuẩn bị mở tờ khai trước khi tàu cập cảng'}</td>
               </tr>
             </tbody>
@@ -1729,20 +1758,34 @@ export async function renderShipmentDetail(container, shipmentId) {
       toast('Tải trọn bộ hồ sơ ZIP / Xuất Excel', 'info');
     });
 
+    // Helper làm mới giao diện tại tab hiện tại
+    window.refreshCurrentShipmentDetail = (pane = null) => {
+      renderShipmentDetail(container, shipmentId, pane);
+    };
+
     // Upload document
     const handleUpload = () => {
-      if (openUploadDocumentModal) openUploadDocumentModal(shipment.id);
-      else window.appNavigateTo('documents');
+      if (openUploadDocumentModal) {
+        openUploadDocumentModal(shipment.id, () => renderShipmentDetail(container, shipmentId, 'documents'));
+      } else {
+        window.appNavigateTo('documents');
+      }
     };
     container.querySelector('#sd-btn-upload-doc')?.addEventListener('click', handleUpload);
+    container.querySelector('#sd-btn-pane-upload-doc')?.addEventListener('click', handleUpload);
     container.querySelector('#sd-btn-focus-note')?.addEventListener('click', () => {
       document.getElementById(`tl-input-${shipmentId}`)?.focus();
     });
 
     window.downloadGeneralDoc = async (docId, fileName) => {
       try {
-        const res = await api.get(`/api/documents/${docId}/download`, { responseType: 'blob' });
-        const url = window.URL.createObjectURL(new Blob([res.data]));
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/documents/${docId}/download`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Không thể tải tệp từ máy chủ');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName || 'document.pdf';
@@ -1750,8 +1793,43 @@ export async function renderShipmentDetail(container, shipmentId) {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
+        toast('Đã tải tệp đính kèm thành công!', 'success');
       } catch (e) {
         toast('Lỗi khi tải tài liệu: ' + (e.message || 'Không tìm thấy file'), 'error');
+      }
+    };
+
+    window.deleteShipmentDoc = async (docId, fileName) => {
+      const confirmed = await showConfirm({
+        title: 'Xóa tệp đính kèm?',
+        message: `Bạn có chắc chắn muốn xóa tệp "${fileName || 'này'}" khỏi lô hàng?`,
+        confirmText: 'Xóa tệp',
+        type: 'danger'
+      });
+      if (!confirmed) return;
+      try {
+        await api.delete(`/api/documents/${docId}`);
+        toast('Đã xóa tệp đính kèm thành công!', 'success');
+        renderShipmentDetail(container, shipmentId, 'documents');
+      } catch (err) {
+        toast('Lỗi khi xóa tệp: ' + err.message, 'error');
+      }
+    };
+
+    window.deleteShipmentInvoice = async (invId, invNum, docLabel = 'Chứng từ', pane = 'invoices') => {
+      const confirmed = await showConfirm({
+        title: `Xóa ${docLabel}?`,
+        message: `Bạn có chắc chắn muốn xóa ${docLabel} số "${invNum || ''}" khỏi lô hàng này?`,
+        confirmText: 'Xóa chứng từ',
+        type: 'danger'
+      });
+      if (!confirmed) return;
+      try {
+        await api.delete(`/api/invoices/${invId}`);
+        toast(`Đã xóa ${docLabel} thành công!`, 'success');
+        renderShipmentDetail(container, shipmentId, pane);
+      } catch (err) {
+        toast(`Lỗi khi xóa ${docLabel}: ` + err.message, 'error');
       }
     };
 
@@ -2149,17 +2227,10 @@ export async function renderShipmentDetail(container, shipmentId) {
       }
     });
 
-    // Add invoice
-    container.querySelector('#sd-btn-add-invoice')?.addEventListener('click', () => {
-      if (openCreateInvoiceModal) openCreateInvoiceModal(shipment.id, 'CommercialInvoice');
-      else window.appNavigateTo('invoices');
-    });
-
     // Add customs declaration
     container.querySelector('#sd-btn-add-customs')?.addEventListener('click', () => {
       if (openCreateCustomsModal) openCreateCustomsModal(shipment.id, () => {
-        // Re-render shipment detail on success
-        renderShipmentDetail(container, shipmentId);
+        renderShipmentDetail(container, shipmentId, 'customs');
       });
       else window.appNavigateTo('customs-declarations');
     });
@@ -2270,28 +2341,28 @@ export async function renderShipmentDetail(container, shipmentId) {
       });
     };
 
-    // Tạo chứng từ trực tiếp từ chi tiết lô hàng
+    // Tạo chứng từ trực tiếp từ chi tiết lô hàng (cập nhật giao diện ngay lập tức)
     document.getElementById('sd-btn-add-contract')?.addEventListener('click', () => {
-      openCreateInvoiceModal(shipmentId, 'SalesContract');
+      openCreateInvoiceModal(shipmentId, 'SalesContract', () => renderShipmentDetail(container, shipmentId, 'contracts'));
     });
     document.getElementById('sd-btn-add-invoice')?.addEventListener('click', () => {
-      openCreateInvoiceModal(shipmentId, 'CommercialInvoice');
+      openCreateInvoiceModal(shipmentId, 'CommercialInvoice', () => renderShipmentDetail(container, shipmentId, 'invoices'));
     });
     document.getElementById('sd-btn-add-packing')?.addEventListener('click', () => {
-      openCreateInvoiceModal(shipmentId, 'PackingList');
+      openCreateInvoiceModal(shipmentId, 'PackingList', () => renderShipmentDetail(container, shipmentId, 'packing'));
     });
     document.getElementById('sd-btn-add-bl')?.addEventListener('click', () => {
-      openBLModal(null, () => renderShipmentDetail(container, shipmentId), shipmentId);
+      openBLModal(null, () => renderShipmentDetail(container, shipmentId, 'logistics'), shipmentId);
     });
 
     // Handlers cho các nút thao tác trên dòng B/L
     window.editBLFromShipment = (blId) => {
       const bl = blList.find(b => b.id === blId);
-      openBLModal(bl, () => renderShipmentDetail(container, shipmentId), shipmentId);
+      openBLModal(bl, () => renderShipmentDetail(container, shipmentId, 'logistics'), shipmentId);
     };
 
     window.deleteBLFromShipment = (blId, blNumber) => {
-      deleteBL(blId, blNumber, () => renderShipmentDetail(container, shipmentId));
+      deleteBL(blId, blNumber, () => renderShipmentDetail(container, shipmentId, 'logistics'));
     };
 
   } catch (err) {

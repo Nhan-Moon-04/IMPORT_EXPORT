@@ -344,9 +344,9 @@ thead th.shipment-freeze-2 {
 .shipment-freeze-actions {
   position: sticky !important;
   right: 0 !important;
-  width: 110px;
-  min-width: 110px;
-  max-width: 110px;
+  width: 135px;
+  min-width: 135px;
+  max-width: 135px;
   text-align: center;
   z-index: 5;
   background: #fff !important;
@@ -707,3 +707,147 @@ thead th.shipment-freeze-actions {
   border-color: #0266b3;
   box-shadow: 0 0 0 2px rgba(2,102,179,0.1);
 }
+
+
+/* =========================================================
+   TỐI GIẢN BẢNG LÔ HÀNG (bỏ màu mè, chỉ giữ chữ + chấm trạng thái)
+   Scoped trong .modern-shipment-table để không ảnh hưởng trang khác
+   ========================================================= */
+.modern-shipment-table .partner-name {
+  font-weight: 400;
+}
+
+.modern-shipment-table .partner-meta {
+  font-size: 11.5px;
+  color: #9ca3af;
+  gap: 0;
+}
+
+.modern-shipment-table .doc-pill,
+.modern-shipment-table .doc-pill.invoice-pill,
+.modern-shipment-table .doc-pill.decl-pill,
+.modern-shipment-table .doc-pill.cont-pill {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modern-shipment-table .doc-empty {
+  color: #9ca3af;
+}
+
+.modern-shipment-table .eta-plain {
+  white-space: nowrap;
+  color: #1f2937;
+}
+
+.modern-shipment-table .qty-cell,
+.modern-shipment-table .val-money {
+  font-weight: 400;
+}
+
+.modern-shipment-table .status-badge,
+.modern-shipment-table .status-badge[class*="status-"] {
+  padding: 0;
+  background: none !important;
+  border: none !important;
+  color: #374151 !important;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.modern-shipment-table .status-badge .status-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.modern-shipment-table .action-btn.action-view:hover,
+.modern-shipment-table .action-btn.action-edit:hover,
+.modern-shipment-table .action-btn.action-download:hover,
+.modern-shipment-table .action-btn.action-status:hover {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.modern-shipment-table .action-btn.action-delete:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+[data-theme="dark"] .modern-shipment-table .doc-pill,
+[data-theme="dark"] .modern-shipment-table .eta-plain,
+[data-theme="dark"] .modern-shipment-table .status-badge {
+  color: #e2e8f0 !important;
+}
+
+/* ── CHI TIẾT MỞ RỘNG DƯỚI DÒNG LÔ HÀNG (tối giản) ── */
+.expand-drawer-container .xp-wrap {
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.expand-drawer-container .xp-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 32px;
+  margin-bottom: 10px;
+}
+
+.expand-drawer-container .xp-label {
+  color: #6b7280;
+}
+
+.expand-drawer-container .xp-muted {
+  color: #9ca3af;
+}
+
+.expand-drawer-container .xp-table {
+  width: 100%;
+  max-width: 1100px;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+}
+
+.expand-drawer-container .xp-table th {
+  background: #f9fafb;
+  color: #6b7280;
+  font-weight: 500;
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.expand-drawer-container .xp-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1f2937;
+}
+
+.expand-drawer-container .xp-table tfoot td {
+  font-weight: 600;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: none;
+}
+
+.expand-drawer-container .xp-num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="dark"] .expand-drawer-container .xp-wrap,
+[data-theme="dark"] .expand-drawer-container .xp-table td { color: #e2e8f0; }
+[data-theme="dark"] .expand-drawer-container .xp-table { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .expand-drawer-container .xp-table th,
+[data-theme="dark"] .expand-drawer-container .xp-table tfoot td { background: #253346; color: #94a3b8; border-color: #334155; }
