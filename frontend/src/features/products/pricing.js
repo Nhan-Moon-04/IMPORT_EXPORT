@@ -172,117 +172,73 @@ let purchaseFilteredList = [];
 export async function renderPurchasePrices(container) {
   container.innerHTML = `
     <div class="pricing-page-wrapper">
-      <!-- Page Header -->
-      <div class="pricing-header">
-        <div class="pricing-header-title">
-          <h2 class="pricing-title">
-            <span class="title-icon">💰</span>
-            Bảng Giá Mua Vào & Lịch Sử Giá Nhập Sợi
-          </h2>
-          <div class="pricing-subtitle">
-            Quản lý giá mua vào theo từng mã nguyên liệu (VD: VL0572), xuất xứ nước nhập, theo dõi lịch sử biến động giá và bảo lưu giá trên chứng từ cũ
-          </div>
-        </div>
-        <div class="pricing-header-actions">
-          <button id="btnPurchasePriceAdd" class="btn btn-primary" style="height:34px; padding:0 14px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Thêm Giá Mua Vào
-          </button>
-          <button id="btnPurchaseExportExcel" class="btn btn-default" style="height:34px; padding:0 12px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Xuất Excel
-          </button>
-          <button id="btnPurchaseRefresh" class="btn btn-default" style="height:34px; padding:0 12px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-            Nạp lại
-          </button>
-        </div>
-      </div>
-
-      <!-- KPI Summary Cards -->
-      <div class="pricing-kpi-grid">
-        <div class="pricing-kpi-card kpi-blue">
-          <div class="pricing-kpi-icon">📦</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Tổng Mặt Hàng Mua Vào</div>
-            <div class="pricing-kpi-value" id="kpiPurchaseTotal">0 mặt hàng</div>
-            <div class="pricing-kpi-sub" id="kpiPurchaseSub">Đang áp dụng giá hiện hành</div>
-          </div>
-        </div>
-
-        <div class="pricing-kpi-card kpi-emerald">
-          <div class="pricing-kpi-icon">💲</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Giá Mua TB (USD)</div>
-            <div class="pricing-kpi-value" id="kpiPurchaseAvgUsd">$0.00 / kg</div>
-            <div class="pricing-kpi-sub" id="kpiPurchaseUsdCount">0 mặt hàng USD</div>
-          </div>
-        </div>
-
-        <div class="pricing-kpi-card kpi-purple">
-          <div class="pricing-kpi-icon">💵</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Giá Mua TB (VNĐ)</div>
-            <div class="pricing-kpi-value" id="kpiPurchaseAvgVnd">0 ₫ / kg</div>
-            <div class="pricing-kpi-sub" id="kpiPurchaseVndCount">0 mặt hàng VNĐ</div>
-          </div>
-        </div>
-
-        <div class="pricing-kpi-card kpi-amber">
-          <div class="pricing-kpi-icon">🕒</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Cập Nhật Gần Nhất</div>
-            <div class="pricing-kpi-value" id="kpiPurchaseLastUpdate" style="font-size:14px;">---</div>
-            <div class="pricing-kpi-sub">Bảo lưu snapshot trên tờ khai cũ</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Toolbar Card -->
       <div class="pricing-toolbar-card">
         <div class="pricing-toolbar-left">
-          <span style="font-size:12.5px; font-weight:600; color:#475569;">
-            Danh mục giá mua vào đang áp dụng
-          </span>
-          <span style="font-size:11px; background:#eff6ff; color:#1d4ed8; padding:2px 8px; border-radius:12px; font-weight:600;">
-            Khi cập nhật giá mới, các tờ khai cũ không bị thay đổi
-          </span>
+          <button id="btnPurchasePriceAdd" class="misa-btn misa-btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Thêm mới
+          </button>
+          <div class="misa-toolbar-divider"></div>
+          <span class="pricing-toolbar-label">Giá mua vào đang áp dụng</span>
+          <span class="pricing-info-tag">Bảo lưu trên tờ khai cũ</span>
         </div>
         <div class="pricing-toolbar-right">
-          <div class="pricing-search-box">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="purchaseSearchInput" class="pricing-search-input" placeholder="Lọc theo mã SKU, tên hàng hoá, nước nhập...">
+          <div class="misa-search-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="purchaseSearchInput" placeholder="Tìm kiếm...">
           </div>
+          <button id="btnPurchaseExportExcel" class="misa-btn misa-btn-default">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Xuất Excel
+          </button>
+          <button id="btnPurchaseRefresh" class="misa-btn misa-btn-default">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Nạp lại
+          </button>
         </div>
       </div>
 
       <!-- Table Card -->
       <div class="pricing-table-card">
         <div class="pricing-table-container">
-          <table class="modern-shipment-table" id="purchaseTable">
+          <table class="pricing-modern-table pricing-table-purchase" id="purchaseTable">
+            <colgroup>
+              <col style="width: 48px">
+              <col style="width: 155px">
+              <col style="width: 260px">
+              <col style="width: 220px">
+              <col style="width: 140px">
+              <col style="width: 90px">
+              <col style="width: 150px">
+              <col style="width: 120px">
+              <col style="width: 240px">
+              <col style="width: 120px">
+              <col style="width: 110px">
+            </colgroup>
             <thead>
               <tr>
-                <th style="width: 40px; text-align:center;">STT</th>
-                <th style="min-width: 130px;">Mã Sản Phẩm (SKU)</th>
-                <th style="min-width: 220px;">Tên Hàng Hoá Mua Vào</th>
-                <th style="min-width: 190px;">Đối Tác (Nhà Cung Cấp)</th>
-                <th style="min-width: 130px; text-align:center;">Nước Nhập / Xuất Xứ</th>
-                <th style="min-width: 80px; text-align:center;">Tiền Tệ</th>
-                <th style="min-width: 140px; text-align:right;">Đơn Giá Hiện Hành</th>
-                <th style="min-width: 110px;">Ngày Hiệu Lực</th>
-                <th style="min-width: 200px;">Ghi Chú / Nguồn Nhập</th>
-                <th style="min-width: 100px;">Người Tạo</th>
-                <th style="min-width: 120px; text-align:center;">Thao Tác</th>
+                <th class="pricing-freeze-1">STT</th>
+                <th class="pricing-freeze-2">Mã Sản Phẩm (SKU)</th>
+                <th>Tên Hàng Hoá Mua Vào</th>
+                <th>Đối Tác (Nhà Cung Cấp)</th>
+                <th style="text-align:center;">Nước Nhập / Xuất Xứ</th>
+                <th style="text-align:center;">Tiền Tệ</th>
+                <th style="text-align:right;">Đơn Giá Hiện Hành</th>
+                <th>Ngày Hiệu Lực</th>
+                <th>Ghi Chú / Nguồn Nhập</th>
+                <th>Người Tạo</th>
+                <th class="pricing-freeze-actions">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="purchaseTbody">
-              <tr><td colspan="10" style="text-align:center; padding: 32px; color: #64748b;">Đang nạp dữ liệu giá mua vào...</td></tr>
+              <tr><td colspan="11" style="text-align:center; padding: 32px; color: #64748b;">Đang nạp dữ liệu giá mua vào...</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="shipments-pagination-bar">
+        <div class="pricing-pagination-bar">
           <div id="purchasePaginationText">Tổng số: 0 bản ghi</div>
-          <div style="font-size: 12px; color: #64748b;">Bấm vào 📜 để xem toàn bộ lịch sử biến động giá của từng mặt hàng</div>
+          <div>Bấm vào biểu tượng lịch sử để xem các mốc biến động giá</div>
         </div>
       </div>
     </div>
@@ -365,15 +321,15 @@ function renderPurchaseTable(items) {
 
   tbody.innerHTML = items.map((it, idx) => `
     <tr class="shipment-main-row">
-      <td style="text-align:center; color:#94a3b8;">${idx + 1}</td>
-      <td>
+      <td class="pricing-freeze-1" style="text-align:center; color:#94a3b8; font-weight:600;">${idx + 1}</td>
+      <td class="pricing-freeze-2">
         <span class="sku-badge">
           <span>📦</span>
           <span>${escapeHtml(it.productSku || '---')}</span>
         </span>
       </td>
       <td>
-        <strong style="color:#0f172a;">${escapeHtml(it.productName || '---')}</strong>
+        <strong style="color:#0f172a; font-weight:600;">${escapeHtml(it.productName || '---')}</strong>
       </td>
       <td>
         <span style="font-weight:600; color:#1e293b; display:inline-flex; align-items:center; gap:5px;">
@@ -390,11 +346,11 @@ function renderPurchaseTable(items) {
         </span>
       </td>
       <td style="text-align:right;">
-        ${formatMoney(it.unitPrice, it.currency)}
+        <span style="font-variant-numeric:tabular-nums; font-weight:700;">${formatMoney(it.unitPrice, it.currency)}</span>
         <span style="font-size:11px; color:#94a3b8; margin-left:3px;">/ kg</span>
       </td>
       <td>
-        <span style="font-family:monospace; color:#475569; font-size:12px;">
+        <span style="font-family:'SFMono-Regular',Consolas,monospace; color:#475569; font-size:12px;">
           📅 ${formatDate(it.effectiveDate)}
         </span>
       </td>
@@ -406,16 +362,25 @@ function renderPurchaseTable(items) {
       <td>
         <span style="font-size:11.5px; color:#64748b;">${escapeHtml(it.createdBy || 'Hệ thống')}</span>
       </td>
-      <td style="text-align:center;">
+      <td class="pricing-freeze-actions">
         <div class="pricing-action-group">
-          <button class="pricing-btn-icon" title="Cập nhật giá mua mới (giữ lại giá cũ vào lịch sử)" onclick="window.xnkOpenUpdatePurchaseModal('${it.id}')">
-            🔄
+          <button class="pricing-btn-icon" title="Cập nhật giá mua mới (lưu giá cũ vào lịch sử)" onclick="window.xnkOpenUpdatePurchaseModal('${it.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
           </button>
           <button class="pricing-btn-icon" title="Xem lịch sử các mốc giá cũ" onclick="window.xnkOpenPurchaseHistoryModal('${it.id}')">
-            📜
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
           </button>
-          <button class="pricing-btn-icon" title="Xóa" style="color:var(--amis-red);" onclick="window.xnkDeletePurchasePrice('${it.id}')">
-            🗑️
+          <button class="pricing-btn-icon btn-danger" title="Xóa" style="color:var(--amis-red);" onclick="window.xnkDeletePurchasePrice('${it.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
           </button>
         </div>
       </td>
@@ -938,75 +903,14 @@ let activeCustTypeFilter = 'ALL';
 export async function renderSalePrices(container) {
   container.innerHTML = `
     <div class="pricing-page-wrapper">
-      <!-- Page Header -->
-      <div class="pricing-header">
-        <div class="pricing-header-title">
-          <h2 class="pricing-title">
-            <span class="title-icon">💵</span>
-            Bảng Giá Bán Ra & Ánh Xạ Mã Xuất Khẩu
-          </h2>
-          <div class="pricing-subtitle">
-            Quản lý mối liên kết chuyển đổi mã (VD: Mua vào VL0572 ➔ Bán ra VN905), phân loại khách hàng (Cty Mẹ / Khách Ngoại / Nội Địa), hỗ trợ 4 luồng tiền tệ và bảo lưu giá tờ khai
-          </div>
-        </div>
-        <div class="pricing-header-actions">
-          <button id="btnSalePriceAdd" class="btn btn-primary" style="height:34px; padding:0 14px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Thiết Lập Giá Bán Ra Mới
-          </button>
-          <button id="btnSaleExportExcel" class="btn btn-default" style="height:34px; padding:0 12px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Xuất Excel
-          </button>
-          <button id="btnSaleRefresh" class="btn btn-default" style="height:34px; padding:0 12px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-            Nạp lại
-          </button>
-        </div>
-      </div>
-
-      <!-- KPI Summary Cards -->
-      <div class="pricing-kpi-grid">
-        <div class="pricing-kpi-card kpi-purple">
-          <div class="pricing-kpi-icon">🔄</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Cặp Chuyển Đổi Mã (In → Out)</div>
-            <div class="pricing-kpi-value" id="kpiSaleTotal">0 cặp mã</div>
-            <div class="pricing-kpi-sub">Quy cách bán ra & xuất khẩu</div>
-          </div>
-        </div>
-
-        <div class="pricing-kpi-card kpi-emerald">
-          <div class="pricing-kpi-icon">💲</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Giá Bán TB (USD)</div>
-            <div class="pricing-kpi-value" id="kpiSaleAvgUsd">$0.00 / kg</div>
-            <div class="pricing-kpi-sub" id="kpiSaleUsdCount">0 sản phẩm USD</div>
-          </div>
-        </div>
-
-        <div class="pricing-kpi-card kpi-blue">
-          <div class="pricing-kpi-icon">💵</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Giá Bán TB (VNĐ)</div>
-            <div class="pricing-kpi-value" id="kpiSaleAvgVnd">0 ₫ / kg</div>
-            <div class="pricing-kpi-sub" id="kpiSaleVndCount">0 sản phẩm VNĐ</div>
-          </div>
-        </div>
-
-        <div class="pricing-kpi-card kpi-amber">
-          <div class="pricing-kpi-icon">📈</div>
-          <div class="pricing-kpi-body">
-            <div class="pricing-kpi-label">Biên Độ Trung Bình</div>
-            <div class="pricing-kpi-value" id="kpiSaleMargin" style="color:#059669;">+0.00%</div>
-            <div class="pricing-kpi-sub">Chênh lệch giá bán so với giá mua</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Toolbar Card with Currency Flow Tabs & Customer Filter -->
       <div class="pricing-toolbar-card">
         <div class="pricing-toolbar-left">
+          <button id="btnSalePriceAdd" class="misa-btn misa-btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Thêm mới
+          </button>
+          <div class="misa-toolbar-divider"></div>
           <!-- Currency Flow Filter Tabs -->
           <div class="flow-tab-group" id="flowTabs">
             <button class="flow-tab-btn active" data-flow="ALL">Tất cả luồng tiền</button>
@@ -1017,40 +921,62 @@ export async function renderSalePrices(container) {
           </div>
 
           <!-- Customer Type Filter -->
-          <select id="custTypeFilter" class="form-select" style="height:32px; font-size:12px; padding:2px 8px; border-radius:4px;">
+          <select id="custTypeFilter" class="form-select" style="height:30px; font-size:12.5px; padding:2px 8px; border-radius:3px; border:1px solid #d1d5db;">
             <option value="ALL">Tất cả đối tượng khách</option>
-            <option value="ParentCompany">🏢 Công ty Mẹ</option>
-            <option value="ForeignBuyer">🌐 Khách Nước Ngoài</option>
-            <option value="Domestic">🏬 Khách Nội Địa</option>
+            <option value="ParentCompany">Công ty Mẹ</option>
+            <option value="ForeignBuyer">Khách Nước Ngoài</option>
+            <option value="Domestic">Khách Nội Địa</option>
           </select>
         </div>
 
         <div class="pricing-toolbar-right">
-          <div class="pricing-search-box">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="saleSearchInput" class="pricing-search-input" placeholder="Lọc theo mã mua vào, mã bán ra (VN905), khách hàng, thị trường...">
+          <div class="misa-search-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="saleSearchInput" placeholder="Tìm kiếm...">
           </div>
+          <button id="btnSaleExportExcel" class="misa-btn misa-btn-default">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Xuất Excel
+          </button>
+          <button id="btnSaleRefresh" class="misa-btn misa-btn-default">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Nạp lại
+          </button>
         </div>
       </div>
 
       <!-- Table Card -->
       <div class="pricing-table-card">
         <div class="pricing-table-container">
-          <table class="modern-shipment-table" id="saleTable">
+          <table class="pricing-modern-table pricing-table-sale" id="saleTable">
+            <colgroup>
+              <col style="width: 48px">
+              <col style="width: 175px">
+              <col style="width: 130px">
+              <col style="width: 35px">
+              <col style="width: 130px">
+              <col style="width: 250px">
+              <col style="width: 220px">
+              <col style="width: 140px">
+              <col style="width: 140px">
+              <col style="width: 140px">
+              <col style="width: 110px">
+              <col style="width: 110px">
+            </colgroup>
             <thead>
               <tr>
-                <th style="width: 35px; text-align:center;">STT</th>
-                <th style="min-width: 170px;">SP Mua Vào (Nguyên Liệu)</th>
-                <th style="min-width: 120px; text-align:right;">Giá Mua Nguồn</th>
-                <th style="width: 30px; text-align:center;"></th>
-                <th style="min-width: 110px;">Mã Bán (Output)</th>
-                <th style="min-width: 180px;">Tên Hàng Hoá Bán Ra</th>
-                <th style="min-width: 180px;">Khách Hàng & Phân Loại</th>
-                <th style="min-width: 120px; text-align:center;">Thị Trường / Nước Đến</th>
-                <th style="min-width: 120px; text-align:right;">Giá Bán Hiện Hành</th>
-                <th style="min-width: 110px; text-align:center;">Biên Độ & Tỷ Giá</th>
-                <th style="min-width: 95px;">Ngày Hiệu Lực</th>
-                <th style="min-width: 110px; text-align:center;">Thao Tác</th>
+                <th class="pricing-freeze-1">STT</th>
+                <th class="pricing-freeze-2">SP Mua Vào (Nguyên Liệu)</th>
+                <th style="text-align:right;">Giá Mua Nguồn</th>
+                <th style="text-align:center;"></th>
+                <th>Mã Bán (Output)</th>
+                <th>Tên Hàng Hoá Bán Ra</th>
+                <th>Khách Hàng & Phân Loại</th>
+                <th style="text-align:center;">Thị Trường / Nước Đến</th>
+                <th style="text-align:right;">Giá Bán Hiện Hành</th>
+                <th style="text-align:center;">Biên Độ & Tỷ Giá</th>
+                <th>Ngày Hiệu Lực</th>
+                <th class="pricing-freeze-actions">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="saleTbody">
@@ -1058,9 +984,9 @@ export async function renderSalePrices(container) {
             </tbody>
           </table>
         </div>
-        <div class="shipments-pagination-bar">
+        <div class="pricing-pagination-bar">
           <div id="salePaginationText">Tổng số: 0 bản ghi</div>
-          <div style="font-size: 12px; color: #64748b;">Bảo lưu giá snapshot trên tờ khai xuất khẩu và lô hàng đã hoàn thành</div>
+          <div>Bảo lưu giá snapshot trên tờ khai xuất khẩu và lô hàng đã hoàn thành</div>
         </div>
       </div>
     </div>
@@ -1203,8 +1129,8 @@ function renderSaleTable(items) {
   tbody.innerHTML = items.map((it, idx) => {
     return `
       <tr class="shipment-main-row">
-        <td style="text-align:center; color:#94a3b8;">${idx + 1}</td>
-        <td>
+        <td class="pricing-freeze-1" style="text-align:center; color:#94a3b8; font-weight:600;">${idx + 1}</td>
+        <td class="pricing-freeze-2">
           <div style="display:flex; flex-direction:column; gap:2px;">
             <div style="display:flex; align-items:center; gap:6px;">
               <span class="sku-badge">📦 ${escapeHtml(it.inputProductSku || '---')}</span>
@@ -1219,7 +1145,7 @@ function renderSaleTable(items) {
           </div>
         </td>
         <td style="text-align:right;">
-          ${formatMoney(it.inputUnitPrice, it.inputCurrency)}
+          <span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(it.inputUnitPrice, it.inputCurrency)}</span>
           <span style="font-size:11px; color:#94a3b8; margin-left:2px;">/ kg</span>
         </td>
         <td style="text-align:center;">
@@ -1232,7 +1158,7 @@ function renderSaleTable(items) {
           </span>
         </td>
         <td>
-          <strong style="color:#0f172a; font-size:13px;">${escapeHtml(it.outputProductName || it.outputSku || '---')}</strong>
+          <strong style="color:#0f172a; font-size:13px; font-weight:600;">${escapeHtml(it.outputProductName || it.outputSku || '---')}</strong>
         </td>
         <td>
           <div style="display:flex; flex-direction:column; gap:3px;">
@@ -1247,27 +1173,36 @@ function renderSaleTable(items) {
           ${formatCountryBadge(it.destinationCountry)}
         </td>
         <td style="text-align:right;">
-          ${formatMoney(it.unitPrice, it.currency)}
+          <span style="font-variant-numeric:tabular-nums; font-weight:700;">${formatMoney(it.unitPrice, it.currency)}</span>
           <span style="font-size:11px; color:#94a3b8; margin-left:2px;">/ kg</span>
         </td>
         <td style="text-align:center;">
           ${renderMarginCell(it)}
         </td>
         <td>
-          <span style="font-family:monospace; color:#475569; font-size:12px;">
+          <span style="font-family:'SFMono-Regular',Consolas,monospace; color:#475569; font-size:12px;">
             📅 ${formatDate(it.effectiveDate)}
           </span>
         </td>
-        <td style="text-align:center;">
+        <td class="pricing-freeze-actions">
           <div class="pricing-action-group">
             <button class="pricing-btn-icon" title="Cập nhật giá bán mới cho mã này (lưu giá cũ vào lịch sử)" onclick="window.xnkOpenUpdateSaleModal('${it.id}')">
-              🔄
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
             </button>
             <button class="pricing-btn-icon" title="Xem lịch sử biến động giá bán" onclick="window.xnkOpenSaleHistoryModal('${it.id}')">
-              📜
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
             </button>
-            <button class="pricing-btn-icon" title="Xóa" style="color:var(--amis-red);" onclick="window.xnkDeleteSalePrice('${it.id}')">
-              🗑️
+            <button class="pricing-btn-icon btn-danger" title="Xóa" style="color:var(--amis-red);" onclick="window.xnkDeleteSalePrice('${it.id}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
             </button>
           </div>
         </td>

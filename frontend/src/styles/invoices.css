@@ -1,58 +1,541 @@
 /* =========================================================
-   INVOICES / PACKING LIST / SALES CONTRACT PAGE
+   INVOICES / PACKING LIST / SALES CONTRACT — MISA AMIS STYLE
    ========================================================= */
 
-/* ── Invoice number (clickable) ─────────────────────────── */
-.inv-num-link {
-  color: var(--amis-blue);
-  font-weight: 700;
-  font-family: 'Courier New', monospace;
-  cursor: pointer;
-  transition: color 0.15s;
+/* ── Page Layout ─────────────────────────────────────────── */
+.amis-list-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  box-sizing: border-box;
 }
-.inv-num-link:hover { color: var(--amis-blue-hover); text-decoration: underline; }
 
-/* ── Document type badges ────────────────────────────────── */
+/* ── Toolbar ─────────────────────────────────────────────── */
+.amis-toolbar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  gap: 8px;
+  flex-shrink: 0;
+  height: 48px;
+  box-sizing: border-box;
+}
+
+.amis-toolbar-left,
+.amis-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+}
+
+.amis-toolbar-left > *,
+.amis-toolbar-right > * {
+  height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.amis-btn-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+/* ── MISA Buttons ────────────────────────────────────────── */
+.misa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: inherit;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+  user-select: none;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.misa-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.misa-btn-primary {
+  background: #0266b3;
+  color: #fff;
+  border-color: #0266b3;
+  font-weight: 500;
+}
+.misa-btn-primary:hover {
+  background: #015a9e;
+  border-color: #015a9e;
+}
+
+.misa-btn-default {
+  background: #fff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+.misa-btn-default:hover:not(:disabled) {
+  background: #f5f7fa;
+  border-color: #b0b8c4;
+  color: #111827;
+}
+
+.misa-btn-icon-only {
+  padding: 0 !important;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.misa-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+/* ── Date range filter ───────────────────────────────────── */
+.ph-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 6px;
+}
+
+.ph-date-input {
+  height: 24px;
+  line-height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 2px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ph-date-sep {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* ── Select filter ───────────────────────────────────────── */
+.ph-filter-select {
+  height: 30px;
+  line-height: 28px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 22px 0 8px;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.ph-filter-select:focus,
+.ph-date-range:focus-within {
+  border-color: #0266b3;
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.15);
+}
+
+/* ── Search Box ──────────────────────────────────────────── */
+.misa-search-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: #fff;
+  color: #9ca3af;
+  min-width: 220px;
+}
+
+.misa-search-box svg {
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.misa-search-box:focus-within {
+  border-color: #0266b3;
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.1);
+  color: #374151;
+}
+
+.misa-search-box input {
+  height: 24px;
+  line-height: 24px;
+  border: none;
+  outline: none;
+  font-size: 12.5px;
+  color: #111827;
+  font-family: inherit;
+  flex: 1;
+  background: transparent;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.misa-search-box input::placeholder {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .misa-search-box {
+  background: #1e293b;
+  border-color: #334155;
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .misa-search-box input {
+  color: #f1f5f9;
+}
+
+/* ── Column picker wrapper ───────────────────────────────── */
+.amis-col-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+/* ── Table container & Table ─────────────────────────────── */
+.amis-table-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  scrollbar-width: thin;
+}
+
+.amis-data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+  table-layout: fixed;
+}
+
+.amis-data-table thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.amis-data-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border-color);
+  border-top: none;
+  white-space: nowrap;
+  user-select: none;
+  text-align: left;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .amis-data-table th {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.amis-data-table th.sortable {
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.amis-data-table th.sortable:hover {
+  background: #f1f5f9;
+  color: #0266b3;
+}
+
+.amis-th-inner {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  height: 34px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.amis-th-inner.justify-end {
+  justify-content: flex-end !important;
+}
+
+.amis-th-inner.justify-center {
+  justify-content: center !important;
+}
+
+.amis-data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+  background: var(--bg-surface);
+  font-size: 12.5px;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amis-data-table tbody tr:hover td {
+  background: var(--amis-row-hover, #f8fafc) !important;
+}
+
+[data-theme="dark"] .amis-data-table tbody tr:hover td {
+  background: #253346 !important;
+}
+
+.amis-th-check,
+.amis-td-check {
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  text-align: center !important;
+}
+
+.amis-th-actions,
+.amis-td-actions {
+  width: 90px !important;
+  min-width: 90px !important;
+  max-width: 90px !important;
+  text-align: center !important;
+}
+
+/* ── Invoice links & Badges ──────────────────────────────── */
+.inv-num-link {
+  color: #0266b3;
+  font-weight: 600;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.inv-num-link:hover {
+  color: #015290;
+  text-decoration: underline;
+}
+
 .inv-type-badge {
   display: inline-block;
-  padding: 2px 9px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
 }
-.inv-badge-commercial { background: #dbeafe; color: #1d4ed8; }
-.inv-badge-proforma   { background: #e0e7ff; color: #3730a3; }
-.inv-badge-debit      { background: #fef3c7; color: #92400e; }
-.inv-badge-packing    { background: #d1fae5; color: #065f46; }
-.inv-badge-contract   { background: #f3e8ff; color: #6b21a8; }
-.inv-badge-tax        { background: #fee2e2; color: #b91c1c; }
+.inv-badge-commercial { background: #f0f7ff; color: #0266b3; border: 1px solid #bae0fd; }
+.inv-badge-proforma   { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.inv-badge-debit      { background: #fefce8; color: #a16207; border: 1px solid #fef08a; }
+.inv-badge-packing    { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.inv-badge-contract   { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.inv-badge-tax        { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
-/* ── Status badges ───────────────────────────────────────── */
+/* Status */
 .inv-status {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
 }
-.inv-status-paid    { background: #dcfce7; color: #15803d; }
-.inv-status-partial { background: #fef3c7; color: #92400e; }
-.inv-status-pending { background: #f1f5f9; color: #475569; }
-.inv-status-overdue { background: #fee2e2; color: #b91c1c; }
-.inv-status-cancel  { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
+.inv-status-paid    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.inv-status-partial { background: #fefce8; color: #854d0e; border: 1px solid #fef08a; }
+.inv-status-pending { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+.inv-status-overdue { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.inv-status-cancel  { background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; text-decoration: line-through; }
 .inv-status-default { color: var(--text-muted); }
 
-/* ── Currency tag ────────────────────────────────────────── */
+/* Currency */
 .inv-currency {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 3px;
-  font-size: 11.5px;
-  font-weight: 700;
-  background: #e2e8f0;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   color: #475569;
+}
+
+/* Row action buttons */
+.amis-row-actions {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 1 !important;
+}
+
+.amis-icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.amis-icon-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0266b3;
+}
+
+.amis-icon-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.amis-icon-btn-danger:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+/* ── Footer & Pagination ─────────────────────────────────── */
+.amis-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  gap: 12px;
+  flex-shrink: 0;
+  font-size: 12px;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.amis-table-info {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.amis-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.amis-pg-btn {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.amis-pg-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0266b3;
+}
+
+.amis-pg-btn.active {
+  background: #0266b3;
+  border-color: #0266b3;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.amis-pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.amis-pg-ellipsis {
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.amis-page-size-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.amis-page-size-select select {
+  height: 26px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12px;
+  padding: 0 6px;
+  outline: none;
+  box-sizing: border-box;
 }
 
 /* ── Delete confirm dialog ───────────────────────────────── */
@@ -61,15 +544,15 @@
   padding: 8px 0;
 }
 .confirm-icon {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
 }
-.confirm-icon svg { width: 26px; height: 26px; }
+.confirm-icon svg { width: 22px; height: 22px; }
 .confirm-icon-danger {
   background: #fee2e2;
   color: #b91c1c;

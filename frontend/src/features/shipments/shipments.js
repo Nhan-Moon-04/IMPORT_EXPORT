@@ -287,136 +287,57 @@ export async function renderShipments(container, filterType = 'All') {
 
   container.innerHTML = `
     <div class="shipments-page-wrapper">
-      <!-- Page Header -->
-      <div class="shipments-header">
-        <div class="shipments-header-title">
-          <h2 class="shipments-title">
-            <span class="title-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            </span>
-            ${title}
-          </h2>
-          <div class="shipments-subtitle">Theo dõi chi tiết tiến độ chứng từ, booking, hải quan, lịch tàu và trị giá các lô hàng</div>
-        </div>
-        <div class="shipments-header-actions">
-          <button id="btnShipmentAdd" class="btn btn-primary" style="height: 34px; padding: 0 14px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Thêm Lô hàng mới
+
+      <!-- Toolbar Card -->
+      <div class="shipments-toolbar-card">
+        <div class="toolbar-left-actions">
+          <button id="btnShipmentAdd" class="misa-btn misa-btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Thêm mới
           </button>
-          <button id="btnExportShipmentsExcel" class="btn btn-default" style="height: 34px; padding: 0 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;" title="Xuất danh sách lô hàng ra Excel/CSV">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <button id="btnShipmentEdit" class="misa-btn misa-btn-default" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            Sửa
+          </button>
+          <button id="btnShipmentStatus" class="misa-btn misa-btn-default" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg>
+            Đổi Trạng Thái
+          </button>
+          <button id="btnShipmentDelete" class="misa-btn misa-btn-default misa-btn-danger" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Xóa
+          </button>
+          <div class="misa-toolbar-divider"></div>
+          <button id="btnConfigureColumns" class="misa-btn misa-btn-default" title="Tùy chọn các cột hiển thị trong bảng">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Tùy chọn cột
+          </button>
+        </div>
+        <div class="toolbar-right-actions">
+          <div class="misa-search-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="shipmentSearchInput" placeholder="Tìm kiếm...">
+          </div>
+          <button id="btnExportShipmentsExcel" class="misa-btn misa-btn-default" title="Xuất danh sách lô hàng ra Excel/CSV">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Xuất Excel
           </button>
-          <button id="btnShipmentRefresh" class="btn btn-default" style="height: 34px; padding: 0 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <button id="btnShipmentRefresh" class="misa-btn misa-btn-default" title="Nạp lại">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             Nạp lại
           </button>
         </div>
       </div>
 
-      <!-- KPI Summary Cards -->
-      <div class="shipments-kpi-grid">
-        <div class="shipment-kpi-card kpi-blue">
-          <div class="shipment-kpi-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          </div>
-          <div class="shipment-kpi-body">
-            <div class="shipment-kpi-label">Tổng Lô Hàng</div>
-            <div class="shipment-kpi-value" id="kpiShipmentCount">0 lô</div>
-            <div class="shipment-kpi-sub" id="kpiShipmentSub">0 Nhập • 0 Xuất</div>
-          </div>
-        </div>
-
-        <div class="shipment-kpi-card kpi-emerald">
-          <div class="shipment-kpi-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline><path d="M7 16l4 2 6-4"></path></svg>
-          </div>
-          <div class="shipment-kpi-body">
-            <div class="shipment-kpi-label">Tổng Sản Lượng</div>
-            <div class="shipment-kpi-value" id="kpiShipmentQty">0 kg</div>
-            <div class="shipment-kpi-sub" id="kpiShipmentQtySub">≈ 0.00 tấn</div>
-          </div>
-        </div>
-
-        <div class="shipment-kpi-card kpi-amber">
-          <div class="shipment-kpi-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          </div>
-          <div class="shipment-kpi-body">
-            <div class="shipment-kpi-label">Kim Ngạch USD</div>
-            <div class="shipment-kpi-value" id="kpiShipmentUsd" style="color:#059669;">$0.00</div>
-            <div class="shipment-kpi-sub" id="kpiShipmentUsdSub">0 lô tiền tệ USD</div>
-          </div>
-        </div>
-
-        <div class="shipment-kpi-card kpi-purple">
-          <div class="shipment-kpi-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
-          </div>
-          <div class="shipment-kpi-body">
-            <div class="shipment-kpi-label">Giá Trị VNĐ</div>
-            <div class="shipment-kpi-value" id="kpiShipmentVnd" style="color:#1d4ed8;">0 ₫</div>
-            <div class="shipment-kpi-sub" id="kpiShipmentVndSub">0 lô tiền tệ VNĐ</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Status Filter Tabs -->
-      <div class="shipments-tabs-bar">
-        <div class="shipments-status-tabs" id="shipmentsStatusTabs">
-          <button class="shipment-tab-btn active" data-tab="ALL">
-            <span>Tất cả</span>
-            <span class="shipment-tab-count" id="tab-count-ALL">0</span>
-          </button>
-          <button class="shipment-tab-btn" data-tab="DRAFT">
-            <span>Bản nháp</span>
-            <span class="shipment-tab-count" id="tab-count-DRAFT">0</span>
-          </button>
-          <button class="shipment-tab-btn" data-tab="PAYMENT">
-            <span>Chờ thanh toán</span>
-            <span class="shipment-tab-count" id="tab-count-PAYMENT">0</span>
-          </button>
-          <button class="shipment-tab-btn" data-tab="TRANSIT">
-            <span>Đang vận chuyển</span>
-            <span class="shipment-tab-count" id="tab-count-TRANSIT">0</span>
-          </button>
-          <button class="shipment-tab-btn" data-tab="ARRIVED">
-            <span>Đã cập cảng / HQ</span>
-            <span class="shipment-tab-count" id="tab-count-ARRIVED">0</span>
-          </button>
-          <button class="shipment-tab-btn" data-tab="COMPLETED">
-            <span>Hoàn tất</span>
-            <span class="shipment-tab-count" id="tab-count-COMPLETED">0</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Toolbar Card -->
-      <div class="shipments-toolbar-card">
-        <div class="toolbar-left-actions">
-          <button id="btnShipmentEdit" class="btn btn-default btn-sm" disabled style="display:inline-flex; align-items:center; gap:5px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-            Sửa
-          </button>
-          <button id="btnShipmentStatus" class="btn btn-default btn-sm" disabled style="display:inline-flex; align-items:center; gap:5px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.69 5.69"></path></svg>
-            Đổi Trạng Thái
-          </button>
-          <button id="btnShipmentDelete" class="btn btn-default btn-sm" style="color: var(--amis-red); display:inline-flex; align-items:center; gap:5px;" disabled>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            Xóa
-          </button>
-          <div style="height: 18px; width: 1px; background: #e2e8f0; margin: 0 4px;"></div>
-          <button id="btnConfigureColumns" class="btn btn-default btn-sm" style="display:inline-flex; align-items:center; gap:5px;" title="Tùy chọn các cột hiển thị trong bảng">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            Tùy chọn cột
-          </button>
-        </div>
-        <div class="toolbar-right-actions">
-          <div class="shipment-search-wrapper">
-            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="shipmentSearchInput" class="shipment-search-input" placeholder="Lọc mã lô, sản phẩm, đối tác, invoice, tờ khai...">
-          </div>
+      <!-- Status Tabs -->
+      <div class="misa-tabs-wrap">
+        <div class="misa-tabs" id="shipmentsStatusTabs">
+          <button class="misa-tab active" data-tab="ALL">Tất cả <span class="misa-tab-badge" id="tab-count-ALL">0</span></button>
+          <button class="misa-tab" data-tab="DRAFT">Bản nháp <span class="misa-tab-badge" id="tab-count-DRAFT">0</span></button>
+          <button class="misa-tab" data-tab="PAYMENT">Chờ thanh toán <span class="misa-tab-badge" id="tab-count-PAYMENT">0</span></button>
+          <button class="misa-tab" data-tab="TRANSIT">Đang vận chuyển <span class="misa-tab-badge" id="tab-count-TRANSIT">0</span></button>
+          <button class="misa-tab" data-tab="ARRIVED">Đã cập cảng / HQ <span class="misa-tab-badge" id="tab-count-ARRIVED">0</span></button>
+          <button class="misa-tab" data-tab="COMPLETED">Hoàn tất <span class="misa-tab-badge" id="tab-count-COMPLETED">0</span></button>
         </div>
       </div>
 
@@ -426,13 +347,12 @@ export async function renderShipments(container, filterType = 'All') {
           <table class="modern-shipment-table" id="shipmentsTable">
             <thead id="shipmentsThead"></thead>
             <tbody id="shipmentsTbody">
-              <tr><td colspan="13" style="text-align:center; padding: 32px; color: #64748b;">Đang tải danh sách lô hàng...</td></tr>
+              <tr><td colspan="15" style="text-align:center; padding: 32px; color: #64748b;">Đang tải danh sách lô hàng...</td></tr>
             </tbody>
           </table>
         </div>
         <div class="shipments-pagination-bar">
           <div id="shipmentPaginationText">Tổng số: 0 bản ghi</div>
-          <div style="font-size: 12px; color: #64748b;">Hệ thống tải toàn bộ danh sách lô hàng thực tế</div>
         </div>
       </div>
     </div>
@@ -478,30 +398,29 @@ function renderShipmentsTable(items) {
 
   const cols = getActiveColumns();
 
-  // 1. Build Thead
+  // 1. Build Thead (Cố định 2 cột đầu & 1 cột cuối)
   let theadHtml = `<tr>
-    <th style="width: 38px; text-align:center;"><input type="checkbox" id="checkAllShipments"></th>
-    <th style="width: 38px; text-align:center;"></th>
+    <th class="shipment-freeze-1" style="width: 44px; min-width: 44px; max-width: 44px; text-align:center;"><input type="checkbox" id="checkAllShipments" style="cursor:pointer;accent-color:#2563eb"></th>
+    <th class="shipment-freeze-2" style="width: 170px; min-width: 170px;">Mã Lô Hàng</th>
   `;
-  if (cols.code) theadHtml += `<th style="min-width: 140px;">Mã Lô Hàng</th>`;
-  if (cols.type) theadHtml += `<th style="min-width: 110px;">Loại Hình</th>`;
-  if (cols.partner) theadHtml += `<th style="min-width: 180px;">Đối Tác</th>`;
-  if (cols.products) theadHtml += `<th style="min-width: 160px;">Sản Phẩm</th>`;
-  if (cols.quantity) theadHtml += `<th style="min-width: 110px; text-align:right;">Số Lượng (KG)</th>`;
-  if (cols.invoices) theadHtml += `<th style="min-width: 130px;">Invoice</th>`;
-  if (cols.declarations) theadHtml += `<th style="min-width: 140px;">Tờ Khai HQ</th>`;
-  if (cols.containers) theadHtml += `<th style="min-width: 120px;">Container</th>`;
-  if (cols.etd) theadHtml += `<th style="min-width: 95px;">ETD</th>`;
-  if (cols.eta) theadHtml += `<th style="min-width: 140px;">ETA</th>`;
-  if (cols.value) theadHtml += `<th style="min-width: 130px; text-align:right;">Tổng Giá Trị</th>`;
-  if (cols.status) theadHtml += `<th style="min-width: 135px;">Trạng Thái</th>`;
-  theadHtml += `<th style="min-width: 135px; text-align:center;">Thao Tác</th></tr>`;
+  if (cols.type) theadHtml += `<th style="width: 110px; min-width: 110px;">Loại Hình</th>`;
+  if (cols.partner) theadHtml += `<th style="min-width: 170px;">Đối Tác</th>`;
+  if (cols.products) theadHtml += `<th style="min-width: 180px;">Sản Phẩm</th>`;
+  if (cols.quantity) theadHtml += `<th style="width: 125px; min-width: 125px; text-align:right;">Số Lượng (KG)</th>`;
+  if (cols.invoices) theadHtml += `<th style="width: 130px; min-width: 130px;">Invoice</th>`;
+  if (cols.declarations) theadHtml += `<th style="width: 145px; min-width: 145px;">Tờ Khai HQ</th>`;
+  if (cols.containers) theadHtml += `<th style="width: 120px; min-width: 120px;">Container</th>`;
+  if (cols.etd) theadHtml += `<th style="width: 105px; min-width: 105px;">ETD</th>`;
+  if (cols.eta) theadHtml += `<th style="width: 155px; min-width: 155px;">ETA</th>`;
+  if (cols.value) theadHtml += `<th style="width: 135px; min-width: 135px; text-align:right;">Tổng Giá Trị</th>`;
+  if (cols.status) theadHtml += `<th style="width: 140px; min-width: 140px;">Trạng Thái</th>`;
+  theadHtml += `<th class="shipment-freeze-actions" style="width: 115px; min-width: 115px; max-width: 115px; text-align:center;">Thao Tác</th></tr>`;
   thead.innerHTML = theadHtml;
 
   // 2. Build Tbody
   if (items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 40px; color: #64748b;">
-      <div style="font-size: 28px; margin-bottom: 8px;">📦</div>
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; padding: 48px 16px; color: #64748b;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin-bottom:10px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <div style="font-weight: 600; font-size: 14px; color: #334155;">Không tìm thấy lô hàng nào phù hợp</div>
       <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Thử thay đổi từ khóa tìm kiếm hoặc chọn tab trạng thái khác</div>
     </td></tr>`;
@@ -545,7 +464,7 @@ function renderShipmentsTable(items) {
     // Containers
     let contHtml = `<span class="doc-empty">---</span>`;
     if (s.containerNumbers && s.containerNumbers.length > 0) {
-      contHtml = s.containerNumbers.map(c => `<span class="doc-pill" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0;" title="Số Cont: ${c}">${c}</span>`).join(' ');
+      contHtml = s.containerNumbers.map(c => `<span class="doc-pill cont-pill" title="Số Cont: ${c}">${c}</span>`).join(' ');
     }
 
     // ETD
@@ -570,25 +489,23 @@ function renderShipmentsTable(items) {
 
     let rowHtml = `
     <tr data-id="${s.id}" class="shipment-main-row ${selectedId === s.id ? 'selected' : ''}">
-      <td style="text-align:center;">
-        <input type="checkbox" class="row-checkbox" value="${s.id}" ${selectedId === s.id ? 'checked' : ''}>
+      <!-- Cột 1 cố định: Checkbox -->
+      <td class="shipment-freeze-1" style="text-align:center;">
+        <input type="checkbox" class="row-checkbox" value="${s.id}" ${selectedId === s.id ? 'checked' : ''} style="cursor:pointer;accent-color:#2563eb">
       </td>
-      <td style="text-align:center;" class="expand-btn" data-id="${s.id}">
-        <span class="expand-chevron" id="expand-icon-${s.id}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-        </span>
+
+      <!-- Cột 2 cố định: Mã Lô Hàng + Nút Expand -->
+      <td class="shipment-freeze-2">
+        <div class="shipment-code-cell">
+          <span class="expand-btn expand-chevron" id="expand-icon-${s.id}" title="Mở rộng chi tiết lô hàng">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+          <a href="javascript:void(0)" onclick="window.appNavigateTo('shipment-detail', '${s.id}')" class="shipment-code-badge" title="Nhấn để xem toàn bộ hồ sơ chi tiết">
+            ${s.shipmentCode}
+          </a>
+        </div>
       </td>
     `;
-
-    if (cols.code) {
-      rowHtml += `
-      <td>
-        <a href="javascript:void(0)" onclick="window.appNavigateTo('shipment-detail', '${s.id}')" class="shipment-code-badge" title="Nhấn để xem toàn bộ hồ sơ chi tiết">
-          <span class="badge-icon">📦</span>
-          <span>${s.shipmentCode}</span>
-        </a>
-      </td>`;
-    }
 
     if (cols.type) {
       rowHtml += `<td>
@@ -659,7 +576,7 @@ function renderShipmentsTable(items) {
     }
 
     rowHtml += `
-      <td style="text-align:center;">
+      <td class="shipment-freeze-actions" style="text-align:center;">
         <div class="action-buttons-group">
           <button class="action-btn action-view" title="Xem chi tiết lô hàng" onclick="window.appNavigateTo('shipment-detail', '${s.id}')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -678,7 +595,7 @@ function renderShipmentsTable(items) {
     </tr>
     <!-- Hidden Expandable Row -->
     <tr id="expand-row-${s.id}" class="expand-row" style="display:none;">
-      <td colspan="13" style="padding: 0;">
+      <td colspan="15" style="padding: 0;">
         <div class="expand-drawer-container" id="expand-content-${s.id}">
           <div style="text-align:center; padding: 20px; color: #64748b;">Đang tải chi tiết lô hàng...</div>
         </div>
@@ -769,9 +686,9 @@ function setupShipmentEvents() {
   });
 
   // Quick Status Tabs
-  document.querySelectorAll('#shipmentsStatusTabs .shipment-tab-btn').forEach(btn => {
+  document.querySelectorAll('#shipmentsStatusTabs .misa-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#shipmentsStatusTabs .shipment-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#shipmentsStatusTabs .misa-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentStatusTab = btn.getAttribute('data-tab') || 'ALL';
       renderShipmentsTable(getFilteredShipments());

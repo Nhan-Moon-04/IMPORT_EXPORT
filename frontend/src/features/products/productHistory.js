@@ -1,6 +1,6 @@
 /**
- * Product History & Material Usage Tracking — MISA AMIS UI Style
- * Lịch sử nhập/xuất, tồn kho, định mức sử dụng từng mặt hàng
+ * Product History & Material Usage Tracking — Modern Enterprise UI
+ * Lịch sử nhập/xuất, tồn kho luỹ kế, định mức sử dụng từng mặt hàng
  */
 import { api, showToast } from "../../core/api.js";
 
@@ -29,19 +29,19 @@ let globalSummary = {
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 const ALL_COLS = [
-  { key: 'date',              label: 'Ngày GD',            visible: true,  sortable: true  },
-  { key: 'type',              label: 'Loại Hình',          visible: true,  sortable: true  },
-  { key: 'sku',               label: 'Mã SKU',             visible: true,  sortable: true  },
-  { key: 'productName',       label: 'Tên Mặt Hàng',       visible: true,  sortable: true  },
-  { key: 'shipmentCode',      label: 'Mã Lô Hàng',         visible: true,  sortable: false },
-  { key: 'invoiceNumber',     label: 'Số Invoice',         visible: true,  sortable: false },
-  { key: 'declarationNumber', label: 'Tờ Khai HQ',         visible: true,  sortable: false },
-  { key: 'partnerName',       label: 'Đối Tác',            visible: true,  sortable: true  },
-  { key: 'quantity',          label: 'Số Lượng',           visible: true,  sortable: true  },
-  { key: 'unitPrice',         label: 'Đơn Giá (USD)',      visible: true,  sortable: true  },
-  { key: 'totalAmount',       label: 'Thành Tiền (USD)',   visible: true,  sortable: true  },
-  { key: 'balanceQuantity',   label: 'Tồn Sau GD',         visible: true,  sortable: false },
-  { key: 'status',            label: 'Trạng Thái',         visible: true,  sortable: false },
+  { key: 'date',              label: 'Ngày GD',            width: '110px', visible: true,  sortable: true  },
+  { key: 'type',              label: 'Loại Hình',          width: '130px', visible: true,  sortable: true  },
+  { key: 'sku',               label: 'Mã SKU',             width: '150px', visible: true,  sortable: true  },
+  { key: 'productName',       label: 'Tên Mặt Hàng',       width: '280px', visible: true,  sortable: true  },
+  { key: 'shipmentCode',      label: 'Mã Lô Hàng',         width: '160px', visible: true,  sortable: false },
+  { key: 'invoiceNumber',     label: 'Số Invoice',         width: '130px', visible: true,  sortable: false },
+  { key: 'declarationNumber', label: 'Tờ Khai HQ',         width: '150px', visible: true,  sortable: false },
+  { key: 'partnerName',       label: 'Đối Tác',            width: '220px', visible: true,  sortable: true  },
+  { key: 'quantity',          label: 'Số Lượng',           width: '125px', visible: true,  sortable: true  },
+  { key: 'unitPrice',         label: 'Đơn Giá (USD)',      width: '115px', visible: true,  sortable: true  },
+  { key: 'totalAmount',       label: 'Thành Tiền (USD)',   width: '140px', visible: true,  sortable: true  },
+  { key: 'balanceQuantity',   label: 'Tồn Sau GD',         width: '130px', visible: true,  sortable: false },
+  { key: 'status',            label: 'Trạng Thái',         width: '115px', visible: true,  sortable: false },
 ];
 let columns = ALL_COLS.map(c => ({ ...c }));
 
@@ -53,160 +53,132 @@ export async function renderProductHistory(container, defaultProductId = null) {
   sortDir = 'desc';
 
   container.innerHTML = `
-    <div class="ph-page">
+    <div class="ph-history-page">
 
-      <!-- STAT CARDS -->
-      <div class="ph-stat-grid">
-        <div class="ph-stat-card ph-stat-blue">
-          <div class="ph-stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
-          </div>
-          <div class="ph-stat-body">
-            <div class="ph-stat-label">Tổng Nhập Khẩu</div>
-            <div class="ph-stat-value" id="statImportQty">0 kg</div>
-            <div class="ph-stat-sub" id="statImportVal">Trị giá: $0.00</div>
-          </div>
-        </div>
+      <!-- TABLE CARD CONTAINER -->
+      <div class="ph-table-card">
 
-        <div class="ph-stat-card ph-stat-orange">
-          <div class="ph-stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 14 12 9 7 14"/><line x1="12" y1="9" x2="12" y2="21"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
-          </div>
-          <div class="ph-stat-body">
-            <div class="ph-stat-label">Xuất Khẩu / Đã Dùng</div>
-            <div class="ph-stat-value" id="statExportQty">0 kg</div>
-            <div class="ph-stat-sub" id="statExportVal">Trị giá: $0.00</div>
-          </div>
-        </div>
-
-        <div class="ph-stat-card ph-stat-green">
-          <div class="ph-stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          </div>
-          <div class="ph-stat-body">
-            <div class="ph-stat-label">Tồn Kho / Còn Lại</div>
-            <div class="ph-stat-value" id="statRemainQty">0 kg</div>
-            <div class="ph-stat-sub" id="statRemainNote">Lũy kế tồn khả dụng</div>
-          </div>
-        </div>
-
-        <div class="ph-stat-card ph-stat-purple">
-          <div class="ph-stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="ph-stat-body">
-            <div class="ph-stat-label">Tỷ Lệ Đã Sử Dụng</div>
-            <div class="ph-stat-value" id="statUsageRate">0%</div>
-            <div class="ph-stat-progress">
-              <div class="ph-progress-bar" id="statUsageBar"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PRODUCT SPOTLIGHT (shown when a product is selected) -->
-      <div id="productSpotlightCard" class="ph-spotlight" style="display:none"></div>
-
-      <!-- MAIN TABLE CARD -->
-      <div class="amis-list-page">
-
-        <!-- TOOLBAR -->
-        <div class="amis-toolbar-wrap ph-toolbar-wrap">
-          <div class="amis-toolbar-left" style="flex-wrap:wrap; gap:6px;">
-            <!-- Product dropdown -->
-            <div class="ph-filter-group">
-              <label class="ph-filter-label">Mặt hàng</label>
-              <select id="histProductSelect" class="ph-filter-select ph-select-wide">
+        <!-- MODERN TOOLBAR -->
+        <div class="ph-modern-toolbar">
+          <div class="ph-tb-left">
+            <!-- Filter Mặt Hàng -->
+            <div class="ph-control-group">
+              <span class="ph-control-label">Mặt hàng:</span>
+              <select id="histProductSelect" class="ph-modern-select ph-select-prod">
                 <option value="">-- Tất cả mặt hàng --</option>
               </select>
             </div>
 
-            <div class="amis-btn-divider"></div>
-
-            <!-- Type filter -->
-            <select id="histFilterType" class="ph-filter-select">
+            <!-- Filter Loại Hình -->
+            <select id="histFilterType" class="ph-modern-select">
               <option value="">Tất cả loại hình</option>
-              <option value="Import">📥 Nhập khẩu</option>
-              <option value="Export">📤 Xuất khẩu</option>
+              <option value="Import">Nhập khẩu</option>
+              <option value="Export">Xuất khẩu</option>
             </select>
 
-            <!-- Date range -->
-            <div class="ph-date-range">
-              <input type="date" id="histDateFrom" class="ph-date-input" title="Từ ngày">
-              <span class="ph-date-sep">—</span>
-              <input type="date" id="histDateTo" class="ph-date-input" title="Đến ngày">
-              <button id="btnHistFilterApply" class="amis-btn amis-btn-ghost amis-btn-xs">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                Lọc
-              </button>
+            <!-- Filter Ngày Tháng -->
+            <div class="ph-date-wrap">
+              <input type="date" id="histDateFrom" class="ph-date-field" title="Từ ngày">
+              <span class="ph-date-divider">—</span>
+              <input type="date" id="histDateTo" class="ph-date-field" title="Đến ngày">
             </div>
+
+            <button id="btnHistFilterApply" class="ph-btn ph-btn-primary" title="Áp dụng bộ lọc">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              Lọc
+            </button>
           </div>
 
-          <div class="amis-toolbar-right">
-            <!-- Search -->
-            <div class="amis-search-box">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="histSearchInput" placeholder="Lọc mã SKU, lô hàng, invoice...">
+          <div class="ph-tb-right">
+            <!-- Search Bar -->
+            <div class="ph-search-bar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="histSearchInput" placeholder="Tìm kiếm SKU, lô hàng, invoice, tờ khai...">
             </div>
 
-            <!-- Export -->
-            <button id="btnHistExportExcel" class="amis-btn amis-btn-ghost" title="Xuất CSV">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <!-- Export Excel Button -->
+            <button id="btnHistExportExcel" class="ph-btn" title="Xuất dữ liệu Excel (CSV)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="8" y1="13" x2="16" y2="13"/>
+                <line x1="8" y1="17" x2="16" y2="17"/>
+                <line x1="10" y1="9" x2="10.01" y2="9"/>
+              </svg>
               Xuất Excel
             </button>
 
-            <!-- Refresh -->
-            <button id="btnHistRefresh" class="amis-btn amis-btn-ghost" title="Nạp lại">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <!-- Refresh Button -->
+            <button id="btnHistRefresh" class="ph-btn" title="Nạp lại dữ liệu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
               Nạp lại
             </button>
 
-            <!-- Column picker -->
+            <!-- Column Picker -->
             <div class="amis-col-picker-wrap" id="colPickerWrapHist">
-              <button id="btnColPickerHist" class="amis-btn amis-btn-ghost amis-btn-icon-only" title="Tuỳ chỉnh cột">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <button id="btnColPickerHist" class="ph-btn ph-btn-icon-only" title="Tuỳ chỉnh cột hiển thị">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"/>
+                  <line x1="8" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/>
+                  <line x1="3" y1="12" x2="3.01" y2="12"/>
+                  <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
               </button>
               <div class="amis-col-dropdown" id="colDropdownHist" style="display:none">
                 <div class="col-dropdown-header">Tuỳ chỉnh cột hiển thị</div>
                 <div class="col-dropdown-list" id="colCheckListHist"></div>
                 <div class="col-dropdown-footer">
-                  <button class="amis-btn amis-btn-ghost amis-btn-xs" id="btnResetColsHist">Đặt lại</button>
-                  <button class="amis-btn amis-btn-primary amis-btn-xs" id="btnApplyColsHist">Áp dụng</button>
+                  <button class="ph-btn ph-btn-xs" id="btnResetColsHist">Đặt lại</button>
+                  <button class="ph-btn ph-btn-primary ph-btn-xs" id="btnApplyColsHist">Áp dụng</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- TABLE -->
-        <div class="amis-table-container">
-          <table class="amis-data-table" id="histTable">
+        <!-- SCROLLABLE TABLE CONTAINER (CỐ ĐỊNH 2 CỘT ĐẦU VÀ 1 CỘT CUỐI) -->
+        <div class="ph-table-wrap">
+          <table class="ph-modern-table" id="histTable">
+            <colgroup id="histColgroup"></colgroup>
             <thead id="histThead"></thead>
             <tbody id="histTbody">
-              <tr><td colspan="20" class="amis-table-empty">
-                <div class="ph-loading">
-                  <div class="ph-spinner"></div>
-                  <span>Đang tải dữ liệu lịch sử xuất nhập khẩu...</span>
-                </div>
-              </td></tr>
+              <tr>
+                <td colspan="20" class="amis-table-empty">
+                  <div class="ph-loading">
+                    <div class="ph-spinner"></div>
+                    <span>Đang tải dữ liệu lịch sử xuất nhập khẩu...</span>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- FOOTER -->
-        <div class="amis-table-footer">
-          <div class="amis-table-info" id="histPaginationText">Tổng số: 0 giao dịch</div>
-          <div class="amis-pagination-controls" id="histPaginationBtns"></div>
-          <div class="amis-page-size-select">
+        <!-- MODERN FOOTER & PAGINATION -->
+        <div class="ph-modern-footer">
+          <div class="ph-ft-info" id="histPaginationText">Tổng số: 0 giao dịch</div>
+          <div class="ph-ft-pagination" id="histPaginationBtns"></div>
+          <div class="ph-ft-pagesize">
             <span>Hiển thị</span>
             <select id="histPageSize">
               <option value="20" selected>20</option>
               <option value="50">50</option>
               <option value="100">100</option>
             </select>
-            <span>dòng/trang</span>
+            <span>dòng / trang</span>
           </div>
         </div>
+
       </div>
     </div>
   `;
@@ -265,8 +237,6 @@ async function loadHistoryData() {
     };
 
     applySortAndRender();
-    updateStatCards();
-    updateSpotlightCard();
   } catch (_) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="20" class="amis-table-empty" style="color:var(--amis-red)">Lỗi tải dữ liệu. Vui lòng bấm Nạp lại.</td></tr>`;
   }
@@ -302,113 +272,51 @@ function getSortVal(row, col) {
   }
 }
 
-// ─── Stat Cards ───────────────────────────────────────────────────────────────
-function updateStatCards() {
-  const impQty  = globalSummary.totalImportQuantity;
-  const expQty  = globalSummary.totalExportQuantity;
-  const remQty  = globalSummary.totalRemainingQuantity;
-
-  const fmtQty  = v => `${Number(v).toLocaleString('vi-VN')} kg`;
-  const fmtUsd  = v => `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  setText("statImportQty",  fmtQty(impQty));
-  setText("statExportQty",  fmtQty(expQty));
-  setHTML("statImportVal",  `Trị giá: <strong>${fmtUsd(globalSummary.totalImportValue)}</strong>`);
-  setHTML("statExportVal",  `Trị giá: <strong>${fmtUsd(globalSummary.totalExportValue)}</strong>`);
-
-  const remEl = document.getElementById("statRemainQty");
-  if (remEl) {
-    remEl.textContent = fmtQty(remQty);
-    remEl.style.color = remQty < 0 ? 'var(--amis-red)' : '';
-  }
-
-  const noteEl = document.getElementById("statRemainNote");
-  if (noteEl) {
-    noteEl.innerHTML = remQty < 0
-      ? `<span style="color:var(--amis-red);font-weight:600">⚠️ Xuất vượt lượng nhập</span>`
-      : `Số lượng khả dụng còn lại`;
-  }
-
-  const usageRate = impQty > 0 ? Math.min(100, Math.max(0, (expQty / impQty) * 100)) : (expQty > 0 ? 100 : 0);
-  setText("statUsageRate", `${usageRate.toFixed(1)}%`);
-  const bar = document.getElementById("statUsageBar");
-  if (bar) {
-    bar.style.width = `${usageRate}%`;
-    bar.style.background = usageRate > 90 ? '#ef4444' : usageRate > 50 ? '#f59e0b' : '#8b5cf6';
-  }
-}
-
-function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
-function setHTML(id, v) { const el = document.getElementById(id); if (el) el.innerHTML = v; }
-
-// ─── Spotlight card ───────────────────────────────────────────────────────────
-function updateSpotlightCard() {
-  const card = document.getElementById("productSpotlightCard");
-  if (!card) return;
-
-  if (!selectedProductId) { card.style.display = "none"; return; }
-
-  const p = productsList.find(x => x.id === selectedProductId);
-  if (!p) { card.style.display = "none"; return; }
-
-  const impQty   = globalSummary.totalImportQuantity;
-  const remQty   = globalSummary.totalRemainingQuantity;
-  const avgPrice = impQty > 0 ? (globalSummary.totalImportValue / impQty) : 0;
-
-  card.style.display = "block";
-  card.innerHTML = `
-    <div class="ph-spotlight-inner">
-      <div class="ph-spotlight-left">
-        <div class="ph-spotlight-avatar">🧵</div>
-        <div>
-          <div class="ph-spotlight-name">
-            ${p.name}
-            <span class="amis-sku-badge">${p.sku}</span>
-            ${p.hsCode ? `<span class="amis-code">HS: ${p.hsCode}</span>` : ''}
-          </div>
-          <div class="ph-spotlight-meta">
-            Nhóm: <strong>${p.productGroup || 'Sợi dệt'}</strong> &nbsp;·&nbsp;
-            Xuất xứ: <strong>${p.countryOfOrigin || 'N/A'}</strong> &nbsp;·&nbsp;
-            ĐVT: <strong>${p.unit || 'kg'}</strong>
-          </div>
-        </div>
-      </div>
-      <div class="ph-spotlight-right">
-        <div class="ph-spotlight-kpi">
-          <span class="ph-kpi-label">Đơn giá bình quân nhập</span>
-          <span class="ph-kpi-val" style="color:var(--amis-blue)">$${avgPrice.toFixed(4)}</span>
-        </div>
-        <div class="ph-spotlight-sep"></div>
-        <div class="ph-spotlight-kpi">
-          <span class="ph-kpi-label">Tồn khả dụng</span>
-          <span class="ph-kpi-val" style="color:${remQty < 0 ? 'var(--amis-red)' : 'var(--amis-green)'}">
-            ${Number(remQty).toLocaleString('vi-VN')} ${p.unit || 'kg'}
-          </span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// ─── Table header ─────────────────────────────────────────────────────────────
+// ─── Table header (Cố định 2 cột đầu & 1 cột cuối) ───────────────────────────
 function renderHeader() {
   const thead = document.getElementById("histThead");
+  const colgroup = document.getElementById("histColgroup");
   if (!thead) return;
 
   const visCols = columns.filter(c => c.visible);
 
+  // Render colgroup để đảm bảo độ rộng các cột cố định mượt mà
+  if (colgroup) {
+    colgroup.innerHTML = `
+      <col style="width: 44px">
+      ${visCols.map((col, idx) => {
+        if (idx === 0) return `<col style="width: 110px">`;
+        return `<col style="width: ${col.width || '130px'}">`;
+      }).join('')}
+      <col style="width: 85px">
+    `;
+  }
+
   thead.innerHTML = `
     <tr>
-      <th class="amis-th-check"><input type="checkbox" id="chkAllHist" title="Chọn tất cả"></th>
-      ${visCols.map(col => `
-        <th class="amis-th${col.sortable ? ' sortable' : ''}" data-col="${col.key}" style="${numCols.includes(col.key) ? 'text-align:right' : ''}">
-          <div class="amis-th-inner${numCols.includes(col.key) ? ' justify-end' : ''}">
-            <span>${col.label}</span>
-            ${col.sortable ? `<span class="sort-icon${sortCol === col.key ? (sortDir === 'asc' ? ' asc' : ' desc') : ''}">${getSortSVG(col.key)}</span>` : ''}
-          </div>
-        </th>
-      `).join('')}
-      <th class="amis-th-actions">Thao tác</th>
+      <!-- Cột cố định 1: Checkbox -->
+      <th class="ph-col-freeze-1">
+        <input type="checkbox" id="chkAllHist" title="Chọn tất cả" style="cursor:pointer;accent-color:#0266b3">
+      </th>
+
+      <!-- Các cột dữ liệu -->
+      ${visCols.map((col, idx) => {
+        const isFreeze2 = (idx === 0); // Cột đầu tiên sau checkbox được cố định vị trí thứ 2
+        const freezeCls = isFreeze2 ? ' ph-col-freeze-2' : '';
+        const alignRight = numCols.includes(col.key);
+
+        return `
+          <th class="${col.sortable ? 'sortable' : ''}${freezeCls}" data-col="${col.key}" style="${alignRight ? 'text-align:right' : ''}">
+            <div class="ph-th-flex${alignRight ? ' justify-end' : ''}">
+              <span>${col.label}</span>
+              ${col.sortable ? `<span class="ph-sort-ico${sortCol === col.key ? ' active' : ''}">${getSortSVG(col.key)}</span>` : ''}
+            </div>
+          </th>
+        `;
+      }).join('')}
+
+      <!-- Cột cố định cuối: Thao tác -->
+      <th class="ph-col-freeze-actions">Thao tác</th>
     </tr>
   `;
 
@@ -423,19 +331,31 @@ function renderHeader() {
   });
 
   document.getElementById("chkAllHist")?.addEventListener("change", (e) => {
-    document.querySelectorAll(".row-chk").forEach(cb => cb.checked = e.target.checked);
+    const checked = e.target.checked;
+    document.querySelectorAll(".row-chk").forEach(cb => {
+      cb.checked = checked;
+      const tr = cb.closest("tr");
+      if (tr) {
+        if (checked) tr.classList.add("row-selected");
+        else tr.classList.remove("row-selected");
+      }
+    });
   });
 }
 
 const numCols = ['quantity', 'unitPrice', 'totalAmount', 'balanceQuantity'];
 
 function getSortSVG(col) {
-  if (sortCol !== col) return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>`;
-  if (sortDir === 'asc') return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5l-7 7h14z" fill="currentColor" stroke="none"/></svg>`;
-  return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19l7-7H5z" fill="currentColor" stroke="none"/></svg>`;
+  if (sortCol !== col) {
+    return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>`;
+  }
+  if (sortDir === 'asc') {
+    return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>`;
+  }
+  return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`;
 }
 
-// ─── Table body ───────────────────────────────────────────────────────────────
+// ─── Table body (Cố định 2 cột đầu & 1 cột cuối) ──────────────────────────────
 function renderTable() {
   const tbody = document.getElementById("histTbody");
   if (!tbody) return;
@@ -446,9 +366,9 @@ function renderTable() {
   const visCols = columns.filter(c => c.visible);
 
   if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="${visCols.length + 2}" class="amis-table-empty">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:.35;margin-bottom:8px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <div>Không tìm thấy giao dịch xuất nhập khẩu nào phù hợp điều kiện lọc.</div>
+    tbody.innerHTML = `<tr><td colspan="${visCols.length + 2}" class="amis-table-empty" style="padding:48px 16px;text-align:center;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin-bottom:10px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div style="font-weight:500;color:var(--text-muted);font-size:14px">Không tìm thấy giao dịch xuất nhập khẩu nào phù hợp bộ lọc.</div>
     </td></tr>`;
     document.getElementById("histPaginationText").textContent = "Tổng số: 0 giao dịch";
     renderPagination();
@@ -459,44 +379,101 @@ function renderTable() {
     const isImport = row.shipmentType === 'Import';
     const dateStr  = row.date ? new Date(row.date).toLocaleDateString('vi-VN') : '—';
     const qtySign  = isImport ? `+${Number(row.quantity).toLocaleString('vi-VN')}` : `−${Number(row.quantity).toLocaleString('vi-VN')}`;
-    const qtyColor = isImport ? 'var(--amis-blue)' : '#d97706';
-    const balColor = (row.balanceQuantity || 0) < 0 ? 'var(--amis-red)' : 'var(--amis-green)';
+    const qtyColor = isImport ? '#0266b3' : '#b45309';
+    const balColor = (row.balanceQuantity || 0) < 0 ? '#b91c1c' : '#111827';
 
-    const cells = visCols.map(col => {
+    const cells = visCols.map((col, idx) => {
+      const isFreeze2 = (idx === 0);
+      const freezeCls = isFreeze2 ? ' ph-col-freeze-2' : '';
+
       switch (col.key) {
-        case 'date': return `<td style="white-space:nowrap;color:var(--text-muted);font-size:12.5px">${dateStr}</td>`;
-        case 'type': return `<td>${isImport
-          ? `<span class="ph-chip ph-chip-import">📥 Nhập khẩu</span>`
-          : `<span class="ph-chip ph-chip-export">📤 Xuất khẩu</span>`}</td>`;
-        case 'sku': return `<td><strong class="amis-sku-badge">${row.sku || '—'}</strong></td>`;
-        case 'productName': return `<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.productName || '—'}</td>`;
-        case 'shipmentCode': return `<td><a class="ph-link" href="javascript:void(0)" onclick="window.appNavigateTo('shipment-detail','${row.shipmentId}')">${row.shipmentCode || '—'}</a></td>`;
-        case 'invoiceNumber': return `<td><code class="amis-code">${row.invoiceNumber || '—'}</code></td>`;
-        case 'declarationNumber': return `<td><code class="amis-code" style="color:#b45309">${row.declarationNumber || '—'}</code></td>`;
-        case 'partnerName': return `<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.partnerName || '—'}</td>`;
-        case 'quantity': return `<td style="text-align:right;font-weight:700;color:${qtyColor};white-space:nowrap">${qtySign} <span style="font-size:11px;font-weight:400;color:var(--text-muted)">${row.unit || 'kg'}</span></td>`;
-        case 'unitPrice': return `<td style="text-align:right;white-space:nowrap">$${Number(row.unitPrice || 0).toFixed(4)}</td>`;
-        case 'totalAmount': return `<td style="text-align:right;font-weight:700;white-space:nowrap">$${Number(row.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
-        case 'balanceQuantity': return `<td style="text-align:right;font-weight:700;color:${balColor};white-space:nowrap">${Number(row.balanceQuantity || 0).toLocaleString('vi-VN')} <span style="font-size:11px;font-weight:400;color:var(--text-muted)">${row.unit || 'kg'}</span></td>`;
-        case 'status': return `<td style="text-align:center"><span class="ph-status-chip">${row.status || 'Hoàn tất'}</span></td>`;
-        default: return `<td></td>`;
+        case 'date':
+          return `<td class="${freezeCls}" style="white-space:nowrap;font-weight:500;color:#334155"><span class="ph-num">${dateStr}</span></td>`;
+        
+        case 'type':
+          return `<td class="${freezeCls}">${isImport
+            ? `<span class="ph-type-pill ph-type-in">Nhập khẩu</span>`
+            : `<span class="ph-type-pill ph-type-out">Xuất khẩu</span>`}</td>`;
+        
+        case 'sku':
+          return `<td class="${freezeCls}"><span class="ph-sku-pill">${row.sku || '—'}</span></td>`;
+        
+        case 'productName':
+          return `<td class="${freezeCls}" title="${row.productName || ''}"><div class="ph-cell-name">${row.productName || '—'}</div></td>`;
+        
+        case 'shipmentCode':
+          return `<td class="${freezeCls}"><a class="ph-shipment-pill" href="javascript:void(0)" onclick="window.appNavigateTo('shipment-detail','${row.shipmentId}')">
+            ${row.shipmentCode || '—'}
+          </a></td>`;
+        
+        case 'invoiceNumber':
+          return `<td class="${freezeCls}"><span class="ph-code-tag">${row.invoiceNumber || '—'}</span></td>`;
+        
+        case 'declarationNumber':
+          return `<td class="${freezeCls}"><span class="ph-code-tag ph-code-orange">${row.declarationNumber || '—'}</span></td>`;
+        
+        case 'partnerName':
+          return `<td class="${freezeCls}" title="${row.partnerName || ''}"><div class="ph-cell-name">${row.partnerName || '—'}</div></td>`;
+        
+        case 'quantity':
+          return `<td class="${freezeCls}" style="text-align:right;white-space:nowrap">
+            <span class="ph-num" style="font-weight:600;color:${qtyColor}">${qtySign}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">${row.unit || 'kg'}</span>
+          </td>`;
+        
+        case 'unitPrice':
+          return `<td class="${freezeCls}" style="text-align:right;white-space:nowrap"><span class="ph-num" style="color:var(--text-muted)">$${Number(row.unitPrice || 0).toFixed(4)}</span></td>`;
+        
+        case 'totalAmount':
+          return `<td class="${freezeCls}" style="text-align:right;white-space:nowrap"><span class="ph-num" style="font-weight:600;color:#111827">$${Number(row.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>`;
+        
+        case 'balanceQuantity':
+          return `<td class="${freezeCls}" style="text-align:right;white-space:nowrap">
+            <span class="ph-num" style="font-weight:600;color:${balColor}">${Number(row.balanceQuantity || 0).toLocaleString('vi-VN')}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">${row.unit || 'kg'}</span>
+          </td>`;
+        
+        case 'status': {
+          const isDone = (row.status === 'Completed' || row.status === 'Hoàn tất' || !row.status);
+          return `<td class="${freezeCls}" style="text-align:center"><span class="ph-status-pill ${isDone ? 'ph-status-success' : 'ph-status-draft'}">${row.status || 'Hoàn tất'}</span></td>`;
+        }
+        
+        default:
+          return `<td class="${freezeCls}"></td>`;
       }
     }).join('');
 
     return `
       <tr>
-        <td class="amis-td-check"><input type="checkbox" class="row-chk" value="${row.shipmentId}"></td>
+        <!-- Cột cố định 1: Checkbox -->
+        <td class="ph-col-freeze-1">
+          <input type="checkbox" class="row-chk" value="${row.shipmentId}" style="cursor:pointer;accent-color:#0266b3">
+        </td>
+
         ${cells}
-        <td class="amis-td-actions">
-          <div class="amis-row-actions">
-            <button class="amis-icon-btn" onclick="window.appNavigateTo('shipment-detail','${row.shipmentId}')" title="Xem lô hàng">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
+
+        <!-- Cột cố định cuối: Thao tác -->
+        <td class="ph-col-freeze-actions">
+          <button class="ph-action-btn" onclick="window.appNavigateTo('shipment-detail','${row.shipmentId}')" title="Xem chi tiết lô hàng">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
         </td>
       </tr>
     `;
   }).join('');
+
+  // Row selection handler
+  tbody.querySelectorAll(".row-chk").forEach(chk => {
+    chk.addEventListener("change", (e) => {
+      const tr = e.target.closest("tr");
+      if (tr) {
+        if (e.target.checked) tr.classList.add("row-selected");
+        else tr.classList.remove("row-selected");
+      }
+    });
+  });
 
   const end = Math.min(currentPage * pageSize, total);
   document.getElementById("histPaginationText").textContent =
@@ -514,12 +491,12 @@ function renderPagination() {
   if (pages <= 1) { ctrl.innerHTML = ''; return; }
 
   const range = paginationRange(currentPage, pages);
-  let html = `<button class="amis-pg-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  let html = `<button class="ph-pg-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
   range.forEach(p => {
-    if (p === '…') { html += `<span class="amis-pg-ellipsis">…</span>`; }
-    else { html += `<button class="amis-pg-btn${p === currentPage ? ' active' : ''}" data-page="${p}">${p}</button>`; }
+    if (p === '…') { html += `<span class="ph-pg-dots">…</span>`; }
+    else { html += `<button class="ph-pg-btn${p === currentPage ? ' active' : ''}" data-page="${p}">${p}</button>`; }
   });
-  html += `<button class="amis-pg-btn" data-page="${currentPage + 1}" ${currentPage === pages ? 'disabled' : ''}>›</button>`;
+  html += `<button class="ph-pg-btn" data-page="${currentPage + 1}" ${currentPage === pages ? 'disabled' : ''}>›</button>`;
   ctrl.innerHTML = html;
 
   ctrl.querySelectorAll("[data-page]").forEach(btn => {

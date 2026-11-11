@@ -16,43 +16,43 @@ let sortDir          = 'desc';
 // ─── Column definitions ───────────────────────────────────────────────────────
 const COL_DEFS = {
   Invoice: [
-    { key: 'invoiceNumber', label: 'Số Invoice',       visible: true,  sortable: true  },
-    { key: 'invoiceDate',   label: 'Ngày Lập',         visible: true,  sortable: true  },
-    { key: 'type',          label: 'Loại Hóa Đơn',     visible: true,  sortable: true  },
-    { key: 'shipmentCode',  label: 'Mã Lô Hàng',       visible: true,  sortable: false },
-    { key: 'partnerName',   label: 'Đối Tác',          visible: true,  sortable: true  },
-    { key: 'shipmentType',  label: 'Loại Hình',        visible: true,  sortable: true  },
-    { key: 'currency',      label: 'Tiền Tệ',          visible: false, sortable: false },
-    { key: 'paymentTerms',  label: 'Điều Kiện TT',     visible: false, sortable: false },
-    { key: 'totalValue',    label: 'Tổng Tiền',        visible: true,  sortable: true  },
-    { key: 'status',        label: 'Trạng Thái',       visible: true,  sortable: false },
+    { key: 'invoiceNumber', label: 'Số Invoice',       width: '160px', visible: true,  sortable: true  },
+    { key: 'invoiceDate',   label: 'Ngày Lập',         width: '110px', visible: true,  sortable: true  },
+    { key: 'type',          label: 'Loại Hóa Đơn',     width: '140px', visible: true,  sortable: true  },
+    { key: 'shipmentCode',  label: 'Mã Lô Hàng',       width: '150px', visible: true,  sortable: false },
+    { key: 'partnerName',   label: 'Đối Tác',          width: '200px', visible: true,  sortable: true  },
+    { key: 'shipmentType',  label: 'Loại Hình',        width: '120px', visible: true,  sortable: true  },
+    { key: 'currency',      label: 'Tiền Tệ',          width: '90px',  visible: false, sortable: false },
+    { key: 'paymentTerms',  label: 'Điều Kiện TT',     width: '130px', visible: false, sortable: false },
+    { key: 'totalValue',    label: 'Tổng Tiền',        width: '150px', visible: true,  sortable: true  },
+    { key: 'status',        label: 'Trạng Thái',       width: '120px', visible: true,  sortable: false },
   ],
   PackingList: [
-    { key: 'invoiceNumber', label: 'Số Packing List',  visible: true,  sortable: true  },
-    { key: 'invoiceDate',   label: 'Ngày Lập',         visible: true,  sortable: true  },
-    { key: 'shipmentCode',  label: 'Mã Lô Hàng',       visible: true,  sortable: false },
-    { key: 'partnerName',   label: 'Đối Tác',          visible: true,  sortable: true  },
-    { key: 'shipmentType',  label: 'Loại Hình',        visible: true,  sortable: true  },
-    { key: 'totalValue',    label: 'Tổng Tiền',        visible: true,  sortable: true  },
-    { key: 'status',        label: 'Trạng Thái',       visible: true,  sortable: false },
+    { key: 'invoiceNumber', label: 'Số Packing List',  width: '160px', visible: true,  sortable: true  },
+    { key: 'invoiceDate',   label: 'Ngày Lập',         width: '110px', visible: true,  sortable: true  },
+    { key: 'shipmentCode',  label: 'Mã Lô Hàng',       width: '150px', visible: true,  sortable: false },
+    { key: 'partnerName',   label: 'Đối Tác',          width: '220px', visible: true,  sortable: true  },
+    { key: 'shipmentType',  label: 'Loại Hình',        width: '120px', visible: true,  sortable: true  },
+    { key: 'totalValue',    label: 'Tổng Tiền',        width: '150px', visible: true,  sortable: true  },
+    { key: 'status',        label: 'Trạng Thái',       width: '120px', visible: true,  sortable: false },
   ],
   SalesContract: [
-    { key: 'invoiceNumber', label: 'Số Hợp Đồng',     visible: true,  sortable: true  },
-    { key: 'invoiceDate',   label: 'Ngày Lập',         visible: true,  sortable: true  },
-    { key: 'type',          label: 'Loại Hợp Đồng',   visible: true,  sortable: false },
-    { key: 'shipmentCode',  label: 'Mã Lô Hàng',       visible: true,  sortable: false },
-    { key: 'partnerName',   label: 'Đối Tác',          visible: true,  sortable: true  },
-    { key: 'totalValue',    label: 'Tổng Tiền',        visible: true,  sortable: true  },
-    { key: 'status',        label: 'Trạng Thái',       visible: true,  sortable: false },
+    { key: 'invoiceNumber', label: 'Số Hợp Đồng',     width: '160px', visible: true,  sortable: true  },
+    { key: 'invoiceDate',   label: 'Ngày Lập',         width: '110px', visible: true,  sortable: true  },
+    { key: 'type',          label: 'Loại Hợp Đồng',   width: '140px', visible: true,  sortable: false },
+    { key: 'shipmentCode',  label: 'Mã Lô Hàng',       width: '150px', visible: true,  sortable: false },
+    { key: 'partnerName',   label: 'Đối Tác',          width: '220px', visible: true,  sortable: true  },
+    { key: 'totalValue',    label: 'Tổng Tiền',        width: '150px', visible: true,  sortable: true  },
+    { key: 'status',        label: 'Trạng Thái',       width: '120px', visible: true,  sortable: false },
   ],
 };
 let columns = [];
 
 // ─── Label helpers ────────────────────────────────────────────────────────────
 function getLabels(docType) {
-  if (docType === 'PackingList')   return { title: 'Danh Sách Packing List', addBtn: '+ Lập Packing List', search: 'Tìm số Packing List, lô hàng...' };
-  if (docType === 'SalesContract') return { title: 'Danh Sách Hợp Đồng',    addBtn: '+ Lập Hợp Đồng',    search: 'Tìm số hợp đồng, lô hàng...' };
-  return { title: 'Danh Sách Hóa Đơn',   addBtn: '+ Lập Hóa Đơn',   search: 'Tìm số Invoice, lô hàng, đối tác...' };
+  if (docType === 'PackingList')   return { title: 'Danh Sách Packing List', addBtn: 'Lập Packing List', search: 'Tìm số Packing List, lô hàng...' };
+  if (docType === 'SalesContract') return { title: 'Danh Sách Hợp Đồng',    addBtn: 'Lập Hợp Đồng',    search: 'Tìm số hợp đồng, lô hàng...' };
+  return { title: 'Danh Sách Hóa Đơn',   addBtn: 'Lập Hóa Đơn',   search: 'Tìm số Invoice, lô hàng, đối tác...' };
 }
 
 // ─── Entry ────────────────────────────────────────────────────────────────────
@@ -72,13 +72,13 @@ export async function renderInvoices(container, docType = 'Invoice') {
       <!-- TOOLBAR -->
       <div class="amis-toolbar-wrap">
         <div class="amis-toolbar-left">
-          <button id="btn-add-invoice" class="amis-btn amis-btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button id="btn-add-invoice" class="misa-btn misa-btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             ${lbl.addBtn}
           </button>
-          <div class="amis-btn-divider"></div>
-          <button id="btn-refresh-invoices" class="amis-btn amis-btn-ghost">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <div class="misa-toolbar-divider"></div>
+          <button id="btn-refresh-invoices" class="misa-btn misa-btn-default">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Nạp lại
           </button>
         </div>
@@ -101,27 +101,27 @@ export async function renderInvoices(container, docType = 'Invoice') {
 
           <select id="filter-shipment-type" class="ph-filter-select">
             <option value="">Loại hình XNK</option>
-            <option value="Import">📥 Nhập khẩu</option>
-            <option value="Export">📤 Xuất khẩu</option>
+            <option value="Import">Nhập khẩu</option>
+            <option value="Export">Xuất khẩu</option>
           </select>
 
           <!-- Search -->
-          <div class="amis-search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <div class="misa-search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="invoice-search-input" placeholder="${lbl.search}">
           </div>
 
           <!-- Column picker -->
           <div class="amis-col-picker-wrap" id="colPickerWrapInv">
-            <button id="btnColPickerInv" class="amis-btn amis-btn-ghost amis-btn-icon-only" title="Tuỳ chỉnh cột">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <button id="btnColPickerInv" class="misa-btn misa-btn-default misa-btn-icon-only" title="Tuỳ chỉnh cột">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </button>
             <div class="amis-col-dropdown" id="colDropdownInv" style="display:none">
               <div class="col-dropdown-header">Tuỳ chỉnh cột hiển thị</div>
               <div class="col-dropdown-list" id="colCheckListInv"></div>
               <div class="col-dropdown-footer">
-                <button class="amis-btn amis-btn-ghost amis-btn-xs" id="btnResetColsInv">Đặt lại</button>
-                <button class="amis-btn amis-btn-primary amis-btn-xs" id="btnApplyColsInv">Áp dụng</button>
+                <button class="misa-btn misa-btn-default ph-btn-xs" id="btnResetColsInv">Đặt lại</button>
+                <button class="misa-btn misa-btn-primary ph-btn-xs" id="btnApplyColsInv">Áp dụng</button>
               </div>
             </div>
           </div>
@@ -131,6 +131,7 @@ export async function renderInvoices(container, docType = 'Invoice') {
       <!-- TABLE -->
       <div class="amis-table-container">
         <table class="amis-data-table" id="invoices-table">
+          <colgroup id="invoices-colgroup"></colgroup>
           <thead id="invoices-thead"></thead>
           <tbody id="invoices-table-body">
             <tr><td colspan="20" class="amis-table-empty">
@@ -228,23 +229,39 @@ function applyFilterSort() {
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 function renderHeader() {
-  const thead = document.getElementById('invoices-thead');
+  const thead    = document.getElementById('invoices-thead');
+  const colgroup = document.getElementById('invoices-colgroup');
   if (!thead) return;
-  const visCols = columns.filter(c => c.visible);
-  const numKeys = ['totalValue'];
+  const visCols    = columns.filter(c => c.visible);
+  const numKeys    = ['totalValue'];
+  const centerKeys = ['status'];
+
+  if (colgroup) {
+    colgroup.innerHTML = `
+      <col style="width: 44px">
+      ${visCols.map(col => `<col style="width: ${col.width || '140px'}">`).join('')}
+      <col style="width: 90px">
+    `;
+  }
 
   thead.innerHTML = `
     <tr>
-      <th class="amis-th-check"><input type="checkbox" id="chk-all-invoices" title="Chọn tất cả"></th>
-      ${visCols.map(col => `
-        <th class="amis-th${col.sortable ? ' sortable' : ''}" data-col="${col.key}"
-            style="${numKeys.includes(col.key) ? 'text-align:right' : ''}">
-          <div class="amis-th-inner${numKeys.includes(col.key) ? ' justify-end' : ''}">
-            <span>${col.label}</span>
-            ${col.sortable ? `<span class="sort-icon${sortCol === col.key ? (sortDir === 'asc' ? ' asc' : ' desc') : ''}">${sortSVG(col.key)}</span>` : ''}
-          </div>
-        </th>`).join('')}
-      <th class="amis-th-actions">Thao tác</th>
+      <th class="amis-th-check"><input type="checkbox" id="chk-all-invoices" title="Chọn tất cả" style="cursor:pointer;accent-color:#0266b3"></th>
+      ${visCols.map(col => {
+        const alignRight  = numKeys.includes(col.key);
+        const alignCenter = centerKeys.includes(col.key);
+        const justifyCls  = alignRight ? ' justify-end' : alignCenter ? ' justify-center' : '';
+        const textAlign   = alignRight ? 'text-align:right' : alignCenter ? 'text-align:center' : '';
+
+        return `
+          <th class="amis-th${col.sortable ? ' sortable' : ''}" data-col="${col.key}" style="${textAlign}">
+            <div class="amis-th-inner${justifyCls}">
+              <span>${col.label}</span>
+              ${col.sortable ? `<span class="sort-icon${sortCol === col.key ? (sortDir === 'asc' ? ' asc' : ' desc') : ''}">${sortSVG(col.key)}</span>` : ''}
+            </div>
+          </th>`;
+      }).join('')}
+      <th class="amis-th-actions" style="text-align:center">Thao tác</th>
     </tr>
   `;
 
@@ -297,17 +314,17 @@ function renderTable() {
         case 'type':
           return `<td>${docTypeBadge(inv.type)}</td>`;
         case 'shipmentCode':
-          return `<td>${inv.shipmentCode ? `<a class="ph-link" href="javascript:void(0)" onclick="window.appNavigateTo('shipment-detail','${inv.shipmentId}')">${inv.shipmentCode}</a>` : '<span class="amis-td-muted">—</span>'}</td>`;
+          return `<td>${inv.shipmentCode ? `<a class="ph-shipment-pill" href="javascript:void(0)" onclick="window.appNavigateTo('shipment-detail','${inv.shipmentId}')">${inv.shipmentCode}</a>` : '<span class="amis-td-muted">—</span>'}</td>`;
         case 'partnerName':
-          return `<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${inv.partnerName || '—'}</td>`;
+          return `<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${inv.partnerName || '—'}</td>`;
         case 'shipmentType':
-          return `<td>${inv.shipmentType === 'Import' ? '<span class="ph-chip ph-chip-import">📥 Nhập</span>' : inv.shipmentType === 'Export' ? '<span class="ph-chip ph-chip-export">📤 Xuất</span>' : '<span class="amis-td-muted">—</span>'}</td>`;
+          return `<td>${inv.shipmentType === 'Import' ? '<span class="ph-type-pill ph-type-in">Nhập khẩu</span>' : inv.shipmentType === 'Export' ? '<span class="ph-type-pill ph-type-out">Xuất khẩu</span>' : '<span class="amis-td-muted">—</span>'}</td>`;
         case 'currency':
           return `<td><span class="inv-currency">${inv.currency || 'USD'}</span></td>`;
         case 'paymentTerms':
           return `<td style="font-size:12px;color:var(--text-muted)">${inv.paymentTerms || '—'}</td>`;
         case 'totalValue':
-          return `<td style="text-align:right;font-weight:700;white-space:nowrap">${formatMoney(inv.totalValue, inv.currency)}</td>`;
+          return `<td style="text-align:right;font-weight:600;white-space:nowrap;color:#111827">${formatMoney(inv.totalValue, inv.currency)}</td>`;
         case 'status':
           return `<td style="text-align:center">${statusBadge(inv.status)}</td>`;
         default:
@@ -317,18 +334,18 @@ function renderTable() {
 
     return `
       <tr data-id="${inv.id}">
-        <td class="amis-td-check"><input type="checkbox" class="chk-row-invoice" value="${inv.id}"></td>
+        <td class="amis-td-check"><input type="checkbox" class="chk-row-invoice" value="${inv.id}" style="cursor:pointer;accent-color:#0266b3"></td>
         ${cells}
         <td class="amis-td-actions">
           <div class="amis-row-actions">
             <button class="amis-icon-btn btn-view-invoice" data-id="${inv.id}" title="Xem chi tiết">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
             <button class="amis-icon-btn btn-download-doc" data-id="${inv.id}" title="Tải file đính kèm">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
             <button class="amis-icon-btn amis-icon-btn-danger btn-del-invoice" data-id="${inv.id}" data-num="${inv.invoiceNumber}" title="Xóa">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
           </div>
         </td>

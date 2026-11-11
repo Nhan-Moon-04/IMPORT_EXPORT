@@ -1170,4 +1170,489 @@
   gap: 4px;
 }
 
+/* =========================================================
+   MISA AMIS VOUCHER / SHIPMENT DETAIL REDESIGN
+   ========================================================= */
+
+.sd-misa-page {
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  min-height: 100%;
+  padding: 12px 18px 24px 18px;
+  gap: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
+}
+
+/* ── Top Header Toolbar ── */
+.sd-misa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sd-misa-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sd-misa-back-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.15s;
+}
+.sd-misa-back-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.sd-misa-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.sd-misa-btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.sd-misa-btn-copy:hover {
+  background: #e2e8f0;
+}
+
+.sd-misa-type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.sd-misa-type-tag.type-import {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.sd-misa-type-tag.type-export {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.sd-misa-status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.sd-misa-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Master Voucher Box ── */
+.sd-misa-master {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sd-misa-master-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sd-misa-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sd-misa-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: default;
+}
+.sd-misa-radio input {
+  accent-color: #059669;
+}
+
+.sd-misa-divider-v {
+  width: 1px;
+  height: 14px;
+  background: #cbd5e1;
+}
+
+.sd-misa-master-total {
+  text-align: right;
+}
+
+.sd-misa-total-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sd-misa-total-value {
+  font-size: 23px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.sd-misa-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}
+
+.sd-misa-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sd-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sd-form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sd-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sd-form-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.sd-form-control {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: #1e293b;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.sd-form-highlight {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.sd-partner-code {
+  color: #0266b3;
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+/* ── MISA Tab Bar ── */
+.sd-misa-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0 12px;
+  margin-top: 4px;
+}
+
+.sd-misa-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.sd-misa-tab-list .sd-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.sd-misa-tab-list .sd-tab:hover {
+  color: #059669;
+  background: #f0fdf4;
+}
+
+.sd-misa-tab-list .sd-tab.active {
+  color: #059669;
+  border-bottom-color: #059669;
+  background: transparent;
+}
+
+.sd-tab-count {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.sd-misa-tab-list .sd-tab.active .sd-tab-count {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sd-misa-tabs-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+/* ── Tab Panes ── */
+.sd-pane-wrap {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sd-pane {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+.sd-pane.active {
+  display: flex;
+}
+
+/* ── Full Width Table Styling ── */
+.sd-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  overflow-x: auto;
+  background: #ffffff;
+}
+
+.sd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.sd-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.sd-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 12.5px;
+}
+
+.sd-table tr:hover td {
+  background: #f8fafc;
+}
+
+.sd-total-row td {
+  background: #f8fafc !important;
+  font-weight: 700;
+  border-top: 2px solid #cbd5e1;
+  border-bottom: none;
+}
+
+/* ── MISA Table Bottom Area ── */
+.sd-misa-table-footer {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.sd-misa-footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sd-misa-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sd-misa-note-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.sd-misa-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.sd-misa-attachment-box {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  padding: 10px 14px;
+  transition: border-color 0.15s;
+}
+.sd-misa-attachment-box:hover {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+
+.sd-misa-footer-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.sd-misa-calc-table {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sd-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.sd-calc-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.sd-calc-val {
+  font-size: 12.5px;
+  color: #1e293b;
+}
+
+.sd-calc-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 2px 0;
+}
+
+.sd-calc-total {
+  font-weight: 800;
+  color: #0f172a;
+}
+.sd-calc-total .sd-calc-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.sd-calc-total .sd-calc-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #059669;
+}
+
+.sd-calc-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+@media (max-width: 960px) {
+  .sd-misa-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .sd-misa-table-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
 
