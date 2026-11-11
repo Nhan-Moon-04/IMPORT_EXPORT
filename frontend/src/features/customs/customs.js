@@ -110,42 +110,42 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
       <!-- TOOLBAR MISA AMIS -->
       <div class="amis-toolbar-wrap">
         <div class="amis-toolbar-left">
-          <button id="btnCustomsAdd" class="amis-btn amis-btn-primary" title="Mở tờ khai hải quan mới">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button id="btnCustomsAdd" class="misa-btn misa-btn-primary" title="Mở tờ khai hải quan mới">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Thêm Tờ Khai HQ
           </button>
-          <button id="btnCustomsImportExcel" class="amis-btn" style="background:#0266b3; color:#fff;" title="Tự động đọc thông tin từ file Excel tờ khai điện tử (VNACCS/ECUS)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Nhập Từ File Tờ Khai (.xlsx)
+          <button id="btnCustomsImportExcel" class="misa-btn misa-btn-default" title="Tự động đọc thông tin từ file Excel tờ khai điện tử (VNACCS/ECUS)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Nhập Từ Excel (.xlsx)
           </button>
           <input type="file" id="inputCustomsQuickExcel" accept=".xlsx,.xls" style="display:none;">
-          <button id="btnCustomsEdit" class="amis-btn amis-btn-ghost" disabled title="Chỉnh sửa tờ khai đã chọn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+          <button id="btnCustomsEdit" class="misa-btn misa-btn-default" disabled title="Chỉnh sửa tờ khai đã chọn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             Sửa
           </button>
-          <button id="btnCustomsDetail" class="amis-btn amis-btn-ghost" disabled title="Xem chi tiết tờ khai">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <button id="btnCustomsDetail" class="misa-btn misa-btn-default" disabled title="Xem chi tiết tờ khai">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             Chi tiết
           </button>
-          <button id="btnCustomsDownloadDoc" class="amis-btn amis-btn-ghost" disabled title="Xem hoặc tải file đính kèm tờ khai">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Tải File Tờ Khai
+          <button id="btnCustomsDownloadDoc" class="misa-btn misa-btn-default" disabled title="Xem hoặc tải file đính kèm tờ khai">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Tải File
           </button>
-          <button id="btnCustomsPrint" class="amis-btn amis-btn-ghost" disabled title="In bản tờ khai Hải quan A4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <button id="btnCustomsPrint" class="misa-btn misa-btn-default" disabled title="In bản tờ khai Hải quan A4">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             In Tờ Khai
           </button>
-          <button id="btnCustomsDelete" class="amis-btn amis-btn-ghost amis-btn-danger-text" disabled title="Xóa tờ khai đã chọn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <button id="btnCustomsDelete" class="misa-btn misa-btn-default misa-btn-danger" disabled title="Xóa tờ khai đã chọn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             Xóa
           </button>
-          <div class="amis-btn-divider"></div>
-          <button id="btnCustomsRefresh" class="amis-btn amis-btn-ghost" title="Nạp lại danh sách dữ liệu">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <div class="misa-toolbar-divider"></div>
+          <button id="btnCustomsRefresh" class="misa-btn misa-btn-default" title="Nạp lại danh sách dữ liệu">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Nạp lại
           </button>
-          <button id="btnCustomsExport" class="amis-btn amis-btn-ghost" title="Xuất danh sách ra file Excel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <button id="btnCustomsExport" class="misa-btn misa-btn-default" title="Xuất danh sách ra file Excel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Excel
           </button>
         </div>
@@ -154,8 +154,8 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
           <!-- Lọc nguồn gốc -->
           <select id="filterCustomsScope" class="ph-filter-select">
             <option value="">Tất cả nguồn gốc</option>
-            <option value="foreign">🌐 Nhập khẩu nước ngoài (USD)</option>
-            <option value="domestic">🏠 Nhập khẩu trong nước (VNĐ)</option>
+            <option value="foreign">Nhập khẩu nước ngoài (USD)</option>
+            <option value="domestic">Nhập khẩu trong nước (VNĐ)</option>
           </select>
 
           <!-- Lọc ngày đăng ký -->
@@ -168,10 +168,10 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
           <!-- Lọc phân luồng -->
           <select id="filterCustomsStatus" class="ph-filter-select">
             <option value="">Tất cả phân luồng</option>
-            <option value="1">🟢 Luồng Xanh (Thông quan)</option>
-            <option value="2">🟡 Luồng Vàng (Kiểm tra hồ sơ)</option>
-            <option value="3">🔴 Luồng Đỏ (Kiểm hóa)</option>
-            <option value="0">⚪ Chưa phân luồng</option>
+            <option value="1">Luồng Xanh (Thông quan)</option>
+            <option value="2">Luồng Vàng (Kiểm tra hồ sơ)</option>
+            <option value="3">Luồng Đỏ (Kiểm hóa)</option>
+            <option value="0">Chưa phân luồng</option>
           </select>
 
           <!-- Lọc loại hình -->
@@ -186,22 +186,22 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
           </select>
 
           <!-- Ô tìm kiếm nhanh -->
-          <div class="amis-search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <div class="misa-search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="customsSearchInput" placeholder="Tìm số tờ khai, lô hàng, chi cục...">
           </div>
 
           <!-- Tùy chỉnh cột -->
           <div class="amis-col-picker-wrap" id="colPickerWrapCustoms">
-            <button id="btnColPickerCustoms" class="amis-btn amis-btn-ghost amis-btn-icon-only" title="Tùy chỉnh cột hiển thị">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <button id="btnColPickerCustoms" class="misa-btn misa-btn-default misa-btn-icon-only" title="Tùy chỉnh cột hiển thị">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </button>
             <div class="amis-col-dropdown" id="colDropdownCustoms" style="display:none;">
               <div class="col-dropdown-header">Tùy chỉnh cột hiển thị</div>
               <div class="col-dropdown-body" id="colDropdownBodyCustoms"></div>
               <div class="col-dropdown-footer">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnResetColCustoms">Mặc định</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnSaveColCustoms">Áp dụng</button>
+                <button type="button" class="misa-btn misa-btn-default ph-btn-xs" id="btnResetColCustoms">Mặc định</button>
+                <button type="button" class="misa-btn misa-btn-primary ph-btn-xs" id="btnSaveColCustoms">Áp dụng</button>
               </div>
             </div>
           </div>
@@ -210,7 +210,8 @@ export async function renderCustoms(container, subTab = 'customs-declarations') 
 
       <!-- BẢNG DỮ LIỆU CHÍNH -->
       <div class="amis-table-container">
-        <table class="amis-table" id="customsMainTable">
+        <table class="amis-data-table amis-table" id="customsMainTable">
+          <colgroup id="customs-colgroup"></colgroup>
           <thead>
             <tr id="customsTableHeadRow"></tr>
           </thead>
@@ -450,39 +451,46 @@ function applyFilters() {
 // ─── RENDER BẢNG ──────────────────────────────────────────────────────────────
 function renderTableHead() {
   const headRow = document.getElementById('customsTableHeadRow');
+  const colgroup = document.getElementById('customs-colgroup');
   if (!headRow) return;
 
   const colConfig = getSavedColumns();
   const allSelected = filteredDeclarations.length > 0 && filteredDeclarations.every(d => selectedIds.has(d.id));
+  const activeCols = DEFAULT_COLUMNS.filter(c => colConfig[c.id]);
+
+  if (colgroup) {
+    colgroup.innerHTML = `
+      <col style="width: 44px">
+      ${activeCols.map(c => `<col style="width: ${c.minWidth || '120px'}">`).join('')}
+    `;
+  }
 
   let html = `
-    <th style="width: 38px; text-align: center; position: sticky; left: 0; z-index: 3; background: #f8fafc;">
-      <input type="checkbox" id="chkCustomsSelectAll" class="amis-checkbox" ${allSelected ? 'checked' : ''}>
+    <th class="amis-th-check" style="width: 44px; text-align: center; position: sticky; left: 0; z-index: 3; background: #f8fafc;">
+      <input type="checkbox" id="chkCustomsSelectAll" class="amis-checkbox" ${allSelected ? 'checked' : ''} style="cursor:pointer; accent-color:#0266b3;">
     </th>
   `;
 
-  DEFAULT_COLUMNS.forEach(col => {
-    if (!colConfig[col.id]) return;
-
+  activeCols.forEach(col => {
     let sortIcon = '';
     if (col.sortable) {
       if (sortField === col.id) {
         sortIcon = sortDirection === 'asc'
-          ? `<span style="margin-left:4px; color:var(--amis-blue);">▲</span>`
-          : `<span style="margin-left:4px; color:var(--amis-blue);">▼</span>`;
+          ? `<span style="margin-left:4px; color:#0266b3; font-size:10px;">▲</span>`
+          : `<span style="margin-left:4px; color:#0266b3; font-size:10px;">▼</span>`;
       } else {
-        sortIcon = `<span style="margin-left:4px; opacity:0.3;">▲</span>`;
+        sortIcon = `<span style="margin-left:4px; opacity:0.3; font-size:10px;">▲</span>`;
       }
     }
 
     const isNumeric = col.id === 'valueUsd' || col.id === 'exchangeRate' || col.id === 'taxableValueVnd' || col.id === 'totalTaxAmount';
-    const isCenter = col.id === 'actions' || col.id === 'hasFile' || col.id === 'declarationType' || col.id === 'originScope';
+    const isCenter = col.id === 'actions' || col.id === 'hasFile' || col.id === 'declarationType' || col.id === 'originScope' || col.id === 'status';
     const justify = isNumeric ? 'flex-end' : (isCenter ? 'center' : 'flex-start');
 
     const cursorStyle = col.sortable ? 'cursor:pointer; user-select:none;' : '';
     html += `
-      <th style="min-width:${col.minWidth}; ${cursorStyle}" data-col="${col.id}" class="${col.sortable ? 'sortable-header' : ''}">
-        <div style="display:flex; align-items:center; justify-content:${justify}">
+      <th style="min-width:${col.minWidth}; ${cursorStyle} ${isNumeric ? 'text-align:right;' : isCenter ? 'text-align:center;' : ''}" data-col="${col.id}" class="${col.sortable ? 'sortable-header' : ''}">
+        <div class="amis-th-inner" style="display:flex; align-items:center; justify-content:${justify}; width:100%; box-sizing:border-box;">
           <span>${col.label}</span>
           ${sortIcon}
         </div>
@@ -528,10 +536,8 @@ function renderTableBody() {
   if (filteredDeclarations.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="15" style="text-align: center; padding: 48px; color: var(--text-muted);">
-          <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
-          <div style="font-weight: 600; font-size: 14px; color: #334155;">Không tìm thấy tờ khai hải quan nào</div>
-          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Thử thay đổi bộ lọc tìm kiếm hoặc nhấn nút "Thêm Tờ Khai HQ"</div>
+        <td colspan="16" style="text-align: center; padding: 48px; color: var(--text-muted);">
+          <div style="font-weight: 500; font-size: 13px; color: #475569;">Không tìm thấy tờ khai hải quan nào phù hợp bộ lọc.</div>
         </td>
       </tr>
     `;
@@ -546,43 +552,43 @@ function renderTableBody() {
     const dateFormatted = d.declarationDate ? new Date(d.declarationDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---';
 
     // Channel badge
-    let channelBadge = '<span class="customs-channel-chip channel-unclassified">⚪ Chưa phân luồng</span>';
-    if (d.status === 1) channelBadge = '<span class="customs-channel-chip channel-green">🟢 Luồng Xanh (1)</span>';
-    else if (d.status === 2) channelBadge = '<span class="customs-channel-chip channel-yellow">🟡 Luồng Vàng (2)</span>';
-    else if (d.status === 3) channelBadge = '<span class="customs-channel-chip channel-red">🔴 Luồng Đỏ (3)</span>';
+    let channelBadge = '<span class="customs-channel-chip channel-unclassified">Chưa phân luồng</span>';
+    if (d.status === 1) channelBadge = '<span class="customs-channel-chip channel-green">Luồng Xanh (1)</span>';
+    else if (d.status === 2) channelBadge = '<span class="customs-channel-chip channel-yellow">Luồng Vàng (2)</span>';
+    else if (d.status === 3) channelBadge = '<span class="customs-channel-chip channel-red">Luồng Đỏ (3)</span>';
 
     // Scope badge
     const scopeBadge = d.isDomestic
-      ? `<span class="customs-scope-badge domestic" title="Hàng mua bán nội địa, giao dịch VNĐ">🏠 Trong nước</span>`
-      : `<span class="customs-scope-badge foreign" title="Hàng nhập khẩu nước ngoài, giao dịch USD quy đổi tỷ giá">🌐 Nước ngoài</span>`;
+      ? `<span class="customs-scope-badge domestic" title="Hàng mua bán nội địa, giao dịch VNĐ">Trong nước</span>`
+      : `<span class="customs-scope-badge foreign" title="Hàng nhập khẩu nước ngoài, giao dịch USD quy đổi tỷ giá">Nước ngoài</span>`;
 
     // Type badge
     const isExport = d.declarationType?.startsWith('B') || d.shipmentType === 'Export';
     const typeBadge = `<span class="customs-type-badge ${isExport ? 'export' : ''}">${d.declarationType || 'A11'}</span>`;
 
     // File attached icon & name
-    let fileHtml = `<span style="color:#94a3b8; font-size:11px;">Chưa đính kèm</span>`;
+    let fileHtml = `<span style="color:#94a3b8; font-size:11.5px;">Chưa đính kèm</span>`;
     if (d.docId || d.docName) {
       const isXlsx = d.docName?.endsWith('.xlsx') || d.docName?.endsWith('.xls');
       const badgeColor = isXlsx ? '#15803d' : '#b91c1c';
       const badgeBg = isXlsx ? '#f0fdf4' : '#fef2f2';
       const badgeBorder = isXlsx ? '#bbf7d0' : '#fecaca';
-      const iconLabel = isXlsx ? '📗 Excel' : '📕 PDF';
+      const fileLabel = isXlsx ? 'Excel' : 'PDF';
 
       fileHtml = `
-        <div style="display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; background:${badgeBg}; border:1px solid ${badgeBorder}; color:${badgeColor}; font-size:11px; font-weight:700; cursor:pointer;" 
+        <div style="display:inline-flex; align-items:center; gap:4px; padding:2px 6px; border-radius:3px; background:${badgeBg}; border:1px solid ${badgeBorder}; color:${badgeColor}; font-size:11px; font-weight:500; cursor:pointer;" 
              onclick="event.stopPropagation(); window.viewCustomsDoc('${d.id}')" 
              title="Xem / Tải file: ${escapeHtml(d.docName || 'File tờ khai')}">
-          <span>${iconLabel}</span>
-          <span style="max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">${escapeHtml(d.docName || 'Tải file')}</span>
+          <span>${fileLabel}:</span>
+          <span style="max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(d.docName || 'Tải file')}</span>
         </div>
       `;
     }
 
     return `
       <tr class="bl-main-row ${isSelected ? 'selected' : ''}" data-id="${d.id}">
-        <td style="text-align: center; position: sticky; left: 0; background: inherit; z-index: 1;">
-          <input type="checkbox" class="amis-checkbox chk-row-customs" data-id="${d.id}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation();">
+        <td class="amis-td-check" style="text-align: center; position: sticky; left: 0; background: inherit; z-index: 1;">
+          <input type="checkbox" class="amis-checkbox chk-row-customs" data-id="${d.id}" ${isSelected ? 'checked' : ''} style="cursor:pointer; accent-color:#0266b3;" onclick="event.stopPropagation();">
         </td>
 
         ${colConfig.declarationNumber ? `
@@ -593,7 +599,7 @@ function renderTableBody() {
           </td>
         ` : ''}
 
-        ${colConfig.status ? `<td>${channelBadge}</td>` : ''}
+        ${colConfig.status ? `<td style="text-align:center;">${channelBadge}</td>` : ''}
 
         ${colConfig.originScope ? `<td style="text-align:center;">${scopeBadge}</td>` : ''}
 
@@ -601,7 +607,7 @@ function renderTableBody() {
 
         ${colConfig.shipmentCode ? `
           <td>
-            <a href="#" style="font-weight:600; color:var(--amis-blue); text-decoration:none;" onclick="event.stopPropagation(); window.appNavigateTo('shipment-detail', '${d.shipmentId}'); return false;" title="Xem chi tiết lô hàng liên kết">
+            <a href="#" style="font-weight:500; color:#0266b3; text-decoration:none;" onclick="event.stopPropagation(); window.appNavigateTo('shipment-detail', '${d.shipmentId}'); return false;" title="Xem chi tiết lô hàng liên kết">
               ${escapeHtml(d.shipmentCode)}
             </a>
           </td>
@@ -611,22 +617,22 @@ function renderTableBody() {
 
         ${colConfig.customsBranch ? `<td style="font-size:12px; color:#334155;">${escapeHtml(d.customsBranch)}</td>` : ''}
 
-        ${colConfig.partnerName ? `<td><div style="font-weight:600; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(d.partnerName)}">${escapeHtml(d.partnerName)}</div></td>` : ''}
+        ${colConfig.partnerName ? `<td><div style="font-weight:500; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(d.partnerName)}">${escapeHtml(d.partnerName)}</div></td>` : ''}
 
         ${colConfig.valueUsd ? `
-          <td style="text-align:right; font-weight:700; color:#0369a1; font-size:12.5px;">
+          <td style="text-align:right; font-weight:600; color:#111827; font-size:12.5px;">
             ${d.isDomestic || d.valueUsd === null ? '<span style="color:#94a3b8; font-weight:normal;">---</span>' : `$${Number(d.valueUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           </td>
         ` : ''}
 
         ${colConfig.exchangeRate ? `
-          <td style="text-align:right; font-family:monospace; font-weight:600; color:#475569;">
+          <td style="text-align:right; font-family:inherit; font-weight:500; color:#475569;">
             ${d.isDomestic || !d.exchangeRate ? '<span style="color:#94a3b8; font-weight:normal;">---</span>' : Number(d.exchangeRate).toLocaleString('vi-VN')}
           </td>
         ` : ''}
 
         ${colConfig.taxableValueVnd ? `
-          <td style="text-align:right; font-weight:700; color:var(--amis-green); font-size:12.5px;">
+          <td style="text-align:right; font-weight:600; color:#111827; font-size:12.5px;">
             ${d.taxableValueVnd ? `${Number(d.taxableValueVnd).toLocaleString('vi-VN')} ₫` : '<span style="color:#94a3b8; font-weight:normal;">---</span>'}
           </td>
         ` : ''}
@@ -642,25 +648,26 @@ function renderTableBody() {
         ${colConfig.hasFile ? `<td style="text-align:center;">${fileHtml}</td>` : ''}
 
         ${colConfig.actions ? `
-          <td style="text-align:center;">
-            <div style="display:inline-flex; align-items:center; gap:4px;">
-              <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.viewCustomsVNACCS('${d.id}')" title="Xem chi tiết tờ khai">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <td class="amis-td-actions" style="text-align:center;">
+            <div class="amis-row-actions" style="display:inline-flex; align-items:center; gap:2px;">
+              <button class="amis-icon-btn" onclick="event.stopPropagation(); window.viewCustomsVNACCS('${d.id}')" title="Xem chi tiết tờ khai">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
-              <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.viewCustomsDoc('${d.id}')" title="Tải file đính kèm">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <button class="amis-icon-btn" onclick="event.stopPropagation(); window.viewCustomsDoc('${d.id}')" title="Tải file đính kèm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </button>
-              <button class="sd-btn-sm" style="padding:2px 6px;" onclick="event.stopPropagation(); window.editCustomsDeclaration('${d.id}')" title="Chỉnh sửa">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <button class="amis-icon-btn" onclick="event.stopPropagation(); window.editCustomsDeclaration('${d.id}')" title="Chỉnh sửa">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button class="sd-btn-sm btn-danger" style="padding:2px 6px;" onclick="event.stopPropagation(); window.deleteCustomsDeclaration('${d.id}')" title="Xóa tờ khai">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <button class="amis-icon-btn amis-icon-btn-danger" onclick="event.stopPropagation(); window.deleteCustomsDeclaration('${d.id}')" title="Xóa tờ khai">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </div>
           </td>
         ` : ''}
       </tr>
     `;
+  }).join('');
   }).join('');
 
   // Row click listeners
@@ -1392,23 +1399,25 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
   const modalHtml = `
     <form id="form-create-customs" style="padding: 4px 0;">
       <!-- BANNER UPLOAD & AUTO-PARSE FILE EXCEL TỜ KHAI -->
-      <div class="customs-upload-dropzone" id="cdUploadDropzone" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1.5px dashed #0284c7; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+      <div class="customs-upload-dropzone" id="cdUploadDropzone" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 4px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <div style="font-size: 26px; line-height: 1;">⚡</div>
+          <div style="width:32px; height:32px; border-radius:3px; background:#eff6ff; display:flex; align-items:center; justify-content:center; color:#0266b3; flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
           <div>
-            <div style="font-weight: 700; font-size: 13px; color: #0369a1;">Tự động điền từ file Tờ khai Hải quan điện tử (.xlsx / VNACCS)</div>
+            <div style="font-weight: 600; font-size: 13px; color: #1e293b;">Tự động điền từ file Tờ khai Hải quan điện tử (.xlsx / VNACCS)</div>
             <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">Tải lên file tờ khai (.xlsx) để hệ thống tự trích xuất Số tờ khai, Ngày ĐK, Chi cục, Tỷ giá, Trị giá & Danh sách dòng hàng.</div>
           </div>
         </div>
         <div>
-          <label class="amis-btn" style="background:#0284c7; color:#fff; cursor:pointer; margin:0; font-size:12px; padding:6px 14px; box-shadow:0 1px 2px rgba(0,0,0,0.08); display:inline-flex; align-items:center; gap:6px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <label class="misa-btn misa-btn-default" style="cursor:pointer; margin:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Tải file Excel lên</span>
             <input type="file" id="cdFileAutoParse" accept=".xlsx,.xls" style="display:none;">
           </label>
         </div>
       </div>
-      <div id="cdAutoParseAlert" style="display:none; margin-bottom:14px; padding:10px 14px; border-radius:6px; font-size:12.5px; line-height:1.45;"></div>
+      <div id="cdAutoParseAlert" style="display:none; margin-bottom:14px; padding:10px 14px; border-radius:4px; font-size:12.5px; line-height:1.45;"></div>
 
       <!-- CHỌN NGUỒN GỐC TỜ KHAI -->
       <div style="margin-bottom: 14px;">
@@ -1417,14 +1426,14 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
           <label class="customs-scope-option ${!isDefDomestic ? 'selected' : ''}" id="lblScopeForeign">
             <input type="radio" name="cd-scope-radio" value="foreign" ${!isDefDomestic ? 'checked' : ''}>
             <div>
-              <div style="font-weight:700; color:#1d4ed8; font-size:13px;">🌐 Nhập Khẩu Nước Ngoài (USD)</div>
+              <div style="font-weight:600; color:#0266b3; font-size:13px;">Nhập Khẩu Nước Ngoài (USD)</div>
               <div style="font-size:11px; color:#64748b; margin-top:2px;">Trị giá nguyên tệ USD, quy đổi theo Tỷ giá Hải quan để tính thuế</div>
             </div>
           </label>
           <label class="customs-scope-option ${isDefDomestic ? 'selected' : ''}" id="lblScopeDomestic">
             <input type="radio" name="cd-scope-radio" value="domestic" ${isDefDomestic ? 'checked' : ''}>
             <div>
-              <div style="font-weight:700; color:#15803d; font-size:13px;">🏠 Mua Bán Trong Nước (VNĐ)</div>
+              <div style="font-weight:600; color:#15803d; font-size:13px;">Mua Bán Trong Nước (VNĐ)</div>
               <div style="font-size:11px; color:#64748b; margin-top:2px;">Giao dịch nội địa trực tiếp bằng VNĐ, không có USD/tỷ giá</div>
             </div>
           </label>
@@ -1436,8 +1445,8 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
           <label class="form-label required">Số Tờ Khai HQ (12 số)</label>
           <div style="display:flex; gap:6px;">
             <input type="text" id="cd-number" class="form-control" required value="${autoNum}" placeholder="VD: 108584252930" style="font-family:monospace; font-weight:700; color:var(--amis-blue);">
-            <button type="button" class="btn btn-secondary btn-sm" id="btnGenCustomsNum" title="Tự động sinh số tờ khai mới" style="padding:4px 8px;">
-              🔄 Sinh số
+            <button type="button" class="misa-btn misa-btn-default" id="btnGenCustomsNum" title="Tự động sinh số tờ khai mới">
+              Sinh số
             </button>
           </div>
         </div>
@@ -1471,10 +1480,10 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
         <div class="form-group">
           <label class="form-label required">Phân Luồng Hải Quan</label>
           <select id="cd-status" class="form-control">
-            <option value="1" selected>🟢 Luồng Xanh (1 - Thông quan)</option>
-            <option value="2">🟡 Luồng Vàng (2 - Kiểm tra hồ sơ)</option>
-            <option value="3">🔴 Luồng Đỏ (3 - Kiểm hóa thực tế)</option>
-            <option value="0">⚪ Chưa phân luồng</option>
+            <option value="1" selected>Luồng Xanh (1 - Thông quan)</option>
+            <option value="2">Luồng Vàng (2 - Kiểm tra hồ sơ)</option>
+            <option value="3">Luồng Đỏ (3 - Kiểm hóa thực tế)</option>
+            <option value="0">Chưa phân luồng</option>
           </select>
         </div>
 
@@ -1535,8 +1544,8 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
               <input type="number" step="1000" id="cd-val-vnd-direct" class="form-control" placeholder="VD: 500000000" value="${isDefDomestic && defVal ? defVal : ''}">
             </div>
           </div>
-          <div style="font-size:11px; color:#15803d; margin-bottom:12px; font-weight:600;">
-            ✓ Giao dịch nội địa sử dụng tiền tệ Việt Nam Đồng (VNĐ). Đô là đô, VNĐ là VNĐ, không sử dụng tỷ giá quy đổi.
+          <div style="font-size:11px; color:#15803d; margin-bottom:12px; font-weight:500;">
+            Giao dịch nội địa sử dụng tiền tệ Việt Nam Đồng (VNĐ). Không sử dụng tỷ giá quy đổi.
           </div>
         </div>
 
@@ -1568,10 +1577,10 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
       </div>
 
       <!-- PREVIEW & MAP DÒNG HÀNG TRÍCH XUẤT TỪ FILE TỜ KHAI -->
-      <div id="cdItemsSection" style="display:none; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <div id="cdItemsSection" style="display:none; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #fff; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
         <div style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <div>
-            <strong style="color: #0f172a; font-size: 13px;">📦 Dòng Hàng Trích Xuất Từ Tờ Khai (<span id="cdItemsCount">0</span> dòng)</strong>
+            <strong style="color: #0f172a; font-size: 13px;">Dòng Hàng Trích Xuất Từ Tờ Khai (<span id="cdItemsCount">0</span> dòng)</strong>
             <div style="font-size: 11.5px; color: #64748b; margin-top: 1px;">Kiểm tra mô tả chi tiết trên tờ khai và chọn Mã Sản Phẩm (SKU) tương ứng trong hệ thống</div>
           </div>
           <span style="font-size: 11.5px; color: #16a34a; font-weight: 600;" id="cdItemsMatchedNote"></span>
@@ -1612,8 +1621,8 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
       </div>
 
       <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">✕ Hủy bỏ</button>
-        <button type="button" class="btn btn-primary" id="btn-save-customs">✔ Cất (Lưu Tờ Khai)</button>
+        <button type="button" class="misa-btn misa-btn-default" onclick="closeModal()">Hủy bỏ</button>
+        <button type="button" class="misa-btn misa-btn-primary" id="btn-save-customs">Lưu Tờ Khai</button>
       </div>
     </form>
   `;
@@ -1849,12 +1858,12 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
         alertEl.style.border = '1px solid #bbf7d0';
         alertEl.style.color = '#166534';
         alertEl.innerHTML = `
-          <div style="font-weight:700; font-size:13px; margin-bottom:2px;">
-            🎉 Đã đọc thành công Tờ khai Hải quan: <strong>${escapeHtml(extracted.declarationNumber || file.name)}</strong>
+          <div style="font-weight:600; font-size:13px; margin-bottom:2px;">
+            Đã đọc thành công Tờ khai Hải quan: <strong>${escapeHtml(extracted.declarationNumber || file.name)}</strong>
           </div>
           <div>
             Trích xuất <strong>${extracted.items.length} dòng hàng</strong>, Trị giá: <strong>$${Number(extracted.valueUsd || 0).toLocaleString()}</strong>, Tỷ giá: <strong>${Number(extracted.exchangeRate || 0).toLocaleString()}</strong>.
-            ${matchedShipment ? `<br>👉 Tự động khớp với Lô hàng: <strong style="color:#0369a1;">${escapeHtml(matchedShipment.shipmentCode)}</strong> (${escapeHtml(matchedShipment.supplierName || matchedShipment.customerName || '')})` : '<br>👉 <em>Vui lòng chọn Lô hàng liên kết và kiểm tra Mã sản phẩm (SKU) bên dưới.</em>'}
+            ${matchedShipment ? `<br>Tự động khớp với Lô hàng: <strong style="color:#0266b3;">${escapeHtml(matchedShipment.shipmentCode)}</strong> (${escapeHtml(matchedShipment.supplierName || matchedShipment.customerName || '')})` : '<br><em>Vui lòng chọn Lô hàng liên kết và kiểm tra Mã sản phẩm (SKU) bên dưới.</em>'}
           </div>
         `;
       }
@@ -1892,11 +1901,11 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
               <td style="text-align:right; font-family:monospace;">
                 ${it.unitPrice ? `$${Number(it.unitPrice).toFixed(2)}` : '—'}
               </td>
-              <td style="text-align:right; font-weight:700; color:#0369a1;">
+              <td style="text-align:right; font-weight:700; color:#0266b3;">
                 ${it.totalPrice ? `$${Number(it.totalPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'}
               </td>
               <td>
-                <select class="form-control cd-item-sku-select" style="font-size:11.5px; height:30px; font-weight:600; color:#0369a1; padding:2px 6px;" data-idx="${idx}">
+                <select class="form-control cd-item-sku-select" style="font-size:11.5px; height:30px; font-weight:600; color:#0266b3; padding:2px 6px;" data-idx="${idx}">
                   <option value="">-- Chưa liên kết mã SP --</option>
                   ${allProducts.map(p => `
                     <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" ${bestProd?.id === p.id ? 'selected' : ''}>
@@ -1904,14 +1913,14 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
                     </option>
                   `).join('')}
                 </select>
-                ${bestProd ? `<div style="font-size:10.5px; color:#15803d; font-weight:600; margin-top:2px;">✓ Tự động khớp với SKU: ${escapeHtml(bestProd.sku)}</div>` : ''}
+                ${bestProd ? `<div style="font-size:10.5px; color:#15803d; font-weight:600; margin-top:2px;">Tự động khớp với SKU: ${escapeHtml(bestProd.sku)}</div>` : ''}
               </td>
             </tr>
           `;
         }).join('');
 
         if (noteEl) {
-          noteEl.textContent = matchCount > 0 ? `✓ Tự động khớp ${matchCount}/${extracted.items.length} mặt hàng` : '';
+          noteEl.textContent = matchCount > 0 ? `Tự động khớp ${matchCount}/${extracted.items.length} mặt hàng` : '';
         }
         itemsSection.style.display = 'block';
       } else {
@@ -1921,7 +1930,7 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
       // Đồng bộ tên file lên ô trợ giúp
       const helpText = document.getElementById('cdFileHelpText');
       if (helpText) {
-        helpText.innerHTML = `✓ Đã sẵn sàng lưu file gốc: <strong style="color:#0284c7;">${escapeHtml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+        helpText.innerHTML = `Đã sẵn sàng lưu file gốc: <strong style="color:#0266b3;">${escapeHtml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
       }
 
     } catch (err) {
@@ -1931,7 +1940,7 @@ export async function openCreateCustomsModal(defaultShipmentId = null, onSuccess
         alertEl.style.background = '#fef2f2';
         alertEl.style.border = '1px solid #fecaca';
         alertEl.style.color = '#b91c1c';
-        alertEl.innerHTML = `<strong>⚠️ Không thể đọc file tờ khai:</strong> ${escapeHtml(err.message)}`;
+        alertEl.innerHTML = `<strong>Không thể đọc file tờ khai:</strong> ${escapeHtml(err.message)}`;
       }
     }
   }
@@ -2120,14 +2129,14 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
             <label class="customs-scope-option ${!isDom ? 'selected' : ''}" id="lblScopeForeignEdit">
               <input type="radio" name="cd-scope-radio-edit" value="foreign" ${!isDom ? 'checked' : ''}>
               <div>
-                <div style="font-weight:700; color:#1d4ed8; font-size:13px;">🌐 Nhập Khẩu Nước Ngoài (USD)</div>
+                <div style="font-weight:600; color:#0266b3; font-size:13px;">Nhập Khẩu Nước Ngoài (USD)</div>
                 <div style="font-size:11px; color:#64748b; margin-top:2px;">Trị giá nguyên tệ USD, quy đổi theo Tỷ giá Hải quan để tính thuế</div>
               </div>
             </label>
             <label class="customs-scope-option ${isDom ? 'selected' : ''}" id="lblScopeDomesticEdit">
               <input type="radio" name="cd-scope-radio-edit" value="domestic" ${isDom ? 'checked' : ''}>
               <div>
-                <div style="font-weight:700; color:#15803d; font-size:13px;">🏠 Mua Bán Trong Nước (VNĐ)</div>
+                <div style="font-weight:600; color:#15803d; font-size:13px;">Mua Bán Trong Nước (VNĐ)</div>
                 <div style="font-size:11px; color:#64748b; margin-top:2px;">Giao dịch nội địa trực tiếp bằng VNĐ, không có USD/tỷ giá</div>
               </div>
             </label>
@@ -2162,10 +2171,10 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
           <div class="form-group">
             <label class="form-label required">Phân Luồng</label>
             <select id="cd-status-edit" class="form-control">
-              <option value="1" ${cd.status === 1 ? 'selected' : ''}>🟢 Luồng Xanh (1 - Thông quan)</option>
-              <option value="2" ${cd.status === 2 ? 'selected' : ''}>🟡 Luồng Vàng (2 - Kiểm tra hồ sơ)</option>
-              <option value="3" ${cd.status === 3 ? 'selected' : ''}>🔴 Luồng Đỏ (3 - Kiểm hóa thực tế)</option>
-              <option value="0" ${cd.status === 0 ? 'selected' : ''}>⚪ Chưa phân luồng</option>
+              <option value="1" ${cd.status === 1 ? 'selected' : ''}>Luồng Xanh (1 - Thông quan)</option>
+              <option value="2" ${cd.status === 2 ? 'selected' : ''}>Luồng Vàng (2 - Kiểm tra hồ sơ)</option>
+              <option value="3" ${cd.status === 3 ? 'selected' : ''}>Luồng Đỏ (3 - Kiểm hóa thực tế)</option>
+              <option value="0" ${cd.status === 0 ? 'selected' : ''}>Chưa phân luồng</option>
             </select>
           </div>
 
@@ -2218,8 +2227,8 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
                 <input type="number" step="1000" id="cd-val-vnd-direct-edit" class="form-control" value="${meta.taxableValueVnd || ''}" placeholder="VD: 500000000">
               </div>
             </div>
-            <div style="font-size:11px; color:#15803d; margin-bottom:12px; font-weight:600;">
-              ✓ Giao dịch nội địa sử dụng tiền tệ Việt Nam Đồng (VNĐ). Đô là đô, VNĐ là VNĐ, không sử dụng tỷ giá quy đổi.
+            <div style="font-size:11px; color:#15803d; margin-bottom:12px; font-weight:500;">
+              Giao dịch nội địa sử dụng tiền tệ Việt Nam Đồng (VNĐ). Không sử dụng tỷ giá quy đổi.
             </div>
           </div>
 
@@ -2261,8 +2270,8 @@ window.editCustomsDeclaration = async function (id, onSuccess = null) {
         </div>
 
         <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">✕ Hủy bỏ</button>
-          <button type="button" class="btn btn-primary" id="btn-update-customs">✔ Cập Nhật Tờ Khai</button>
+          <button type="button" class="misa-btn misa-btn-default" onclick="closeModal()">Hủy bỏ</button>
+          <button type="button" class="misa-btn misa-btn-primary" id="btn-update-customs">Cập Nhật Tờ Khai</button>
         </div>
       </form>
     `;
@@ -2555,8 +2564,8 @@ window.viewCustomsVNACCS = function (id) {
             <div>
               <strong>Tệp đính kèm gốc:</strong> ${escapeHtml(cd.docName)}
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.viewCustomsDoc('${id}')">
-              📥 Tải File Gốc
+            <button type="button" class="misa-btn misa-btn-default ph-btn-xs" onclick="window.viewCustomsDoc('${id}')">
+              Tải File Gốc
             </button>
           </div>
         ` : ''}
@@ -2566,7 +2575,7 @@ window.viewCustomsVNACCS = function (id) {
           <div class="vnaccs-sig-block">
             <div class="vnaccs-sig-title">NGƯỜI KHAI HẢI QUAN</div>
             <div class="vnaccs-sig-sub">(Đã xác nhận khai báo)</div>
-            <div style="color:#0369a1; font-weight:700; font-size:11.5px;">✔ XÁC NHẬN HỢP LỆ</div>
+            <div style="color:#0266b3; font-weight:700; font-size:11.5px;">XÁC NHẬN HỢP LỆ</div>
             <div style="font-size:11px; color:#64748b;">Thời gian: ${dDate}</div>
           </div>
           <div class="vnaccs-sig-block">
@@ -2578,10 +2587,10 @@ window.viewCustomsVNACCS = function (id) {
       </div>
 
       <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Đóng</button>
-        ${cd.docName ? `<button type="button" class="btn btn-secondary" onclick="window.viewCustomsDoc('${id}')">📥 Tải File Đính Kèm (${escapeHtml(cd.docName)})</button>` : ''}
-        <button type="button" class="btn btn-primary" onclick="window.printCustomsVNACCS('${id}')">
-          🖨️ In Tờ Khai (A4)
+        <button type="button" class="misa-btn misa-btn-default" onclick="closeModal()">Đóng</button>
+        ${cd.docName ? `<button type="button" class="misa-btn misa-btn-default" onclick="window.viewCustomsDoc('${id}')">Tải File Đính Kèm (${escapeHtml(cd.docName)})</button>` : ''}
+        <button type="button" class="misa-btn misa-btn-primary" onclick="window.printCustomsVNACCS('${id}')">
+          In Tờ Khai (A4)
         </button>
       </div>
     </div>
