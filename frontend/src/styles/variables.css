@@ -1,118 +1,92 @@
+/* =========================================================
+   MISA AMIS 2025 ENTERPRISE TOKENS & CSS VARIABLES
+   ========================================================= */
+
 :root {
-  /* =========================================================
-     IMEX N — ENTERPRISE ERP DESIGN SYSTEM TOKENS
-     Tailored for Export-Import (XNK) & Accounting Professionals
-     ========================================================= */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  /* 1. Brand & Semantic Accent Colors */
-  --amis-blue: #0266b3;
-  --amis-blue-hover: #015290;
-  --amis-blue-light: #eff6ff;
-  --amis-blue-border: #bfdbfe;
+  /* MISA AMIS Corporate Palette (2025) */
+  --amis-blue: #0266b3; /* Signature MISA blue */
+  --amis-blue-hover: #00508f;
+  --amis-blue-light: #e8f3fb;
+  --amis-green: #00a152;
+  --amis-green-hover: #00733d;
+  --amis-green-light: #e6f7ef;
+  --amis-orange: #f37021;
+  --amis-orange-hover: #d95e14;
+  --amis-red: #ea3a3d;
+  --amis-red-light: #fde8e8;
+  
+  /* Sidebar Palette (Light Theme like Hiệp Lợi Group) */
+  --amis-sidebar-bg: #ffffff; /* Siderbar is white */
+  --amis-sidebar-text: #64748b; /* slate-500 */
+  --amis-sidebar-text-hover: #1e293b;
+  --amis-sidebar-hover: #f1f5f9;
+  --amis-sidebar-active-bg: #eff6ff; /* blue-50 */
+  --amis-sidebar-active-text: #3b82f6; /* blue-500 */
+  --amis-sidebar-border: #e2e8f0;
 
-  --amis-green: #059669;
-  --amis-green-hover: #047857;
-  --amis-green-light: #ecfdf5;
-  --amis-green-border: #a7f3d0;
-
-  --amis-red: #dc2626;
-  --amis-red-hover: #b91c1c;
-  --amis-red-light: #fef2f2;
-  --amis-red-border: #fecaca;
-
-  --amis-orange: #d97706;
-  --amis-orange-hover: #b45309;
-  --amis-orange-light: #fffbeb;
-  --amis-orange-border: #fde68a;
-
-  --amis-purple: #6d28d9;
-  --amis-purple-light: #f5f3ff;
-  --amis-purple-border: #ddd6fe;
-
-  /* Legacy Alias Tokens (ensures 100% compatibility across all modules) */
-  --misa-blue: var(--amis-blue);
-  --misa-blue-hover: var(--amis-blue-hover);
-  --misa-blue-light: var(--amis-blue-light);
-  --misa-green: var(--amis-green);
-  --misa-green-hover: var(--amis-green-hover);
-  --misa-orange: var(--amis-orange);
-  --misa-red: var(--amis-red);
-  --misa-border: #e2e8f0;
-
-  /* 2. Neutral Surfaces & Text Hierarchy */
-  --amis-sidebar-bg: #0f172a;
-  --amis-sidebar-hover: #1e293b;
-  --amis-sidebar-active: #0266b3;
-  --amis-sidebar-text: #94a3b8;
-  --amis-sidebar-text-active: #ffffff;
-
-  --amis-bg: #f1f5f9;
+  /* Light Theme Defaults */
+  --amis-bg: #f3f6f9; /* Soft background */
   --amis-card-bg: #ffffff;
   --amis-border: #e2e8f0;
-  --amis-border-strong: #cbd5e1;
-
   --amis-text: #0f172a;
-  --amis-text-secondary: #334155;
-  --amis-text-muted: #64748b;
-  --amis-text-light: #94a3b8;
+  --amis-text-muted: #475569;
+  --amis-row-hover: #f8fafc;
+  --amis-row-selected: #eff6ff;
 
-  /* 3. Workspace Layout & Component Aliases */
   --bg-app: var(--amis-bg);
   --bg-surface: var(--amis-card-bg);
-  --bg-subtle: #f8fafc;
-  --text-main: var(--amis-text);
-  --text-secondary: var(--amis-text-secondary);
-  --text-muted: var(--amis-text-muted);
   --border-color: var(--amis-border);
+  --text-main: var(--amis-text);
+  --text-muted: var(--amis-text-muted);
 
-  --amis-row-hover: #f0f7ff;
-  --amis-row-selected: #e0effc;
+  /* Dimensions */
+  --header-height: 56px; /* AMIS standard header height */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px; /* Smooth rounded corners */
+  --radius-lg: 12px;
+  --radius-full: 9999px;
 
-  /* 4. Dimensions & Spacing */
-  --sidebar-width: 244px;
-  --sidebar-collapsed-width: 60px;
-  --header-height: 52px;
+  /* Shadows (Soft & Premium) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-dropdown: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-floating: 0 0 15px rgba(0, 0, 0, 0.05);
 
-  --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-
-  /* 5. Elevation Shadows (Subtle, crisp ERP style) */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-dropdown: 0 10px 25px -4px rgba(15, 23, 42, 0.14), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
-
-  /* 6. Typography */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  --transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark Theme Support */
 [data-theme="dark"] {
-  --amis-bg: #0b1120;
+  --amis-bg: #0f172a;
   --amis-card-bg: #1e293b;
-  --bg-subtle: #0f172a;
   --amis-border: #334155;
-  --amis-border-strong: #475569;
   --amis-text: #f8fafc;
-  --amis-text-secondary: #e2e8f0;
   --amis-text-muted: #94a3b8;
-  --amis-text-light: #64748b;
+  --amis-row-hover: #334155;
+  --amis-row-selected: #0f172a;
 
   --bg-app: var(--amis-bg);
   --bg-surface: var(--amis-card-bg);
+  --border-color: var(--amis-border);
   --text-main: var(--amis-text);
   --text-muted: var(--amis-text-muted);
-  --border-color: var(--amis-border);
+  
+  --amis-sidebar-bg: #1e293b;
+  --amis-sidebar-text: #94a3b8;
+  --amis-sidebar-text-hover: #f8fafc;
+  --amis-sidebar-hover: #334155;
+  --amis-sidebar-active-bg: #3b82f6;
+  --amis-sidebar-active-text: #ffffff;
+  --amis-sidebar-border: #334155;
 
-  --amis-row-hover: #253346;
-  --amis-row-selected: rgba(2, 102, 179, 0.25);
-
-  --amis-blue-light: rgba(2, 102, 179, 0.18);
-  --amis-green-light: rgba(5, 150, 105, 0.18);
-  --amis-red-light: rgba(220, 38, 38, 0.18);
-  --amis-orange-light: rgba(217, 119, 6, 0.18);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-dropdown: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  --shadow-floating: 0 0 15px rgba(0, 0, 0, 0.4);
 }

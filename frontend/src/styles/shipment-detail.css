@@ -1171,7 +1171,7 @@
 }
 
 /* =========================================================
-   MISA AMIS VOUCHER / SHIPMENT DETAIL REDESIGN
+   MODERN ACCOUNTING VOUCHER / SHIPMENT DETAIL REDESIGN
    ========================================================= */
 
 .sd-misa-page {
@@ -1179,22 +1179,27 @@
   flex-direction: column;
   background: #f8fafc;
   min-height: 100%;
-  padding: 12px 18px 24px 18px;
-  gap: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  padding: 14px 18px 24px 18px;
+  gap: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #1e293b;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-/* ── Top Header Toolbar ── */
+/* ── 1. Khối Tiêu đề Chứng từ Lô hàng ── */
 .sd-misa-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 10px 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  padding: 12px 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .sd-misa-header-left {
@@ -1202,24 +1207,29 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
-.sd-misa-back-btn {
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  width: 28px;
-  height: 28px;
-  display: flex;
+.sd-misa-back-btn,
+.sd-misa-btn-back {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: #475569;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
-.sd-misa-back-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+.sd-misa-back-btn:hover,
+.sd-misa-btn-back:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #0266b3;
 }
 
 .sd-misa-title {
@@ -1230,195 +1240,338 @@
   letter-spacing: -0.2px;
 }
 
+.sd-misa-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #0266b3;
+  border: 1px solid #dbeafe;
+}
+.sd-misa-type-badge.is-export {
+  background: #ecfdf5;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
 .sd-misa-btn-copy {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
-  font-size: 11px;
-  font-weight: 600;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
   color: #475569;
   background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 3px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .sd-misa-btn-copy:hover {
-  background: #e2e8f0;
-}
-
-.sd-misa-type-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-.sd-misa-type-tag.type-import {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-}
-.sd-misa-type-tag.type-export {
-  background: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
-}
-
-.sd-misa-status-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 11.5px;
-  font-weight: 600;
   background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
 .sd-misa-header-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-/* ── Master Voucher Box ── */
-.sd-misa-master {
+.sd-misa-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  padding: 14px 18px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sd-misa-toolbar-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
 }
 
+.sd-misa-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #0266b3;
+  border: 1px solid #0266b3;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.sd-misa-primary-btn:hover {
+  background: #035397;
+}
+.sd-misa-primary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── 2. Khối Thông tin Chung, Nhà cung cấp & Chứng từ ── */
+.sd-misa-master {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px 20px 18px 20px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+/* Hàng thông tin chung + Khối Tổng tiền thanh toán */
 .sd-misa-master-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  gap: 16px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
   border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
 }
 
-.sd-misa-radio-group {
+.sd-misa-status-strip {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 7px 14px;
 }
 
-.sd-misa-radio {
-  display: flex;
+.sd-status-pill {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #0f172a;
-  cursor: default;
-}
-.sd-misa-radio input {
-  accent-color: #059669;
+  color: #1e293b;
 }
 
-.sd-misa-divider-v {
+.sd-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0266b3;
+  box-shadow: 0 0 0 3px rgba(2, 102, 179, 0.15);
+}
+.sd-status-pill.is-paid .sd-status-dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.sd-strip-sep {
   width: 1px;
   height: 14px;
   background: #cbd5e1;
 }
 
-.sd-misa-master-total {
-  text-align: right;
+.sd-strip-item {
+  font-size: 12.5px;
+  color: #64748b;
+}
+.sd-strip-item strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.sd-incoterm-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 5px;
+  background: #ecfdf5;
+  color: #16a34a !important;
+  border: 1px solid #bbf7d0;
+  font-size: 12px;
+}
+
+/* Khối Tổng tiền thanh toán bên phải: nổi bật, gọn gàng */
+.sd-misa-master-total-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  min-width: 220px;
+}
+
+.sd-misa-total-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
 }
 
 .sd-misa-total-label {
-  font-size: 11px;
-  color: #64748b;
+  font-size: 11.5px;
+  color: #15803d;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 .sd-misa-total-value {
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
-  line-height: 1.1;
-  letter-spacing: -0.5px;
+  color: #16a34a;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
 }
 
+.sd-misa-total-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: #475569;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.sd-misa-total-meta strong {
+  color: #0f172a;
+}
+
+/* Lưới 2 khối: Nhà cung cấp & Vận chuyển | Chứng từ & Lịch trình */
 .sd-misa-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 24px;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.sd-master-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sd-master-block-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .sd-misa-form-col {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .sd-form-row {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
+  min-width: 0;
 }
 
 .sd-form-row-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  min-width: 0;
 }
 
 .sd-form-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
+  min-width: 0;
 }
 
 .sd-form-label {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sd-form-control {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 12.5px;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 13px;
   color: #1e293b;
-  min-height: 32px;
+  height: 35px;
   display: flex;
   align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
 }
 
 .sd-form-highlight {
   background: #ffffff;
   border-color: #cbd5e1;
-  color: #0f172a;
 }
 
 .sd-partner-code {
   color: #0266b3;
+  font-weight: 600;
   margin-left: 6px;
   font-size: 12px;
 }
 
-/* ── MISA Tab Bar ── */
+.sd-ref-clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sd-ref-clickable:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+/* ── 3. Thanh Tab Chứng từ Ngang ── */
 .sd-misa-tabs-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #ffffff;
-  border-radius: 6px 6px 0 0;
+  border-radius: 8px 8px 0 0;
   border: 1px solid #e2e8f0;
-  border-bottom: 2px solid #e2e8f0;
-  padding: 0 12px;
-  margin-top: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px 12px 0 12px;
+  gap: 12px;
 }
 
 .sd-misa-tab-list {
@@ -1426,65 +1579,95 @@
   align-items: center;
   gap: 4px;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+.sd-misa-tab-list::-webkit-scrollbar {
+  display: none;
 }
 
 .sd-misa-tab-list .sd-tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 9px 14px;
   font-size: 13px;
   font-weight: 600;
   color: #64748b;
   border: none;
+  border-radius: 6px 6px 0 0;
   background: transparent;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .sd-misa-tab-list .sd-tab:hover {
-  color: #059669;
-  background: #f0fdf4;
+  color: #0266b3;
+  background: #f8fafc;
 }
 
 .sd-misa-tab-list .sd-tab.active {
-  color: #059669;
-  border-bottom-color: #059669;
-  background: transparent;
+  color: #0266b3;
+  background: #eff6ff;
+  border-bottom-color: #0266b3;
+  font-weight: 700;
 }
 
 .sd-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  min-width: 20px;
+  padding: 0 6px;
   background: #f1f5f9;
   color: #475569;
   font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
 }
 
 .sd-misa-tab-list .sd-tab.active .sd-tab-count {
-  background: #dcfce7;
-  color: #15803d;
+  background: #dbeafe;
+  color: #0266b3;
+  font-weight: 700;
 }
 
 .sd-misa-tabs-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
-  color: #64748b;
+  padding-bottom: 6px;
+  flex-shrink: 0;
 }
 
-/* ── Tab Panes ── */
+.sd-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+.sd-meta-pill strong {
+  color: #0f172a;
+}
+
+/* ── 4. Khung Nội dung Tab & Bảng Hàng tiền ── */
 .sd-pane-wrap {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-top: none;
-  border-radius: 0 0 6px 6px;
-  padding: 14px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border-radius: 0 0 8px 8px;
+  padding: 16px 18px 18px 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  margin-top: -14px;
 }
 
 .sd-pane {
@@ -1496,128 +1679,322 @@
   display: flex;
 }
 
-/* ── Full Width Table Styling ── */
 .sd-table-wrap {
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 420px;
   background: #ffffff;
 }
 
 .sd-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .sd-table th {
-  background: #f8fafc;
-  color: #475569;
+  background: #f1f5f9;
+  color: #334155;
   font-weight: 600;
   font-size: 12px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .sd-table td {
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-bottom: 1px solid #f1f5f9;
   color: #1e293b;
-  font-size: 12.5px;
+  font-size: 13px;
+  vertical-align: middle;
 }
 
-.sd-table tr:hover td {
+.sd-table tbody tr:hover td {
   background: #f8fafc;
 }
 
 .sd-total-row td {
   background: #f8fafc !important;
   font-weight: 700;
-  border-top: 2px solid #cbd5e1;
+  border-top: 1px solid #cbd5e1;
   border-bottom: none;
+  padding: 11px 12px;
 }
 
-/* ── MISA Table Bottom Area ── */
-.sd-misa-table-footer {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 16px;
-  margin-top: 10px;
+/* Nút Sửa / Xóa từng dòng trong bảng */
+.sd-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sd-row-btn-edit {
+  color: #0266b3;
+}
+.sd-row-btn-edit:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.sd-row-btn-del {
+  color: #dc2626;
+  padding: 0 6px;
+}
+.sd-row-btn-del:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.sd-row-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.sd-misa-footer-left {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+/* ── 5. Hàng Nút Chức Năng Dưới Bảng ── */
 .sd-misa-footer-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sd-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sd-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sd-action-btn-primary {
+  background: #0266b3;
+  color: #ffffff;
+  border: 1px solid #0266b3;
+}
+.sd-action-btn-primary:hover:not(:disabled) {
+  background: #035397;
+}
+
+.sd-action-btn-secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+.sd-action-btn-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.sd-action-btn-danger {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.sd-action-btn-danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+/* ── 6. Khu vực Cuối trang: Ghi chú, Đính kèm và Tổng tiền (Lưới 3 Cột Cân Đối) ── */
+.sd-misa-table-footer {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 330px;
+  gap: 16px;
+  align-items: stretch;
 }
 
 .sd-misa-note-box {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 10px 12px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
 }
 
 .sd-misa-note-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #334155;
-  margin-bottom: 8px;
 }
 
+.sd-note-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.sd-misa-note-box .tl-list {
+  max-height: 92px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sd-misa-note-box .tl-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.sd-misa-note-box .tl-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 11px;
+  font-size: 12.5px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #1e293b;
+  transition: border-color 0.15s ease;
+}
+.sd-misa-note-box .tl-input:focus {
+  border-color: #0266b3;
+  outline: none;
+}
+
+.sd-misa-note-box .tl-send-btn {
+  width: auto;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: #0266b3;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid #0266b3;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sd-misa-note-box .tl-send-btn:hover {
+  background: #035397;
+  transform: none;
+}
+
+/* Cột 2: Đính kèm chứng từ */
 .sd-misa-attachment-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.sd-misa-attach-dropzone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   background: #ffffff;
   border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 10px 14px;
-  transition: border-color 0.15s;
+  border-radius: 6px;
+  padding: 12px 10px;
+  text-align: center;
+  transition: all 0.15s ease;
 }
-.sd-misa-attachment-box:hover {
-  border-color: #059669;
-  background: #f0fdf4;
+.sd-misa-attachment-box:hover .sd-misa-attach-dropzone {
+  border-color: #0266b3;
+  background: #eff6ff;
 }
 
+.sd-attach-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sd-attach-drop-text {
+  font-size: 12.5px;
+  color: #334155;
+}
+
+.sd-attach-drop-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Cột 3: Bảng tổng hợp tiền hàng & thuế */
 .sd-misa-footer-right {
   display: flex;
   flex-direction: column;
 }
 
 .sd-misa-calc-table {
+  flex: 1;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
 }
 
 .sd-calc-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12.5px;
-  color: #475569;
+  font-size: 13px;
+  color: #334155;
 }
 
 .sd-calc-label {
-  font-size: 12px;
+  font-size: 12.5px;
   color: #64748b;
 }
 
 .sd-calc-val {
-  font-size: 12.5px;
-  color: #1e293b;
+  font-size: 13px;
+  color: #0f172a;
+}
+.sd-calc-val.is-tax-alert {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 .sd-calc-divider {
@@ -1627,31 +2004,57 @@
 }
 
 .sd-calc-total {
-  font-weight: 800;
+  font-weight: 700;
   color: #0f172a;
 }
 .sd-calc-total .sd-calc-label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
 }
 .sd-calc-total .sd-calc-val {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
-  color: #059669;
+  color: #16a34a;
 }
 
 .sd-calc-sub {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
 }
 
-@media (max-width: 960px) {
+/* Tối ưu cho màn hình 1366px và nhỏ hơn */
+@media (max-width: 1400px) {
+  .sd-misa-page {
+    padding: 12px 14px 20px 14px;
+  }
+  .sd-misa-form-grid {
+    gap: 14px;
+  }
+  .sd-misa-table-footer {
+    grid-template-columns: 1.15fr 0.95fr 300px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1150px) {
   .sd-misa-form-grid {
     grid-template-columns: 1fr;
   }
   .sd-misa-table-footer {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sd-misa-footer-right {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .sd-misa-table-footer {
     grid-template-columns: 1fr;
+  }
+  .sd-misa-footer-right {
+    grid-column: span 1;
   }
 }
 

@@ -470,30 +470,31 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
       return `
       <tr>
         <td style="text-align:center;color:#64748b;">${idx + 1}</td>
-        <td style="font-weight:700;color:var(--amis-blue);">${it.productCode}</td>
-        <td><strong>${it.productName}</strong></td>
-        <td style="font-family:monospace;color:#475569;">${it.hsCode}</td>
-        <td>${it.origin}</td>
-        <td style="text-align:center;">${it.unit}</td>
-        <td style="text-align:right;font-weight:600;">${q.toLocaleString()}</td>
-        <td style="text-align:right;font-weight:600;color:#0266b3;">${pk ? `${pk.toLocaleString()} kiện` : '---'}</td>
-        <td style="text-align:right;">${isVnd ? `${Number(p).toLocaleString('vi-VN')} ₫` : `$${p.toFixed(2)}`}</td>
-        <td style="text-align:right;font-weight:700;color:var(--amis-green);">${isVnd ? `${Number(rowTotal).toLocaleString('vi-VN')} ₫` : `$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
-        <td style="text-align:right;">${Number(it.netWeight || 0).toFixed(0)} kg</td>
-        <td style="text-align:right;">${Number(it.grossWeight || 0).toFixed(0)} kg</td>
+        <td style="font-weight:600;color:#0266b3;">${it.productCode}</td>
+        <td><strong style="color:#1e293b;font-weight:600;">${it.productName}</strong></td>
+        <td style="color:#475569;font-variant-numeric:tabular-nums;">${it.hsCode}</td>
+        <td style="color:#334155;">${it.origin}</td>
+        <td style="text-align:center;color:#475569;">${it.unit}</td>
+        <td style="text-align:right;font-weight:600;color:#0f172a;">${q.toLocaleString()}</td>
+        <td style="text-align:right;font-weight:500;color:#334155;">${pk ? `${pk.toLocaleString()} kiện` : '---'}</td>
+        <td style="text-align:right;color:#334155;">${isVnd ? `${Number(p).toLocaleString('vi-VN')} ₫` : `$${p.toFixed(2)}`}</td>
+        <td style="text-align:right;font-weight:700;color:#16a34a;">${isVnd ? `${Number(rowTotal).toLocaleString('vi-VN')} ₫` : `$${rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
+        <td style="text-align:right;color:#334155;">${Number(it.netWeight || 0).toLocaleString()} kg</td>
+        <td style="text-align:right;color:#334155;">${Number(it.grossWeight || 0).toLocaleString()} kg</td>
         <td style="text-align:center; white-space:nowrap;">
-          <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
-            <button class="sd-btn-sm" style="color:#0266b3;" onclick="window.openItemModal(${idx})" title="Sửa dòng hàng" ${isCompleted ? 'disabled' : ''}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>Sửa
+          <div style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+            <button class="sd-row-btn sd-row-btn-edit" onclick="window.openItemModal(${idx})" title="Sửa dòng hàng" ${isCompleted ? 'disabled' : ''}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              Sửa
             </button>
-            <button class="sd-btn-sm" style="color:#ef4444; border-color:#fecaca; background:#fef2f2;" onclick="window.deleteItemModal(${idx})" title="Xóa dòng hàng" ${isCompleted ? 'disabled' : ''}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <button class="sd-row-btn sd-row-btn-del" onclick="window.deleteItemModal(${idx})" title="Xóa dòng hàng" ${isCompleted ? 'disabled' : ''}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           </div>
         </td>
       </tr>
       `;
-    }).join('') : `<tr><td colspan="13" style="text-align:center;padding:24px;color:#94a3b8;">Chưa có mặt hàng nào. Nhấn "+ Thêm dòng" bên dưới để thêm mặt hàng vào lô hàng.</td></tr>`;
+    }).join('') : `<tr><td colspan="13" style="text-align:center;padding:28px;color:#94a3b8;">Chưa có mặt hàng nào. Nhấn "+ Thêm dòng" bên dưới để thêm mặt hàng vào lô hàng.</td></tr>`;
 
     // ── Build customs rows (MISA AMIS & Thông tin thuế chi tiết) ─────────
     const customsHtml = customs.length === 0 ? `<div class="sd-card"><div class="sd-card-body" style="text-align:center;color:#64748b;padding:24px;">Chưa có tờ khai hải quan nào. Nhấn "+ Thêm tờ khai HQ" bên trên để mở tờ khai.</div></div>` : customs.map(cd => {
@@ -682,156 +683,191 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
     const step5Class = isCompleted ? 'completed' : 'pending';
     const step5Text = isCompleted ? 'Đã nhập kho thành công' : 'Chờ nhận hàng';
 
+    const primaryPackingListNumber = packingLists[0]?.invoiceNumber || packingLists[0]?.packingListNumber || '---';
+
     container.innerHTML = `
       <div class="sd-misa-page">
 
-        <!-- MISA HEADER TOOLBAR -->
+        <!-- 1. KHỐI TIÊU ĐỀ CHỨNG TỪ LÔ HÀNG -->
         <div class="sd-misa-header">
           <div class="sd-misa-header-left">
-            <button class="sd-misa-btn-back" id="sd-back-link" title="Quay lại danh sách lô hàng">
-              ←
+            <button class="sd-misa-back-btn" id="sd-back-link" title="Quay lại danh sách lô hàng">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             </button>
             <h1 class="sd-misa-title">Chứng từ lô hàng ${shpCode}</h1>
-            <span class="sd-misa-type-badge">${typeLabel}</span>
-            <span class="${statusClass}" style="font-size:11.5px; padding:3px 8px;">${statusLabel}</span>
-            <button class="sd-btn-sm" id="sd-btn-copy" title="Sao chép mã lô hàng" style="padding: 3px 8px; font-size:11.5px; margin-left: 4px;">
+            <span class="sd-misa-type-badge ${shipment.type === 'Export' ? 'is-export' : 'is-import'}">${typeLabel}</span>
+            <span class="${statusClass}" style="font-size:12px; padding:3px 10px; border-radius:6px;">${statusLabel}</span>
+            <button class="sd-misa-btn-copy" id="sd-btn-copy" title="Sao chép mã lô hàng">
               ${ICON.copy} Sao chép
             </button>
           </div>
           <div class="sd-misa-header-right">
-            <button class="btn btn-secondary btn-sm" id="sd-btn-crosscheck" title="Kiểm tra đối chiếu Invoice, PL, B/L, C/O">
-              🛡️ Đối chiếu hồ sơ
+            <button class="sd-misa-toolbar-btn" id="sd-btn-crosscheck" title="Kiểm tra đối chiếu Invoice, PL, B/L, C/O">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0266b3" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Đối chiếu hồ sơ
             </button>
-            <button class="btn btn-secondary btn-sm" id="sd-btn-print" title="In chứng từ">
+            <button class="sd-misa-toolbar-btn" id="sd-btn-print" title="In chứng từ">
               ${ICON.print} In chứng từ
             </button>
-            <button class="btn btn-primary btn-sm" id="sd-btn-edit" ${isCompleted ? 'disabled' : ''} title="Chỉnh sửa thông tin lô hàng">
+            <button class="sd-misa-primary-btn" id="sd-btn-edit" ${isCompleted ? 'disabled' : ''} title="Chỉnh sửa thông tin lô hàng">
               ${ICON.edit} Chỉnh sửa
             </button>
           </div>
         </div>
 
-        <!-- MISA MASTER INFORMATION CARD -->
+        <!-- 2. KHỐI THÔNG TIN TỔNG QUAN CHỨNG TỪ -->
         <div class="sd-misa-master">
+
+          <!-- 2.1. Hàng thông tin chung của lô hàng + Khối Tổng tiền thanh toán -->
           <div class="sd-misa-master-top">
-            <div class="sd-misa-radio-group">
-              <label class="sd-misa-radio">
-                <input type="radio" name="pay_status" checked disabled>
-                <span>${isCompleted ? 'Đã hoàn tất thanh toán & giao nhận' : 'Chưa thanh toán / Theo điều kiện hợp đồng'}</span>
-              </label>
-              <div class="sd-misa-divider-v"></div>
-              <span style="font-size:12.5px; color:#475569;">
-                Hình thức: <strong style="color:#1e293b;">${shipment.transportType || 'Vận tải đường biển (FCL)'}</strong>
+            <div class="sd-misa-status-strip">
+              <span class="sd-status-pill ${isCompleted ? 'is-paid' : 'is-unpaid'}">
+                <span class="sd-status-dot"></span>
+                ${isCompleted ? 'Đã hoàn tất thanh toán & giao nhận' : 'Chưa thanh toán / Theo điều kiện hợp đồng'}
               </span>
-              <div class="sd-misa-divider-v"></div>
-              <span style="font-size:12.5px; color:#475569;">
-                Điều kiện: <strong style="color:#059669;">${incotermDisplay}</strong>
+              <span class="sd-strip-sep"></span>
+              <span class="sd-strip-item">
+                Hình thức: <strong>${shipment.transportType || 'Vận tải đường biển (FCL)'}</strong>
+              </span>
+              <span class="sd-strip-sep"></span>
+              <span class="sd-strip-item">
+                Điều kiện: <strong class="sd-incoterm-tag">${incotermDisplay}</strong>
+              </span>
+              <span class="sd-strip-sep"></span>
+              <span class="sd-strip-item">
+                Ngày lập: <strong>${createdDisplay}</strong>
               </span>
             </div>
-            <div class="sd-misa-master-total">
-              <div class="sd-misa-total-label">Tổng tiền thanh toán</div>
-              <div class="sd-misa-total-value">
-                ${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+
+            <!-- Khối Tổng tiền thanh toán bên phải: nổi bật, gọn gàng -->
+            <div class="sd-misa-master-total-card">
+              <div class="sd-misa-total-main">
+                <span class="sd-misa-total-label">Tổng tiền thanh toán</span>
+                <span class="sd-misa-total-value">
+                  ${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                </span>
               </div>
+              ${(customsTaxableVal || customsTaxAmount) ? `
+                <div class="sd-misa-total-meta">
+                  ${customsTaxableVal && !isVnd ? `<span>Trị giá HQ: <strong>${Number(customsTaxableVal).toLocaleString('vi-VN')} ₫</strong></span>` : ''}
+                  ${customsTaxAmount ? `<span>Thuế HQ: <strong style="color:#dc2626;">${Number(customsTaxAmount).toLocaleString('vi-VN')} ₫</strong></span>` : ''}
+                </div>
+              ` : ''}
             </div>
           </div>
 
+          <!-- 2.2. Hai khối thông tin chính: Nhà cung cấp & Vận chuyển | Thông tin chứng từ -->
           <div class="sd-misa-form-grid">
-            <!-- Cột trái: Thông tin Đối tác / Nhà cung cấp & Tuyến đường -->
-            <div class="sd-misa-form-col">
-              <div class="sd-form-row">
-                <div class="sd-form-label">${shipment.type === 'Export' ? 'Khách hàng / Người nhận (Consignee)' : 'Nhà cung cấp / Đối tác (Shipper)'}</div>
-                <div class="sd-form-control sd-form-highlight" style="font-weight:600;">
-                  ${supplierTitle} <span class="sd-partner-code">(${partnerCodeDisplay})</span>
+
+            <!-- Khối trái: Thông tin nhà cung cấp và vận chuyển -->
+            <div class="sd-master-block">
+              <div class="sd-master-block-title">Thông tin nhà cung cấp & vận chuyển</div>
+              <div class="sd-misa-form-col">
+                <div class="sd-form-row">
+                  <label class="sd-form-label">${shipment.type === 'Export' ? 'Khách hàng / Người nhận (Consignee)' : 'Nhà cung cấp / Đối tác (Shipper)'}</label>
+                  <div class="sd-form-control sd-form-highlight">
+                    <span style="font-weight:600; color:#0f172a;">${supplierTitle}</span>
+                    <span class="sd-partner-code">(${partnerCodeDisplay})</span>
+                  </div>
                 </div>
-              </div>
-              <div class="sd-form-row">
-                <div class="sd-form-label">Mã số thuế & Địa chỉ</div>
-                <div class="sd-form-control">
-                  MST: ${shipment.partnerTaxCode || '---'} • ${shipment.partnerAddress || '---'}
+
+                <div class="sd-form-row">
+                  <label class="sd-form-label">Mã số thuế, Địa chỉ & Liên hệ</label>
+                  <div class="sd-form-control">
+                    ${contactPerson !== '---' ? `${contactPerson} • ${contactPhone}` : `MST: ${shipment.partnerTaxCode || '---'} • ${shipment.partnerAddress || '---'}`}
+                  </div>
                 </div>
-              </div>
-              <div class="sd-form-row-2col">
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Cảng bốc hàng (POL)</div>
-                  <div class="sd-form-control">${polDisplay}</div>
+
+                <div class="sd-form-row-2col">
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Cảng bốc hàng (POL)</label>
+                    <div class="sd-form-control" title="${escapeHtml(polDisplay)}">${polDisplay}</div>
+                  </div>
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Cảng dỡ hàng (POD)</label>
+                    <div class="sd-form-control" title="${escapeHtml(podDisplay)}">${podDisplay}</div>
+                  </div>
                 </div>
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Cảng dỡ hàng (POD)</div>
-                  <div class="sd-form-control">${podDisplay}</div>
-                </div>
-              </div>
-              <div class="sd-form-row-2col">
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Hãng vận tải / Đại lý biển</div>
-                  <div class="sd-form-control">${primaryBL?.shippingLine || '---'}</div>
-                </div>
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Tên tàu / Số chuyến (Vessel/Voyage)</div>
-                  <div class="sd-form-control">${primaryBL?.vesselVoyage || '---'}</div>
+
+                <div class="sd-form-row-2col">
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Hãng vận tải / Đại lý biển</label>
+                    <div class="sd-form-control">${primaryBL?.shippingLine || '---'}</div>
+                  </div>
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Tên tàu / Số chuyến (Vessel/Voyage)</label>
+                    <div class="sd-form-control">${primaryBL?.vesselVoyage || '---'}</div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Cột phải: Thông tin Chứng từ, Mã tham chiếu & Lịch trình -->
-            <div class="sd-misa-form-col">
-              <div class="sd-form-row-2col">
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Mã chứng từ lô hàng</div>
-                  <div class="sd-form-control sd-form-highlight" style="font-family:monospace;font-weight:700;color:#0266b3;">
-                    ${shpCode}
+            <!-- Khối phải: Thông tin chứng từ -->
+            <div class="sd-master-block">
+              <div class="sd-master-block-title">Thông tin chứng từ & lịch trình</div>
+              <div class="sd-misa-form-col">
+                <div class="sd-form-row-2col">
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Mã chứng từ lô hàng</label>
+                    <div class="sd-form-control sd-form-highlight" style="font-weight:700; color:#0266b3;">
+                      ${shpCode}
+                    </div>
+                  </div>
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Số Hợp đồng ngoại thương</label>
+                    <div class="sd-form-control sd-ref-clickable" data-goto-pane="contracts" style="font-weight:600;" title="Nhấn để chuyển tới tab Hợp đồng">
+                      ${primaryContractNumber}
+                    </div>
                   </div>
                 </div>
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Số Hợp đồng ngoại thương</div>
-                  <div class="sd-form-control" style="font-weight:600;">
-                    ${primaryContractNumber}
+
+                <div class="sd-form-row-2col">
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Số Commercial Invoice</label>
+                    <div class="sd-form-control sd-ref-clickable" data-goto-pane="invoices" style="font-weight:600; color:#0266b3;" title="Nhấn để chuyển tới tab Hóa đơn">
+                      ${primaryInvoiceNumber}
+                    </div>
+                  </div>
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Số Vận đơn (B/L No.)</label>
+                    <div class="sd-form-control sd-ref-clickable" data-goto-pane="logistics" style="font-weight:600; color:#16a34a;" title="Nhấn để chuyển tới tab Vận tải & B/L">
+                      ${blNumberDisplay}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="sd-form-row-2col">
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Số Commercial Invoice</div>
-                  <div class="sd-form-control" style="font-weight:600;color:#0266b3;">
-                    ${primaryInvoiceNumber}
+
+                <div class="sd-form-row-2col">
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Số tờ khai HQ</label>
+                    <div class="sd-form-control sd-ref-clickable" data-goto-pane="customs" style="font-weight:600;" title="Nhấn để chuyển tới tab Hải quan & Thuế">
+                      ${primaryDeclarationNumber !== '---' ? primaryDeclarationNumber : 'Chưa đăng ký tờ khai'}
+                    </div>
+                  </div>
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Container & Số chì (Seal)</label>
+                    <div class="sd-form-control">
+                      ${primaryBL?.containerNo || '---'} / ${primaryBL?.sealNo || '---'}
+                    </div>
                   </div>
                 </div>
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Số Vận đơn (B/L No.)</div>
-                  <div class="sd-form-control" style="font-family:monospace;font-weight:700;color:#059669;">
-                    ${blNumberDisplay}
+
+                <div class="sd-form-row-2col">
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Ngày xếp hàng (ETD)</label>
+                    <div class="sd-form-control">${etdDisplay}</div>
                   </div>
-                </div>
-              </div>
-              <div class="sd-form-row-2col">
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Số tờ khai HQ</div>
-                  <div class="sd-form-control" style="font-family:monospace;">
-                    ${primaryDeclarationNumber !== '---' ? primaryDeclarationNumber : 'Chưa đăng ký tờ khai'}
+                  <div class="sd-form-group">
+                    <label class="sd-form-label">Ngày cập cảng (ETA)</label>
+                    <div class="sd-form-control" style="font-weight:600; color:#0266b3;">${etaDisplay}</div>
                   </div>
-                </div>
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Container & Số chì (Seal)</div>
-                  <div class="sd-form-control" style="font-family:monospace;">
-                    ${primaryBL?.containerNo || '---'} / ${primaryBL?.sealNo || '---'}
-                  </div>
-                </div>
-              </div>
-              <div class="sd-form-row-2col">
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Ngày xếp hàng (ETD)</div>
-                  <div class="sd-form-control">${etdDisplay}</div>
-                </div>
-                <div class="sd-form-group">
-                  <div class="sd-form-label">Ngày cập cảng (ETA)</div>
-                  <div class="sd-form-control" style="font-weight:600;color:#b45309;">${etaDisplay}</div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
 
-        <!-- MISA TABS NAVIGATION BAR -->
+        <!-- 3. THANH TAB CHỨNG TỪ NGANG -->
         <div class="sd-misa-tabs-bar">
           <div class="sd-misa-tab-list">
             <button class="sd-tab ${currentPane === 'items' ? 'active' : ''}" data-pane="items">
@@ -863,12 +899,12 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
             </button>
           </div>
           <div class="sd-misa-tabs-meta">
-            <span>Loại tiền: <strong style="color:#0f172a;">${currency}</strong></span>
-            ${customsExchangeRate && !isVnd ? `<span>• Tỷ giá HQ: <strong style="color:#0266b3;">${Number(customsExchangeRate).toLocaleString('vi-VN')}</strong></span>` : ''}
+            <span class="sd-meta-pill">Loại tiền: <strong>${currency}</strong></span>
+            ${customsExchangeRate && !isVnd ? `<span class="sd-meta-pill">Tỷ giá HQ: <strong style="color:#0266b3;">${Number(customsExchangeRate).toLocaleString('vi-VN')}</strong></span>` : ''}
           </div>
         </div>
 
-        <!-- TAB CONTENT PANES -->
+        <!-- 4. NỘI DUNG CÁC TAB -->
         <div class="sd-pane-wrap">
 
           <!-- ═══ TAB: HÀNG TIỀN (ITEMS) ═══ -->
@@ -877,7 +913,7 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
               <table class="sd-table">
                 <thead>
                   <tr>
-                    <th style="width:32px; text-align:center;">#</th>
+                    <th style="width:40px; text-align:center;">#</th>
                     <th>Mã hàng</th>
                     <th>Tên hàng / Mặt hàng sợi</th>
                     <th>HS Code</th>
@@ -889,80 +925,91 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
                     <th style="text-align:right;">Thành tiền (${isVnd ? '₫' : '$'})</th>
                     <th style="text-align:right;">Net Weight</th>
                     <th style="text-align:right;">Gross Weight</th>
-                    <th style="text-align:center;">Thao tác</th>
+                    <th style="text-align:center; width:115px;">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${productRowsItems}
+                </tbody>
+                <tfoot>
                   <tr class="sd-total-row">
-                    <td colspan="6" style="text-align:right;">Tổng cộng (${displayItems.length} dòng):</td>
-                    <td style="text-align:right;color:var(--amis-blue);font-weight:700;">${Number(totalQty).toLocaleString()} kg</td>
-                    <td style="text-align:right;color:var(--amis-blue);font-weight:700;">${totalPackages.toLocaleString()} kiện</td>
+                    <td colspan="6" style="text-align:right; color:#334155;">Tổng cộng (${displayItems.length} dòng):</td>
+                    <td style="text-align:right; color:#0266b3; font-weight:700;">${Number(totalQty).toLocaleString()} kg</td>
+                    <td style="text-align:right; color:#0266b3; font-weight:700;">${totalPackages.toLocaleString()} kiện</td>
                     <td></td>
-                    <td style="text-align:right;color:var(--amis-green);font-weight:800;">${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
-                    <td style="text-align:right;font-weight:700;">${totalNetWeight} kg</td>
-                    <td style="text-align:right;font-weight:700;">${totalGrossWeight} kg</td>
+                    <td style="text-align:right; color:#16a34a; font-weight:800; font-size:13.5px;">${isVnd ? `${Number(totalVal).toLocaleString('vi-VN')} ₫` : `$${Number(totalVal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
+                    <td style="text-align:right; font-weight:700; color:#0f172a;">${Number(totalNetWeight).toLocaleString()} kg</td>
+                    <td style="text-align:right; font-weight:700; color:#0f172a;">${Number(totalGrossWeight).toLocaleString()} kg</td>
                     <td style="text-align:center;"></td>
                   </tr>
-                </tbody>
+                </tfoot>
               </table>
             </div>
 
-            <!-- MISA BOTTOM FOOTER: ACTIONS, NOTES, ATTACHMENTS & TOTALS -->
+            <!-- Hàng nút chức năng bảng Hàng tiền: phân cấp rõ chính / phụ / xóa -->
+            <div class="sd-misa-footer-actions">
+              <button class="sd-action-btn sd-action-btn-primary" id="sd-btn-add-item" ${isCompleted ? 'disabled' : ''}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Thêm dòng
+              </button>
+              <button class="sd-action-btn sd-action-btn-secondary" id="sd-btn-export-items">
+                ${ICON.excel} Xuất ra Excel
+              </button>
+              <button class="sd-action-btn sd-action-btn-secondary" id="sd-btn-focus-note">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Ghi chú tiến độ
+              </button>
+              <button class="sd-action-btn sd-action-btn-danger" id="sd-btn-clear-items" ${isCompleted ? 'disabled' : ''}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Xóa hết dòng
+              </button>
+            </div>
+
+            <!-- Khu vực cuối trang: Ghi chú, Đính kèm và Tổng tiền chia theo lưới thẳng hàng -->
             <div class="sd-misa-table-footer">
-              <div class="sd-misa-footer-left">
-                <div class="sd-misa-footer-actions">
-                  <button class="sd-btn-sm" id="sd-btn-add-item" ${isCompleted ? 'disabled' : ''}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    + Thêm dòng
-                  </button>
-                  <button class="sd-btn-sm sd-btn-excel" id="sd-btn-export-items">
-                    ${ICON.excel} Xuất Excel
-                  </button>
-                  <button class="sd-btn-sm" id="sd-btn-focus-note">
-                    💬 Thêm ghi chú
-                  </button>
-                  <button class="sd-btn-sm" id="sd-btn-clear-items" style="color:#ef4444;" ${isCompleted ? 'disabled' : ''}>
-                    🗑️ Xóa hết dòng
+              <!-- Cột 1: Ghi chú nghiệp vụ & Tiến độ lô hàng -->
+              <div class="sd-misa-note-box">
+                <div class="sd-misa-note-header">
+                  <span>Ghi chú nghiệp vụ & Tiến độ lô hàng</span>
+                  <span class="sd-note-hint">Nhấn Enter để lưu</span>
+                </div>
+                <div class="tl-list" id="tl-list-${shipmentId}">
+                  ${buildTimelineHtml(tlLoad(shipmentId))}
+                </div>
+                <div class="tl-input-wrap">
+                  <input
+                    id="tl-input-${shipmentId}"
+                    class="tl-input"
+                    type="text"
+                    placeholder="Nhập ghi chú hoặc cập nhật tiến độ... (Enter để gửi)"
+                    autocomplete="off"
+                  />
+                  <button class="tl-send-btn" id="tl-send-${shipmentId}" title="Lưu ghi chú (Enter)">
+                    Ghi nhận
                   </button>
                 </div>
+              </div>
 
-                <!-- Ghi chú nghiệp vụ / Timeline -->
-                <div class="sd-misa-note-box">
-                  <div class="sd-misa-note-header">
-                    <span>💬 Ghi chú nghiệp vụ & Tiến độ lô hàng</span>
-                    <span style="font-size:11px;color:#94a3b8;font-weight:normal;">Nhấn Enter để ghi nhận</span>
-                  </div>
-                  <div class="tl-list" id="tl-list-${shipmentId}" style="max-height:130px; overflow-y:auto; margin-bottom:8px;">
-                    ${buildTimelineHtml(tlLoad(shipmentId))}
-                  </div>
-                  <div class="tl-input-wrap">
-                    <div class="tl-input-avatar">${currentUser[0].toUpperCase()}</div>
-                    <input
-                      id="tl-input-${shipmentId}"
-                      class="tl-input"
-                      type="text"
-                      placeholder="Nhập ghi chú hoặc cập nhật tiến độ... (Enter để gửi)"
-                      autocomplete="off"
-                    />
-                    <button class="tl-send-btn" id="tl-send-${shipmentId}" title="Gửi (Enter)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                  </div>
+              <!-- Cột 2: Đính kèm chứng từ -->
+              <div class="sd-misa-attachment-box" id="sd-btn-upload-doc" title="Nhấn để tải lên tệp đính kèm chứng từ">
+                <div class="sd-misa-note-header">
+                  <span>Tệp đính kèm chứng từ (${combinedDocs.length} tệp)</span>
+                  <span class="sd-note-hint">Tối đa 15MB</span>
                 </div>
-
-                <!-- Tệp đính kèm Dropzone -->
-                <div class="sd-misa-attachment-box" id="sd-btn-upload-doc" style="cursor:pointer;" title="Nhấn để tải lên tệp đính kèm chứng từ">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:16px;">📎</span>
-                    <div style="font-size:12px; color:#475569;">
-                      <strong>Đính kèm:</strong> Dung lượng tối đa 15MB • <span style="color:#0266b3; text-decoration:underline;">Chọn tệp hoặc kéo và thả vào đây</span> (Hợp đồng, B/L, Invoice, C/O...)
-                    </div>
+                <div class="sd-misa-attach-dropzone">
+                  <div class="sd-attach-icon-circle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0266b3" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <div class="sd-attach-drop-text">
+                    Kéo thả tệp hoặc <span style="color:#0266b3; font-weight:600; text-decoration:underline;">chọn tệp từ máy tính</span>
+                  </div>
+                  <div class="sd-attach-drop-sub">
+                    Hợp đồng, Commercial Invoice, Packing List, B/L, C/O, Tờ khai...
                   </div>
                 </div>
               </div>
 
-              <!-- Bảng tính tài chính tóm tắt theo phong cách MISA AMIS -->
+              <!-- Cột 3: Bảng tổng hợp tiền hàng & thuế -->
               <div class="sd-misa-footer-right">
                 <div class="sd-misa-calc-table">
                   <div class="sd-calc-row">
@@ -979,7 +1026,7 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
                   ` : ''}
                   <div class="sd-calc-row">
                     <span class="sd-calc-label">Thuế nhập khẩu:</span>
-                    <span class="sd-calc-val">${customsTaxAmount ? `${Number(customsTaxAmount).toLocaleString('vi-VN')} ₫` : '0 ₫'}</span>
+                    <span class="sd-calc-val ${customsTaxAmount ? 'is-tax-alert' : ''}">${customsTaxAmount ? `${Number(customsTaxAmount).toLocaleString('vi-VN')} ₫` : '0 ₫'}</span>
                   </div>
                   <div class="sd-calc-row">
                     <span class="sd-calc-label">Thuế GTGT (VAT):</span>
@@ -1475,6 +1522,14 @@ export async function renderShipmentDetail(container, shipmentId, activePane = n
         const paneId = `sd-pane-${tab.dataset.pane}`;
         const pane = document.getElementById(paneId);
         if (pane) pane.classList.add('active');
+      });
+    });
+
+    // Clickable reference fields in Master Voucher
+    container.querySelectorAll('.sd-ref-clickable[data-goto-pane]').forEach(el => {
+      el.addEventListener('click', () => {
+        const target = container.querySelector(`.sd-tab[data-pane="${el.dataset.gotoPane}"]`);
+        if (target) target.click();
       });
     });
 
