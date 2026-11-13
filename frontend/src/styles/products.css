@@ -1321,3 +1321,492 @@ thead th.ph-col-freeze-actions {
   outline: none;
 }
 
+/* =========================================================
+   PARTNERS MODULE (KHÁCH HÀNG & NHÀ CUNG CẤP) — SYNCHRONIZED MISA UI
+   ========================================================= */
+
+.pt-subnav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.pt-seg-group {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  gap: 2px;
+}
+
+[data-theme="dark"] .pt-seg-group {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.pt-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pt-seg-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.pt-seg-btn:hover {
+  color: #0266b3;
+}
+
+.pt-seg-btn.active {
+  background: #ffffff;
+  color: #0266b3;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .pt-seg-btn.active {
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+.pt-seg-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.pt-seg-btn.active .pt-seg-count {
+  background: #e0f2fe;
+  color: #0266b3;
+}
+
+.pt-kpi-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pt-kpi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+}
+
+[data-theme="dark"] .pt-kpi-pill {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+.pt-kpi-pill strong {
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="dark"] .pt-kpi-pill strong {
+  color: #f8fafc;
+}
+
+.pt-kpi-pill.kpi-blue strong { color: #0266b3; }
+.pt-kpi-pill.kpi-green strong { color: #16a34a; }
+.pt-kpi-pill.kpi-amber strong { color: #d97706; }
+
+/* Toolbar filter select */
+.pt-filter-select {
+  height: 32px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pt-filter-select:focus {
+  border-color: var(--amis-blue);
+  box-shadow: 0 0 0 2px rgba(2, 102, 179, 0.12);
+}
+
+.pt-selection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #0266b3;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pt-selection-chip button {
+  border: none;
+  background: none;
+  color: #0266b3;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 0;
+  font-family: inherit;
+}
+
+/* Partner table cells */
+.pt-country-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.pt-country-tag.is-vn {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.pt-country-tag.is-intl {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.pt-incoterm-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.pt-contact-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.pt-contact-name {
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pt-contact-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pt-contact-sub span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pt-shipment-count-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #0266b3;
+  border: 1px solid #bfdbfe;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pt-shipment-count-btn:hover {
+  background: #0266b3;
+  color: #ffffff;
+  border-color: #0266b3;
+}
+
+.pt-shipment-none {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* =========================================================
+   MODERN PARTNER MODAL (THÊM MỚI / SỬA KHÁCH HÀNG & NCC)
+   ========================================================= */
+.pt-modal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+[data-theme="dark"] .pt-modal-banner {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.pt-type-selector {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.pt-type-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pt-type-radio.active {
+  background: #eff6ff;
+  border-color: #0266b3;
+  color: #0266b3;
+  box-shadow: 0 0 0 1px rgba(2, 102, 179, 0.15);
+}
+
+.pt-region-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pt-region-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pt-region-btn:hover,
+.pt-region-btn.active {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  color: #0266b3;
+  font-weight: 600;
+}
+
+.pt-form-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+[data-theme="dark"] .pt-form-card {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.pt-form-card:last-child {
+  margin-bottom: 0;
+}
+
+.pt-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+[data-theme="dark"] .pt-card-head {
+  border-bottom-color: #1e293b;
+}
+
+.pt-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .pt-card-title {
+  color: #f8fafc;
+}
+
+.pt-card-title svg {
+  width: 15px;
+  height: 15px;
+  color: #0266b3;
+}
+
+.pt-card-sub {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.pt-code-input-group {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.pt-code-input-group .form-input {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #0266b3;
+}
+
+.pt-btn-autogen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+  color: #0266b3;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.pt-btn-autogen:hover {
+  background: #0266b3;
+  border-color: #0266b3;
+  color: #ffffff;
+}
+
+.pt-quick-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.pt-quick-chip {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.pt-quick-chip:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0266b3;
+}
+
+.pt-field-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.pt-field-wrap .form-input,
+.pt-field-wrap .form-select {
+  height: 35px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-color: #cbd5e1;
+  font-size: 13px;
+}
+
+.pt-field-wrap .form-textarea {
+  border-radius: 6px;
+  border-color: #cbd5e1;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+
